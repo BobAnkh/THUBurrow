@@ -1,0 +1,31 @@
+version: '3'
+
+services:
+
+  db:
+    image: postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: backend
+    volumes:
+      - ./pg-data:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+
+  pgadmin:
+    container_name: pgadmin_container
+    image: dpage/pgadmin4
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-pgadmin4@pgadmin.org}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    depends_on:
+      - db
+    volumes:
+       - ./pgadmin:/var/lib/pgadmin
+    links:
+      - "db:database"
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
