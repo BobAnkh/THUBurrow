@@ -15,6 +15,8 @@ use chrono::Local;
 use crypto::digest::Digest;
 use crypto::sha3::Sha3;
 
+use idgenerator::IdHelper;
+
 pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
     rocket.mount(
         "/sample",
@@ -30,7 +32,8 @@ pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
 
 #[get("/hello/<name>", rank = 2)]
 async fn hello(name: &str) -> String {
-    format!("Hello, {}!", name)
+    let new_id: i64 = IdHelper::next_id();
+    format!("Hello, {}! This is your id: {}", name, new_id)
 }
 
 #[get("/hello/<id>", rank = 1)]
