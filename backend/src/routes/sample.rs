@@ -7,8 +7,8 @@ use rocket_db_pools::Connection;
 use sea_orm::{entity::*, ActiveModelTrait};
 use uuid::Uuid;
 
+use crate::pool::{PgDb, RedisDb};
 use crate::db;
-use crate::pool::Db;
 use crate::req::user::*;
 
 use chrono::Local;
@@ -20,7 +20,15 @@ use idgenerator::IdHelper;
 pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
     rocket.mount(
         "/sample",
-        routes![hello, hi, redirect_user_by_id, user_login, user_sign_up],
+        routes![
+            hello,
+            hi,
+            redirect_user_by_id,
+            user_login,
+            user_sign_up,
+            redis_save,
+            redis_read
+        ],
     )
 }
 
@@ -40,12 +48,26 @@ async fn redirect_user_by_id(id: i32) -> String {
     hi(id).await
 }
 
+#[get("/redis/<name>")]
+async fn redis_save(db: Connection<RedisDb>, name: &str) -> Result<String, status::NotFound<String>> {
+    let redis_result: Result<String, redis::RedisError> = redis::cmd("SET").arg(&[name, "bar"]).query_async(&mut *db.into_inner()).await;
+    match redis_result {
+        Ok(s) => Ok(format!("{}, {}", name, s)),
+        _ => Err(status::NotFound("Redis cannot save".to_string())),
+    }
+}
+
+#[get("/redis/retrieve/<name>")]
+async fn redis_read(db: Connection<RedisDb>, name: &str) -> Result<String, status::NotFound<String>> {
+    let redis_result: Result<String, redis::RedisError> = redis::cmd("GET").arg(name).query_async(&mut *db.into_inner()).await;
+    match redis_result {
+        Ok(s) => Ok(format!("{}, {}", name, s)),
+        _ => Err(status::NotFound("Redis cannot read".to_string())),
+    }
+}
+
 #[get("/login/<uuid>")]
-async fn user_login(
-    cookies: &CookieJar<'_>,
-    db: Connection<Db>,
-    uuid: Uuid,
-) -> Result<Json<UserData>, status::NotFound<String>> {
+async fn user_login(cookies: &CookieJar<'_>, db: Connection<PgDb>, uuid: Uuid) -> Result<Json<UserData>, status::NotFound<String>> {
     match cookies.get_private("token") {
         Some(cookie) => {
             let token = cookie.value().to_string();
@@ -72,11 +94,7 @@ async fn user_login(
 }
 
 #[post("/sign-up", data = "<user_info>", format = "json")]
-async fn user_sign_up(
-    db: Connection<Db>,
-    cookies: &CookieJar<'_>,
-    user_info: Json<UserInfo<'_>>,
-) -> Json<Uuid> {
+async fn user_sign_up(db: Connection<PgDb>, cookies: &CookieJar<'_>, user_info: Json<UserInfo<'_>>) -> Json<Uuid> {
     // get user info from request
     let user = user_info.into_inner();
     // generate user token from user info
