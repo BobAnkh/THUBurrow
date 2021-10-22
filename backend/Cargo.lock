@@ -144,6 +144,7 @@ name = "backend"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "idgenerator",
  "log",
  "rocket",
  "rocket_cors",
@@ -761,6 +762,15 @@ dependencies = [
  "tower-service",
  "tracing",
  "want",
+]
+
+[[package]]
+name = "idgenerator"
+version = "1.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ed50eba76cba9f64e8c97a8f07748d524823d6f655b0bbe54b5f1056b4d98f56"
+dependencies = [
+ "chrono",
 ]
 
 [[package]]
