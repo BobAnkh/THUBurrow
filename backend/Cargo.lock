@@ -49,6 +49,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "aho-corasick"
+version = "0.7.18"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1e37cfd5e7657ada45f742d6e99ca5788580b5c529dc78faf11ece6dc702656f"
+dependencies = [
+ "memchr",
+]
+
+[[package]]
 name = "ansi_term"
 version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -137,9 +146,11 @@ dependencies = [
  "chrono",
  "deadpool",
  "deadpool-redis",
+ "idgenerator",
  "log",
  "redis",
  "rocket",
+ "rocket_cors",
  "rocket_db_pools",
  "rust-crypto",
  "sea-orm",
@@ -800,6 +811,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "idgenerator"
+version = "1.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ed50eba76cba9f64e8c97a8f07748d524823d6f655b0bbe54b5f1056b4d98f56"
+dependencies = [
+ "chrono",
+]
+
+[[package]]
 name = "idna"
 version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1368,6 +1388,8 @@ version = "1.5.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d07a8629359eb56f1e2fb1652bb04212c072a87ba68546a04065d525673ac461"
 dependencies = [
+ "aho-corasick",
+ "memchr",
  "regex-syntax",
 ]
 
@@ -1413,7 +1435,7 @@ dependencies = [
 [[package]]
 name = "rocket"
 version = "0.5.0-rc.1"
-source = "git+https://github.com/SergioBenitez/Rocket?rev=8cae077ba1d54b92cdef3e171a730b819d5eeb8e#8cae077ba1d54b92cdef3e171a730b819d5eeb8e"
+source = "git+https://github.com/SergioBenitez/Rocket?branch=master#8cae077ba1d54b92cdef3e171a730b819d5eeb8e"
 dependencies = [
  "async-stream",
  "async-trait",
@@ -1452,7 +1474,7 @@ dependencies = [
 [[package]]
 name = "rocket_codegen"
 version = "0.5.0-rc.1"
-source = "git+https://github.com/SergioBenitez/Rocket?rev=8cae077ba1d54b92cdef3e171a730b819d5eeb8e#8cae077ba1d54b92cdef3e171a730b819d5eeb8e"
+source = "git+https://github.com/SergioBenitez/Rocket?branch=master#8cae077ba1d54b92cdef3e171a730b819d5eeb8e"
 dependencies = [
  "devise",
  "glob",
@@ -1465,9 +1487,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "rocket_cors"
+version = "0.5.2"
+source = "git+https://github.com/BobAnkh/rocket_cors.git?branch=master#d7ce9dcb6c31d27e152153fa0f6ee8b1266c8208"
+dependencies = [
+ "log",
+ "regex",
+ "rocket",
+ "serde",
+ "serde_derive",
+ "unicase",
+ "unicase_serde",
+ "url",
+]
+
+[[package]]
 name = "rocket_db_pools"
 version = "0.1.0-rc"
-source = "git+https://github.com/SergioBenitez/Rocket?rev=8cae077ba1d54b92cdef3e171a730b819d5eeb8e#8cae077ba1d54b92cdef3e171a730b819d5eeb8e"
+source = "git+https://github.com/SergioBenitez/Rocket?branch=master#8cae077ba1d54b92cdef3e171a730b819d5eeb8e"
 dependencies = [
  "rocket",
  "rocket_db_pools_codegen",
@@ -1478,7 +1515,7 @@ dependencies = [
 [[package]]
 name = "rocket_db_pools_codegen"
 version = "0.1.0-rc"
-source = "git+https://github.com/SergioBenitez/Rocket?rev=8cae077ba1d54b92cdef3e171a730b819d5eeb8e#8cae077ba1d54b92cdef3e171a730b819d5eeb8e"
+source = "git+https://github.com/SergioBenitez/Rocket?branch=master#8cae077ba1d54b92cdef3e171a730b819d5eeb8e"
 dependencies = [
  "devise",
  "quote",
@@ -1487,7 +1524,7 @@ dependencies = [
 [[package]]
 name = "rocket_http"
 version = "0.5.0-rc.1"
-source = "git+https://github.com/SergioBenitez/Rocket?rev=8cae077ba1d54b92cdef3e171a730b819d5eeb8e#8cae077ba1d54b92cdef3e171a730b819d5eeb8e"
+source = "git+https://github.com/SergioBenitez/Rocket?branch=master#8cae077ba1d54b92cdef3e171a730b819d5eeb8e"
 dependencies = [
  "cookie",
  "either",
@@ -2236,6 +2273,25 @@ name = "unchecked-index"
 version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "eeba86d422ce181a719445e51872fa30f1f7413b62becb52e95ec91aa262d85c"
+
+[[package]]
+name = "unicase"
+version = "2.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "50f37be617794602aabbeee0be4f259dc1778fabe05e2d67ee8f79326d5cb4f6"
+dependencies = [
+ "version_check",
+]
+
+[[package]]
+name = "unicase_serde"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6ef53697679d874d69f3160af80bc28de12730a985d57bdf2b47456ccb8b11f1"
+dependencies = [
+ "serde",
+ "unicase",
+]
 
 [[package]]
 name = "unicode-bidi"

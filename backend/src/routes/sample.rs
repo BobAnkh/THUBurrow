@@ -15,6 +15,8 @@ use chrono::Local;
 use crypto::digest::Digest;
 use crypto::sha3::Sha3;
 
+use idgenerator::IdHelper;
+
 pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
     rocket.mount(
         "/sample",
@@ -32,7 +34,8 @@ pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
 
 #[get("/hello/<name>", rank = 2)]
 async fn hello(name: &str) -> String {
-    format!("Hello, {}!", name)
+    let new_id: i64 = IdHelper::next_id();
+    format!("Hello, {}! This is your id: {}", name, new_id)
 }
 
 #[get("/hello/<id>", rank = 1)]
@@ -70,31 +73,33 @@ async fn user_login(cookies: &CookieJar<'_>, db: Connection<PgDb>, uuid: Uuid) -
             let token = cookie.value().to_string();
             println!("{:?}", uuid);
             match db::user::Entity::find_by_id(uuid).one(&db).await {
-                Ok(Some(user)) => {
-                    match user.token {
-                        Some(s) => {
-                            if s != token {
-                                Err(status::NotFound("Wrong token".to_string()))
-                            } else {
-                                Ok(Json(UserData{id: user.uuid, name: user.username.unwrap()}))
-                            }
-                        },
-                        _ => Err(status::NotFound("No token found".to_string()))
+                Ok(Some(user)) => match user.token {
+                    Some(s) => {
+                        if s != token {
+                            Err(status::NotFound("Wrong token".to_string()))
+                        } else {
+                            Ok(Json(UserData {
+                                id: user.uuid,
+                                name: user.username.unwrap(),
+                            }))
+                        }
                     }
+                    _ => Err(status::NotFound("No token found".to_string())),
                 },
                 _ => Err(status::NotFound("Can not find this user".to_string())),
             }
-        },
+        }
         _ => Err(status::NotFound("No cookie".to_string())),
     }
 }
 
-#[post("/sign_up", data = "<user_info>", format = "json")]
+#[post("/sign-up", data = "<user_info>", format = "json")]
 async fn user_sign_up(db: Connection<PgDb>, cookies: &CookieJar<'_>, user_info: Json<UserInfo<'_>>) -> Json<Uuid> {
     // get user info from request
     let user = user_info.into_inner();
     // generate user token from user info
-    let user_key: String = Local::now().timestamp_millis().to_string() + user.username + user.password;
+    let user_key: String =
+        Local::now().timestamp_millis().to_string() + user.username + user.password;
     let mut hash_sha3 = Sha3::sha3_256();
     hash_sha3.input_str(&user_key);
     let token = hash_sha3.result_str();
