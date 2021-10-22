@@ -9,12 +9,13 @@ mod routes;
 mod req;
 mod db;
 
-use pool::Db;
+use pool::{PgDb, RedisDb};
 use routes::sample;
 
 #[launch]
 fn rocket() -> _ {
     rocket::build()
-        .attach(Db::init())
+        .attach(PgDb::init())
+        .attach(RedisDb::init())
         .attach(AdHoc::on_ignite("mount_user", sample::init))
 }
