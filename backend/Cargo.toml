@@ -8,12 +8,12 @@ edition = "2018"
 [dependencies]
 chrono = { version = "0.4", features = ["serde"] }
 log = "0.4"
-rocket = { git = "https://github.com/SergioBenitez/Rocket", rev = "8cae077ba1d54b92cdef3e171a730b819d5eeb8e", features = [
+rocket = { git = "https://github.com/SergioBenitez/Rocket", branch = "master", features = [
     "json",
     "uuid",
     "secrets",
 ] }
-rocket_db_pools = { git = "https://github.com/SergioBenitez/Rocket", rev = "8cae077ba1d54b92cdef3e171a730b819d5eeb8e", features = [
+rocket_db_pools = { git = "https://github.com/SergioBenitez/Rocket", branch = "master", features = [
     "sqlx_postgres",
 ] }
 sea-orm = { version = "0.2", features = [
@@ -25,3 +25,4 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 uuid = { version = "0.8.2", features = ["v4", "v5", "serde"] }
 rust-crypto = "0.2.36"
+rocket_cors = { git = "https://github.com/BobAnkh/rocket_cors.git", branch = "master"}
