@@ -9,12 +9,15 @@ mod db;
 mod pool;
 mod req;
 mod routes;
+mod utils;
 
 use pool::Db;
 use routes::sample;
+use utils::id_gen;
 
 #[launch]
 fn rocket() -> _ {
+    id_gen::init(1);
     let cors_handler = cors::init();
     rocket::build()
         .attach(cors_handler)
