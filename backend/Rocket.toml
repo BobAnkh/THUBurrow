@@ -1,7 +1,9 @@
 [default]
 address = "101.6.30.172"
 
-[debug.databases.backend]
+[debug.databases.pgdb]
 # postgres://username:password@host:port/dbname
-url = "postgres://postgres:postgres@127.0.0.1:5432/backend"
+url = "postgres://postgres:postgres@127.0.0.1:5432/pgdb"
 
+[debug.databases.keydb]
+url = "redis://:keypassword@127.0.0.1:6300"
