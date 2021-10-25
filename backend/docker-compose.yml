@@ -20,6 +20,7 @@ services:
     environment:
       ROCKET_DATABASES: '{pgdb={url=postgres://postgres:${PG_PASSWORD:-postgres}@pgdb:5432/${PG_DB:-pgdb}},keydb={url=redis://:${KEYDB_PASSWORD}@keydb:6379}}'
       ROCKET_SECRET_KEY: ${ROCKET_SECRET_KEY}
+      ROCKET_ADDRESS: "0.0.0.0"
       VIRTUAL_HOST: ${BACKEND_HOST}
 
 
@@ -58,3 +59,6 @@ services:
 networks:
   innerdb:
     name: innerdb
+  proxy:
+    name: proxy
+    external: true
