@@ -1,5 +1,4 @@
 [default]
-address = "101.6.30.172"
 
 [debug.databases.pgdb]
 # postgres://username:password@host:port/dbname
