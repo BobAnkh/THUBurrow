@@ -1,0 +1,60 @@
+version: '3'
+
+services:
+
+  backend:
+    build: .
+    image: backend:latest
+    container_name: backend_container
+    restart: unless-stopped
+    depends_on:
+      - pgdb
+      - keydb
+    expose:
+      - "8000"
+    networks:
+      innerdb:
+        aliases:
+          - backend
+      proxy:
+    environment:
+      ROCKET_DATABASES: '{pgdb={url=postgres://postgres:${PG_PASSWORD:-postgres}@pgdb:5432/${PG_DB:-pgdb}},keydb={url=redis://:${KEYDB_PASSWORD}@keydb:6379}}'
+      ROCKET_SECRET_KEY: ${ROCKET_SECRET_KEY}
+      VIRTUAL_HOST: ${BACKEND_HOST}
+
+
+  pgdb:
+    image: postgres
+    container_name: postgres_container
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${PG_PASSWORD:-postgres}
+      POSTGRES_DB: ${PG_DB:-pgdb}
+    volumes:
+      - ./data/pg-data:/var/lib/postgresql/data
+    expose:
+      - "5432"
+    networks:
+      innerdb:
+        aliases:
+          - pgdb
+
+  keydb:
+    image: eqalpha/keydb:latest
+    restart: unless-stopped
+    container_name: keydb_container
+    expose:
+      - "6379"
+    volumes:
+      - ./conf/keydb_conf/keydb.conf:/etc/keydb/keydb.conf
+      - ./data/keydb-data:/data
+    command: keydb-server --requirepass ${KEYDB_PASSWORD}
+    privileged: true
+    networks:
+      innerdb:
+        aliases:
+          - keydb
+
+networks:
+  innerdb:
+    name: innerdb
