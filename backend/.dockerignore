@@ -1,0 +1,7 @@
+conf
+data
+target
+.git
+.env
+.env.sample
+docker-compose*
