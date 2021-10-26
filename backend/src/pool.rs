@@ -1,5 +1,6 @@
 use deadpool::managed::{self, Manager, Object, PoolConfig, PoolError};
 use deadpool::Runtime;
+use rocket::State;
 use rocket_db_pools::{rocket::figment::Figment, Config, Database, Error, Pool};
 use sea_orm::{DatabaseConnection, DbErr};
 use std::time::Duration;
@@ -17,6 +18,13 @@ impl DeadManager for deadpool_redis::Manager {
 #[derive(Database)]
 #[database("keydb")]
 pub struct RedisDb(RedisPoolWrapper);
+
+impl RedisDb {
+    pub async fn get_redis_con(db: &State<RedisDb>) -> Object<deadpool_redis::Manager>  {
+        let con_wrapper = db.0.get().await.unwrap();
+        con_wrapper
+    }
+}
 
 pub struct RedisPoolWrapper<M: Manager = deadpool_redis::Manager, C: From<Object<M>> = Object<M>> {
     pool: managed::Pool<M, C>,

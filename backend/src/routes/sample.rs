@@ -1,4 +1,4 @@
-use rocket::http::{Cookie, CookieJar};
+use rocket::http::{Cookie, CookieJar, SameSite};
 use rocket::response::status;
 use rocket::serde::json::Json;
 use rocket::{Build, Rocket};
@@ -50,7 +50,7 @@ async fn redirect_user_by_id(id: i32) -> String {
 
 #[get("/redis/<name>")]
 async fn redis_save(db: Connection<RedisDb>, name: &str) -> Result<String, status::NotFound<String>> {
-    let redis_result: Result<String, redis::RedisError> = redis::cmd("SET").arg(&[name, "bar"]).query_async(&mut *db.into_inner()).await;
+    let redis_result: Result<String, redis::RedisError> = redis::cmd("SET").arg(&[name, "bar"]).query_async(db.into_inner().as_mut()).await;
     match redis_result {
         Ok(s) => Ok(format!("{}, {}", name, s)),
         _ => Err(status::NotFound("Redis cannot save".to_string())),
@@ -59,7 +59,7 @@ async fn redis_save(db: Connection<RedisDb>, name: &str) -> Result<String, statu
 
 #[get("/redis/retrieve/<name>")]
 async fn redis_read(db: Connection<RedisDb>, name: &str) -> Result<String, status::NotFound<String>> {
-    let redis_result: Result<String, redis::RedisError> = redis::cmd("GET").arg(name).query_async(&mut *db.into_inner()).await;
+    let redis_result: Result<String, redis::RedisError> = redis::cmd("GET").arg(name).query_async(db.into_inner().as_mut()).await;
     match redis_result {
         Ok(s) => Ok(format!("{}, {}", name, s)),
         _ => Err(status::NotFound("Redis cannot read".to_string())),
@@ -110,6 +110,7 @@ async fn user_sign_up(db: Connection<PgDb>, cookies: &CookieJar<'_>, user_info: 
     let cookie = Cookie::build("token", token.clone())
         .domain("thuburrow.com")
         .path("/")
+        .same_site(SameSite::None)
         .finish();
     // set cookie
     cookies.add_private(cookie);
