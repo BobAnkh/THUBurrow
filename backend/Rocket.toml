@@ -1,6 +1,7 @@
 [default]
-address = "101.6.30.172"
-
+# address = "101.6.30.172"
+address = "127.0.0.1"
+port = 8000
 [debug.databases.backend]
 # postgres://username:password@host:port/dbname
 url = "postgres://postgres:postgres@127.0.0.1:5432/backend"

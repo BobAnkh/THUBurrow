@@ -9,9 +9,11 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: backend
     volumes:
-      - ./pg-data:/var/lib/postgresql/data
+     # - ./pg-data:/var/lib/postgresql/data
+      - db_volume:/var/lib/postgresql/data
     ports:
       - 5432:5432
+    privileged: true
 
   pgadmin:
     container_name: pgadmin_container
@@ -29,3 +31,7 @@ services:
       - "db:database"
     ports:
       - "${PGADMIN_PORT:-5050}:80"
+      
+volumes:
+  db_volume:
+    external: true

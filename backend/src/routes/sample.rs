@@ -17,13 +17,13 @@ use crypto::sha3::Sha3;
 
 pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
     rocket.mount(
-        "/sample",
+        "/users",
         routes![
             hello,
             hi,
             redirect_user_by_id,
             user_login,
-            user_sign_up
+            super::user_signup::user_sign_up
         ],
     )
 }
