@@ -1,0 +1,35 @@
+version: "3.7"
+
+services:
+  pulsar:
+    image: apachepulsar/pulsar:2.8.1
+    container_name: pulsar_container
+    command: bin/pulsar standalone
+    ports:
+      - "8080:8080"
+      - "6650:6650"
+    restart: unless-stopped
+    volumes:
+      - ./data/pulsardata:/pulsar/data
+      # - ./conf/pulsarconf:/pulsar/conf
+    networks:
+      messagequeue:
+        alises:
+          - pulsar
+
+  pulsar-manager:
+    image: apachepulsar/pulsar-manager:v0.2.0
+    container_name: pulsar_manager_container
+    ports:
+      - "9527:9527"
+      - "7750:7750"
+    depends_on:
+      - pulsar
+    environment:
+      SPRING_CONFIGURATION_FILE: /pulsar-manager/pulsar-manager/application.properties
+    networks:
+      messagequeue:
+
+networks:
+  messagequeue:
+    name: messagequeue
