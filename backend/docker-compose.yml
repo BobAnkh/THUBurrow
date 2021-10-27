@@ -17,12 +17,12 @@ services:
         aliases:
           - backend
       proxy:
+      messagequeue:
     environment:
       ROCKET_DATABASES: '{pgdb={url=postgres://postgres:${PG_PASSWORD:-postgres}@pgdb:5432/${PG_DB:-pgdb}},keydb={url=redis://:${KEYDB_PASSWORD}@keydb:6379}}'
       ROCKET_SECRET_KEY: ${ROCKET_SECRET_KEY}
       ROCKET_ADDRESS: "0.0.0.0"
       VIRTUAL_HOST: ${BACKEND_HOST}
-
 
   pgdb:
     image: postgres
@@ -56,9 +56,44 @@ services:
         aliases:
           - keydb
 
+  pulsar:
+    image: apachepulsar/pulsar:2.8.1
+    container_name: pulsar_container
+    command: bin/pulsar standalone
+    expose:
+      - "8080"
+      - "6650"
+    restart: unless-stopped
+    volumes:
+      - ./data/pulsardata:/pulsar/data
+    # - ./conf/pulsarconf:/pulsar/conf
+    networks:
+      messagequeue:
+        aliases:
+          - pulsar
+
+  # pulsar-manager:
+  #   image: apachepulsar/pulsar-manager:v0.2.0
+  #   container_name: pulsar_manager_container
+  #   expose:
+  #     - "7750"
+  #     - "9527"
+  #   restart: unless-stopped
+  #   depends_on:
+  #     - pulsar
+  #   environment:
+  #     SPRING_CONFIGURATION_FILE: /pulsar-manager/pulsar-manager/application.properties
+  #     VIRTUAL_HOST: ${PULSAR_MANAGE_HOST}
+  #     VIRTUAL_PORT: 9527
+  #   networks:
+  #     messagequeue:
+  #     proxy:
+
 networks:
   innerdb:
     name: innerdb
+  messagequeue:
+    name: messagequeue
   proxy:
     name: proxy
     external: true
