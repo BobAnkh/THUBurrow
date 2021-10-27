@@ -1,16 +1,17 @@
 use rocket::http::{Cookie, CookieJar, SameSite};
 use rocket::response::status;
 use rocket::serde::json::Json;
+use rocket::Request;
 use rocket::{Build, Rocket};
 use rocket_db_pools::Connection;
 
 use sea_orm::{entity::*, ActiveModelTrait};
 use uuid::Uuid;
 
-use crate::pool::{PgDb, RedisDb};
 use crate::db;
+use crate::pool::{PgDb, RedisDb};
 use crate::req::user::*;
-use crate::utils::sso::SsoAuth;
+use crate::utils::sso::{self, AuthTokenError, SsoAuth};
 
 use chrono::Local;
 use crypto::digest::Digest;
@@ -19,24 +20,72 @@ use crypto::sha3::Sha3;
 use idgenerator::IdHelper;
 
 pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
-    rocket.mount(
-        "/sample",
-        routes![
-            hello,
-            hi,
-            redirect_user_by_id,
-            user_login,
-            user_sign_up,
-            redis_save,
-            redis_read,
-            auth_name
-        ],
-    )
+    rocket
+        .mount(
+            "/sample",
+            routes![
+                hello,
+                hi,
+                redirect_user_by_id,
+                user_login,
+                user_sign_up,
+                redis_save,
+                redis_read,
+                auth_name,
+                auth_new
+            ],
+        )
+        .register(
+            "/sample/auth/new",
+            catchers![auth_new_bad_request, auth_new_unauthorized],
+        )
 }
 
 #[get("/auth/<name>")]
-async fn auth_name(auth: SsoAuth,name: &str) -> String {
+async fn auth_name(auth: Result<SsoAuth, AuthTokenError>, name: &str) -> String {
+    if let Err(e) = auth {
+        match e {
+            AuthTokenError::Invalid => return "Invalid token".to_string(),
+            AuthTokenError::Missing => return "Missing token".to_string(),
+            AuthTokenError::DatabaseErr => return "DatabaseErr token".to_string(),
+        }
+    }
     format!("Hello, {}!", name)
+}
+
+#[get("/auth/new/<name>")]
+async fn auth_new(_auth: SsoAuth, name: &str) -> String {
+    format!("Hello, {}!", name)
+}
+
+#[catch(400)]
+async fn auth_new_bad_request(request: &Request<'_>) -> String {
+    let user_result = request
+        .local_cache_async(async { sso::auth_token(request).await })
+        .await;
+    match user_result {
+        Some(e) => match e {
+            AuthTokenError::Invalid => return "Invalid token".to_string(),
+            AuthTokenError::Missing => return "Missing token".to_string(),
+            AuthTokenError::DatabaseErr => return "DatabaseErr token".to_string(),
+        },
+        None => "Valid token".to_string(),
+    }
+}
+
+#[catch(401)]
+async fn auth_new_unauthorized(request: &Request<'_>) -> String {
+    let user_result = request
+        .local_cache_async(async { sso::auth_token(request).await })
+        .await;
+    match user_result {
+        Some(e) => match e {
+            AuthTokenError::Invalid => return "Invalid token".to_string(),
+            AuthTokenError::Missing => return "Missing token".to_string(),
+            AuthTokenError::DatabaseErr => return "DatabaseErr token".to_string(),
+        },
+        None => "Valid token".to_string(),
+    }
 }
 
 #[get("/hello/<name>", rank = 2)]
@@ -56,8 +105,14 @@ async fn redirect_user_by_id(id: i32) -> String {
 }
 
 #[get("/redis/<name>")]
-async fn redis_save(db: Connection<RedisDb>, name: &str) -> Result<String, status::NotFound<String>> {
-    let redis_result: Result<String, redis::RedisError> = redis::cmd("SET").arg(&[name, "bar"]).query_async(db.into_inner().as_mut()).await;
+async fn redis_save(
+    db: Connection<RedisDb>,
+    name: &str,
+) -> Result<String, status::NotFound<String>> {
+    let redis_result: Result<String, redis::RedisError> = redis::cmd("SET")
+        .arg(&[name, "bar"])
+        .query_async(db.into_inner().as_mut())
+        .await;
     match redis_result {
         Ok(s) => Ok(format!("{}, {}", name, s)),
         _ => Err(status::NotFound("Redis cannot save".to_string())),
@@ -65,8 +120,14 @@ async fn redis_save(db: Connection<RedisDb>, name: &str) -> Result<String, statu
 }
 
 #[get("/redis/retrieve/<name>")]
-async fn redis_read(db: Connection<RedisDb>, name: &str) -> Result<String, status::NotFound<String>> {
-    let redis_result: Result<String, redis::RedisError> = redis::cmd("GET").arg(name).query_async(db.into_inner().as_mut()).await;
+async fn redis_read(
+    db: Connection<RedisDb>,
+    name: &str,
+) -> Result<String, status::NotFound<String>> {
+    let redis_result: Result<String, redis::RedisError> = redis::cmd("GET")
+        .arg(name)
+        .query_async(db.into_inner().as_mut())
+        .await;
     match redis_result {
         Ok(s) => Ok(format!("{}, {}", name, s)),
         _ => Err(status::NotFound("Redis cannot read".to_string())),
@@ -74,7 +135,11 @@ async fn redis_read(db: Connection<RedisDb>, name: &str) -> Result<String, statu
 }
 
 #[get("/login/<uuid>")]
-async fn user_login(cookies: &CookieJar<'_>, db: Connection<PgDb>, uuid: Uuid) -> Result<Json<UserData>, status::NotFound<String>> {
+async fn user_login(
+    cookies: &CookieJar<'_>,
+    db: Connection<PgDb>,
+    uuid: Uuid,
+) -> Result<Json<UserData>, status::NotFound<String>> {
     match cookies.get_private("token") {
         Some(cookie) => {
             let token = cookie.value().to_string();
@@ -101,7 +166,11 @@ async fn user_login(cookies: &CookieJar<'_>, db: Connection<PgDb>, uuid: Uuid) -
 }
 
 #[post("/sign-up", data = "<user_info>", format = "json")]
-async fn user_sign_up(db: Connection<PgDb>, cookies: &CookieJar<'_>, user_info: Json<UserInfo<'_>>) -> Json<Uuid> {
+async fn user_sign_up(
+    db: Connection<PgDb>,
+    cookies: &CookieJar<'_>,
+    user_info: Json<UserInfo<'_>>,
+) -> Json<Uuid> {
     // get user info from request
     let user = user_info.into_inner();
     // generate user token from user info

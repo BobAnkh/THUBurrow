@@ -105,7 +105,7 @@ pub async fn auth_token<'r>(request: &'r Request<'_>) -> Option<AuthTokenError> 
                     .finish();
                 request.cookies().add_private(cookie);
                 None
-            },
+            }
             ValidToken::Invalid => Some(AuthTokenError::Invalid),
             ValidToken::DatabaseErr => Some(AuthTokenError::DatabaseErr),
         },
@@ -117,12 +117,10 @@ impl<'r> FromRequest<'r> for SsoAuth {
     type Error = AuthTokenError;
 
     async fn from_request(request: &'r Request<'_>) -> request::Outcome<Self, Self::Error> {
-        let user_result = request
-            .local_cache_async(async {
-                auth_token(request).await
-            })
+        let auth_result = request
+            .local_cache_async(async { auth_token(request).await })
             .await;
-        match user_result {
+        match auth_result {
             Some(err) => match err {
                 AuthTokenError::Missing => {
                     Outcome::Failure((Status::BadRequest, AuthTokenError::Missing))

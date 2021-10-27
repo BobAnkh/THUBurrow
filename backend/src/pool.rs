@@ -20,7 +20,7 @@ impl DeadManager for deadpool_redis::Manager {
 pub struct RedisDb(RedisPoolWrapper);
 
 impl RedisDb {
-    pub async fn get_redis_con(db: &State<RedisDb>) -> Object<deadpool_redis::Manager>  {
+    pub async fn get_redis_con(db: &State<RedisDb>) -> Object<deadpool_redis::Manager> {
         let con_wrapper = db.0.get().await.unwrap();
         con_wrapper
     }
