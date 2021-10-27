@@ -10,6 +10,7 @@ use uuid::Uuid;
 use crate::pool::{PgDb, RedisDb};
 use crate::db;
 use crate::req::user::*;
+use crate::utils::sso::SsoAuth;
 
 use chrono::Local;
 use crypto::digest::Digest;
@@ -27,9 +28,15 @@ pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
             user_login,
             user_sign_up,
             redis_save,
-            redis_read
+            redis_read,
+            auth_name
         ],
     )
+}
+
+#[get("/auth/<name>")]
+async fn auth_name(auth: SsoAuth,name: &str) -> String {
+    format!("Hello, {}!", name)
 }
 
 #[get("/hello/<name>", rank = 2)]
