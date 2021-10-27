@@ -30,6 +30,20 @@ services:
     networks:
       messagequeue:
 
+  typesense:
+    image: typesense/typesense:0.21.0
+    container_name: typesense_container
+    restart: unless-stopped
+    environment:
+      TYPESENSE_API_KEY: ${TYPESENSE_API_KEY:-8Dz4jRrsBjYgdCD/VGP1bleph7oBThJr5IcF43l0U24=}
+      TYPESENSE_DATA_DIR: "/data"
+    depends_on:
+      - pulsar
+    ports:
+      - "8108:8108"
+    volumes:
+      - ./data/typesense-data:/data
+
 networks:
   messagequeue:
     name: messagequeue
