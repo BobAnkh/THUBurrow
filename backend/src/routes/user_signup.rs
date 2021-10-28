@@ -33,41 +33,41 @@ pub async fn user_sign_up(
     // create a response struct
     let mut signup_response = UserSignupResponse {
         success: false,
-        error: Vec::new(),
+        errors: Vec::new(),
     };
     // get user info from request
     let user = user_info.into_inner();
     // check if email address is valid, add corresponding error if so
     if user.email.ends_with("tsinghua.edu.cn") == false {
         signup_response
-            .error
+            .errors
             .push("Illegal Email Address".to_string());
     }
     // check if email address is duplicated, add corresponding error if so
     let email_dup_result = User::find()
-        .filter(db::user::Column::Email.eq(user.email))
+        .filter(db::new_user::Column::Email.eq(user.email))
         .one(&db)
         .await
         .expect("cannot fetch email data from pgdb");
     if let Some(_) = email_dup_result {
         signup_response
-            .error
+            .errors
             .push("Duplicated Email Address".to_string());
     }
     // check if username is duplicated, add corresponding error if so
     let username_dup_result = User::find()
-        .filter(db::user::Column::Username.eq(user.username))
+        .filter(db::new_user::Column::Username.eq(user.username))
         .one(&db)
         .await
         .expect("cannot fetch username data from pgdb");
     if let Some(_) = username_dup_result {
         signup_response
-            .error
+            .errors
             .push("Duplicated Username".to_string());
     }
     // if error exists, refuse to add user
-    if signup_response.error.is_empty() {
-        return (Status::Accepted, Json(signup_response));
+    if !signup_response.errors.is_empty() {
+        return (Status::BadRequest, Json(signup_response));
     } else {
         signup_response.success = true;
     }

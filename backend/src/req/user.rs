@@ -14,8 +14,20 @@ pub struct UserInfo<'r> {
     pub email: &'r str,
 }
 
+#[derive(Deserialize)]
+pub struct UserLoginInfo<'r> {
+    pub username: &'r str,
+    pub password: &'r str,
+}
+
 #[derive(Serialize)]
 pub struct UserSignupResponse {
     pub success: bool,
-    pub error: Vec<String>,
+    pub errors: Vec<String>,
+}
+
+#[derive(Serialize)]
+pub struct UserLoginResponse {
+    pub success: bool,
+    pub errors: Vec<String>,
 }
