@@ -2,4 +2,5 @@
 
 pub mod prelude;
 
+pub mod new_user;
 pub mod user;

@@ -13,6 +13,7 @@ mod utils;
 
 use pool::{PgDb, RedisDb};
 use routes::sample;
+use routes::user_signup;
 use utils::id_gen;
 
 #[launch]
@@ -24,4 +25,5 @@ fn rocket() -> _ {
         .attach(RedisDb::init())
         .attach(cors_handler)
         .attach(AdHoc::on_ignite("mount_user", sample::init))
+        .attach(AdHoc::on_ignite("mount_user", user_signup::init))
 }
