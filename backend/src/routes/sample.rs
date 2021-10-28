@@ -7,9 +7,9 @@ use rocket_db_pools::Connection;
 use sea_orm::{entity::*, ActiveModelTrait};
 use uuid::Uuid;
 
-use crate::pool::{PgDb, RedisDb};
 use crate::db;
-use crate::req::user::*;
+use crate::pool::{PgDb, PulsarSearchProducerMq, RedisDb};
+use crate::req::{user::*, sample_req::*};
 
 use chrono::Local;
 use crypto::digest::Digest;
@@ -27,9 +27,25 @@ pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
             user_login,
             user_sign_up,
             redis_save,
-            redis_read
+            redis_read,
+            pulsar_produce
         ],
     )
+}
+
+#[get("/pulsar/<name>")]
+async fn pulsar_produce(mut producer: Connection<PulsarSearchProducerMq>, name: &str) -> String {
+    let msg = format!("Hello, {}!", name);
+    match producer.send(TestData { data: msg }).await {
+        // Ok(r) => match r.await {
+        //     Ok(cs) => format!("send data successfully!, {}", cs.producer_id),
+        //     Err(e) => format!("Err: {}", e),
+        // },
+        // Err(e) => format!("Err: {}", e),
+        Ok(_) => format!("send data successfully!, {}", name),
+        Err(e) => format!("Err: {}", e),
+    }
+    // let f1 = r.await?;
 }
 
 #[get("/hello/<name>", rank = 2)]
@@ -49,8 +65,14 @@ async fn redirect_user_by_id(id: i32) -> String {
 }
 
 #[get("/redis/<name>")]
-async fn redis_save(db: Connection<RedisDb>, name: &str) -> Result<String, status::NotFound<String>> {
-    let redis_result: Result<String, redis::RedisError> = redis::cmd("SET").arg(&[name, "bar"]).query_async(&mut *db.into_inner()).await;
+async fn redis_save(
+    db: Connection<RedisDb>,
+    name: &str,
+) -> Result<String, status::NotFound<String>> {
+    let redis_result: Result<String, redis::RedisError> = redis::cmd("SET")
+        .arg(&[name, "bar"])
+        .query_async(&mut *db.into_inner())
+        .await;
     match redis_result {
         Ok(s) => Ok(format!("{}, {}", name, s)),
         _ => Err(status::NotFound("Redis cannot save".to_string())),
@@ -58,8 +80,14 @@ async fn redis_save(db: Connection<RedisDb>, name: &str) -> Result<String, statu
 }
 
 #[get("/redis/retrieve/<name>")]
-async fn redis_read(db: Connection<RedisDb>, name: &str) -> Result<String, status::NotFound<String>> {
-    let redis_result: Result<String, redis::RedisError> = redis::cmd("GET").arg(name).query_async(&mut *db.into_inner()).await;
+async fn redis_read(
+    db: Connection<RedisDb>,
+    name: &str,
+) -> Result<String, status::NotFound<String>> {
+    let redis_result: Result<String, redis::RedisError> = redis::cmd("GET")
+        .arg(name)
+        .query_async(&mut *db.into_inner())
+        .await;
     match redis_result {
         Ok(s) => Ok(format!("{}, {}", name, s)),
         _ => Err(status::NotFound("Redis cannot read".to_string())),
@@ -67,7 +95,11 @@ async fn redis_read(db: Connection<RedisDb>, name: &str) -> Result<String, statu
 }
 
 #[get("/login/<uuid>")]
-async fn user_login(cookies: &CookieJar<'_>, db: Connection<PgDb>, uuid: Uuid) -> Result<Json<UserData>, status::NotFound<String>> {
+async fn user_login(
+    cookies: &CookieJar<'_>,
+    db: Connection<PgDb>,
+    uuid: Uuid,
+) -> Result<Json<UserData>, status::NotFound<String>> {
     match cookies.get_private("token") {
         Some(cookie) => {
             let token = cookie.value().to_string();
@@ -94,7 +126,11 @@ async fn user_login(cookies: &CookieJar<'_>, db: Connection<PgDb>, uuid: Uuid) -
 }
 
 #[post("/sign-up", data = "<user_info>", format = "json")]
-async fn user_sign_up(db: Connection<PgDb>, cookies: &CookieJar<'_>, user_info: Json<UserInfo<'_>>) -> Json<Uuid> {
+async fn user_sign_up(
+    db: Connection<PgDb>,
+    cookies: &CookieJar<'_>,
+    user_info: Json<UserInfo<'_>>,
+) -> Json<Uuid> {
     // get user info from request
     let user = user_info.into_inner();
     // generate user token from user info

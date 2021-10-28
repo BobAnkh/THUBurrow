@@ -11,7 +11,7 @@ mod req;
 mod routes;
 mod utils;
 
-use pool::{PgDb, RedisDb};
+use pool::{PgDb, RedisDb, PulsarSearchProducerMq};
 use routes::sample;
 use utils::id_gen;
 
@@ -22,6 +22,7 @@ fn rocket() -> _ {
     rocket::build()
         .attach(PgDb::init())
         .attach(RedisDb::init())
+        .attach(PulsarSearchProducerMq::init())
         .attach(cors_handler)
         .attach(AdHoc::on_ignite("mount_user", sample::init))
 }
