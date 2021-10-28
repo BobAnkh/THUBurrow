@@ -7,7 +7,9 @@ use rocket::http::{Cookie, SameSite, Status};
 use rocket::request::{self, FromRequest, Outcome, Request};
 use rocket::State;
 
-pub struct SsoAuth;
+pub struct SsoAuth {
+    pub id: i64,
+}
 
 #[derive(Debug)]
 pub enum AuthTokenError {
@@ -17,13 +19,18 @@ pub enum AuthTokenError {
 }
 
 pub enum ValidToken {
-    Valid,
-    Refresh(String),
+    Valid(i64),
+    Refresh(i64),
     Invalid,
     DatabaseErr,
+    Missing,
 }
 
-async fn is_valid(token: &str, con: &mut redis::aio::Connection) -> ValidToken {
+async fn is_valid<'r>(
+    request: &'r Request<'_>,
+    token: &str,
+    con: &mut redis::aio::Connection,
+) -> ValidToken {
     let redis_result: Result<u32, redis::RedisError> = redis::cmd("EXPIRE")
         .arg(token)
         .arg(14400)
@@ -31,7 +38,14 @@ async fn is_valid(token: &str, con: &mut redis::aio::Connection) -> ValidToken {
         .await;
     match redis_result {
         // token exists
-        Ok(1) => ValidToken::Valid,
+        Ok(1) => {
+            let get_result: Result<i64, redis::RedisError> =
+                redis::cmd("GET").arg(token).query_async(con).await;
+            match get_result {
+                Ok(id) => ValidToken::Valid(id),
+                _ => ValidToken::DatabaseErr,
+            }
+        }
         // token does not exist
         Ok(_) => {
             // hash token to refresh token
@@ -65,7 +79,22 @@ async fn is_valid(token: &str, con: &mut redis::aio::Connection) -> ValidToken {
                         .query_async(con)
                         .await;
                     match refresh_set {
-                        Ok(_) => ValidToken::Refresh(new_token),
+                        Ok(_) => {
+                            let get_result: Result<i64, redis::RedisError> =
+                                redis::cmd("GET").arg(&new_token).query_async(con).await;
+                            let id: i64 = match get_result {
+                                Ok(id) => id,
+                                _ => return ValidToken::DatabaseErr,
+                            };
+                            // set cookie to the new token
+                            let cookie = Cookie::build("token", new_token)
+                                .domain("thuburrow.com")
+                                .path("/")
+                                .same_site(SameSite::None)
+                                .finish();
+                            request.cookies().add_private(cookie);
+                            ValidToken::Refresh(id)
+                        }
                         _ => ValidToken::DatabaseErr,
                     }
                 }
@@ -80,11 +109,11 @@ async fn is_valid(token: &str, con: &mut redis::aio::Connection) -> ValidToken {
     }
 }
 
-pub async fn auth_token<'r>(request: &'r Request<'_>) -> Option<AuthTokenError> {
+pub async fn auth_token<'r>(request: &'r Request<'_>) -> Option<ValidToken> {
     let db: &State<RedisDb>;
     match request.guard::<&State<RedisDb>>().await.succeeded() {
         None => {
-            return Some(AuthTokenError::DatabaseErr);
+            return Some(ValidToken::DatabaseErr);
         }
         Some(d) => {
             db = d;
@@ -93,21 +122,13 @@ pub async fn auth_token<'r>(request: &'r Request<'_>) -> Option<AuthTokenError> 
     let mut redis_manager = RedisDb::get_redis_con(db).await;
     match request.cookies().get_private("token") {
         // no token in cookie
-        None => Some(AuthTokenError::Missing),
+        None => Some(ValidToken::Missing),
         // get token from cookie and valid it
-        Some(token) => match is_valid(token.value(), redis_manager.as_mut()).await {
-            ValidToken::Valid => None,
-            ValidToken::Refresh(new_token) => {
-                let cookie = Cookie::build("token", new_token.clone())
-                    .domain("thuburrow.com")
-                    .path("/")
-                    .same_site(SameSite::None)
-                    .finish();
-                request.cookies().add_private(cookie);
-                None
-            }
-            ValidToken::Invalid => Some(AuthTokenError::Invalid),
-            ValidToken::DatabaseErr => Some(AuthTokenError::DatabaseErr),
+        Some(token) => match is_valid(request, token.value(), redis_manager.as_mut()).await {
+            ValidToken::Valid(id) => Some(ValidToken::Valid(id)),
+            ValidToken::Refresh(id) => Some(ValidToken::Refresh(id)),
+            ValidToken::DatabaseErr => Some(ValidToken::DatabaseErr),
+            _ => Some(ValidToken::Invalid),
         },
     }
 }
@@ -121,18 +142,20 @@ impl<'r> FromRequest<'r> for SsoAuth {
             .local_cache_async(async { auth_token(request).await })
             .await;
         match auth_result {
-            Some(err) => match err {
-                AuthTokenError::Missing => {
+            Some(msg) => match msg {
+                ValidToken::Missing => {
                     Outcome::Failure((Status::BadRequest, AuthTokenError::Missing))
                 }
-                AuthTokenError::Invalid => {
+                ValidToken::Invalid => {
                     Outcome::Failure((Status::Unauthorized, AuthTokenError::Invalid))
                 }
-                AuthTokenError::DatabaseErr => {
+                ValidToken::DatabaseErr => {
                     Outcome::Failure((Status::InternalServerError, AuthTokenError::DatabaseErr))
                 }
+                ValidToken::Refresh(id) => Outcome::Success(SsoAuth { id: id.clone() }),
+                ValidToken::Valid(id) => Outcome::Success(SsoAuth { id: id.clone() }),
             },
-            None => Outcome::Success(SsoAuth),
+            None => Outcome::Failure((Status::InternalServerError, AuthTokenError::DatabaseErr)),
         }
     }
 }

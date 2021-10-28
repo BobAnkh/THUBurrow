@@ -11,7 +11,7 @@ use uuid::Uuid;
 use crate::db;
 use crate::pool::{PgDb, RedisDb};
 use crate::req::user::*;
-use crate::utils::sso::{self, AuthTokenError, SsoAuth};
+use crate::utils::sso::{self, AuthTokenError, SsoAuth, ValidToken};
 
 use chrono::Local;
 use crypto::digest::Digest;
@@ -54,8 +54,8 @@ async fn auth_name(auth: Result<SsoAuth, AuthTokenError>, name: &str) -> String 
 }
 
 #[get("/auth/new/<name>")]
-async fn auth_new(_auth: SsoAuth, name: &str) -> String {
-    format!("Hello, {}!", name)
+async fn auth_new(auth: SsoAuth, name: &str) -> String {
+    format!("Hello, {}, your id is {}!", name, auth.id)
 }
 
 #[catch(400)]
@@ -65,9 +65,11 @@ async fn auth_new_bad_request(request: &Request<'_>) -> String {
         .await;
     match user_result {
         Some(e) => match e {
-            AuthTokenError::Invalid => return "Invalid token".to_string(),
-            AuthTokenError::Missing => return "Missing token".to_string(),
-            AuthTokenError::DatabaseErr => return "DatabaseErr token".to_string(),
+            ValidToken::Invalid => return "Invalid token".to_string(),
+            ValidToken::Missing => return "Missing token".to_string(),
+            ValidToken::DatabaseErr => return "DatabaseErr token".to_string(),
+            ValidToken::Valid(id) => format!("User Id found: {}", id),
+            ValidToken::Refresh(id) => format!("User Id found: {}", id),
         },
         None => "Valid token".to_string(),
     }
@@ -80,9 +82,11 @@ async fn auth_new_unauthorized(request: &Request<'_>) -> String {
         .await;
     match user_result {
         Some(e) => match e {
-            AuthTokenError::Invalid => return "Invalid token".to_string(),
-            AuthTokenError::Missing => return "Missing token".to_string(),
-            AuthTokenError::DatabaseErr => return "DatabaseErr token".to_string(),
+            ValidToken::Invalid => "Invalid token".to_string(),
+            ValidToken::Missing => "Missing token".to_string(),
+            ValidToken::DatabaseErr => "DatabaseErr token".to_string(),
+            ValidToken::Valid(id) => format!("User Id found: {}", id),
+            ValidToken::Refresh(id) => format!("User Id found: {}", id),
         },
         None => "Valid token".to_string(),
     }
@@ -110,7 +114,8 @@ async fn redis_save(
     name: &str,
 ) -> Result<String, status::NotFound<String>> {
     let redis_result: Result<String, redis::RedisError> = redis::cmd("SET")
-        .arg(&[name, "bar"])
+        .arg(&name)
+        .arg(123456789)
         .query_async(db.into_inner().as_mut())
         .await;
     match redis_result {
