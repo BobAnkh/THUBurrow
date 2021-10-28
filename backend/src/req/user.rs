@@ -11,4 +11,5 @@ pub struct UserData {
 pub struct UserInfo<'r> {
     pub username: &'r str,
     pub password: &'r str,
+    pub email: &'r str,
 }

@@ -19,7 +19,7 @@ use idgenerator::IdHelper;
 
 pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
     rocket.mount(
-        "/sample",
+        "/users",
         routes![
             hello,
             hi,
