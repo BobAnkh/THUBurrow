@@ -14,7 +14,7 @@ services:
       # - ./conf/pulsarconf:/pulsar/conf
     networks:
       messagequeue:
-        alises:
+        aliases:
           - pulsar
 
   pulsar-manager:
