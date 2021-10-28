@@ -30,4 +30,5 @@ pub struct UserSignupResponse {
 pub struct UserLoginResponse {
     pub success: bool,
     pub errors: Vec<String>,
+    pub token: String,
 }

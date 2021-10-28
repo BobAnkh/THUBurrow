@@ -1,4 +1,4 @@
-// use rocket::http::{Cookie, CookieJar};
+use rocket::http::{Cookie, CookieJar};
 // use rocket::response::status;
 use rocket::serde::json::Json;
 use rocket::{Build, Rocket};
@@ -15,9 +15,9 @@ use crate::db::new_user::Entity as User;
 use crate::pool::PgDb;
 use crate::req::user::*;
 
-// use chrono::Local;
-// use crypto::digest::Digest;
-// use crypto::sha3::Sha3;
+use chrono::Local;
+use crypto::digest::Digest;
+use crypto::sha3::Sha3;
 
 // use idgenerator::IdHelper;
 
@@ -28,12 +28,14 @@ pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
 #[post("/login", data = "<user_info>", format = "json")]
 pub async fn user_log_in(
     db: Connection<PgDb>,
+    cookies: &CookieJar<'_>,
     user_info: Json<UserLoginInfo<'_>>,
 ) -> (Status, Json<UserLoginResponse>) {
     // create a response struct
     let mut login_response = UserLoginResponse {
         success: false,
         errors: Vec::new(),
+        token: String::new(),
     };
     // get user info from request
     let user = user_info.into_inner();
@@ -43,10 +45,24 @@ pub async fn user_log_in(
         .one(&db)
         .await
         .expect("cannot fetch username data from pgdb");
+    // check if password is wrong, add corresponding error if so
     match username_existence_result {
         Some(matched_user) => {
             if matched_user.password.eq(&Some(user.password.to_string())) {
                 login_response.success = true;
+                // generate token
+                let user_key: String =
+                Local::now().timestamp_millis().to_string() + user.username + user.password;
+                let mut hash_sha3 = Sha3::sha3_256();
+                hash_sha3.input_str(&user_key);
+                login_response.token = hash_sha3.result_str();
+                // build cookie
+                let cookie = Cookie::build("token", login_response.token.clone())
+                    .domain("thuburrow.com")
+                    .path("/")
+                    .finish();
+                // set cookie
+                cookies.add_private(cookie);
                 (Status::Accepted, Json(login_response))
             } else {
                 login_response.errors.push("Wrong password".to_string());
