@@ -4,6 +4,7 @@ use rocket_db_pools::{rocket::figment::Figment, Config, Database, Error, Pool};
 use sea_orm::{DatabaseConnection, DbErr};
 use std::time::Duration;
 
+// redis for keydb
 pub trait DeadManager: Manager + Sized + Send + Sync + 'static {
     fn new(config: &Config) -> Result<Self, Self::Error>;
 }
@@ -54,7 +55,7 @@ where
     }
 }
 
-//pgdb
+// sql for postgres
 #[derive(Database)]
 #[database("pgdb")]
 pub struct PgDb(SeaOrmPool);
