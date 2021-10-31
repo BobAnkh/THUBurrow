@@ -88,12 +88,14 @@ jobs:
         uses: Swatinem/rust-cache@v1
         with:
           working-directory: backend
-    
+     # temporarily change to a self-maintained workflow
+     # see https://github.com/actions-rs/clippy-check/pull/158
       - name: cargo clippy
-        uses: actions-rs/clippy-check@v1
+        uses: BobAnkh/clippy-check@master
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           args: --all-features
+          working-directory: backend
           
    
   cargo-fmt:
@@ -123,3 +125,4 @@ jobs:
       - name: cargo fmt
         run: cargo fmt -- --check
         
+
