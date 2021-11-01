@@ -136,9 +136,9 @@ async fn user_sign_up(
     // fill the row
     let user = db::user::ActiveModel {
         uuid: Set(uuid.to_owned()),
-        username: Set(Some(user.username.to_string()).to_owned()),
-        password: Set(Some(user.password.to_string()).to_owned()),
-        token: Set(Some(token).to_owned()),
+        username: Set(Some(user.username.to_string())),
+        password: Set(Some(user.password.to_string())),
+        token: Set(Some(token)),
         ..Default::default()
     };
     // insert the row in database
