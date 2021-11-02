@@ -1,8 +1,13 @@
 use deadpool::managed::{self, Manager, Object, PoolConfig, PoolError};
 use deadpool::Runtime;
 use rocket_db_pools::{rocket::figment::Figment, Config, Database, Error, Pool};
+use s3::BucketConfiguration;
 use sea_orm::{DatabaseConnection, DbErr};
 use std::time::Duration;
+
+use s3::bucket::Bucket;
+use s3::creds::Credentials;
+use s3::region::Region;
 
 // redis for keydb
 pub trait DeadManager: Manager + Sized + Send + Sync + 'static {
@@ -75,6 +80,62 @@ impl Pool for SeaOrmPool {
         let connection = sea_orm::Database::connect(&config.url).await?;
 
         Ok(SeaOrmPool { connection })
+    }
+
+    async fn get(&self) -> Result<Self::Connection, Self::Error> {
+        Ok(self.connection.clone())
+    }
+}
+
+#[derive(Database)]
+#[database("minio")]
+pub struct MinioImageStorage(MinioImagePool);
+
+pub struct MinioImagePool {
+    pub connection: Bucket,
+}
+
+#[rocket::async_trait]
+impl Pool for MinioImagePool {
+    type Connection = Bucket;
+    type Error = std::convert::Infallible;
+
+    async fn init(figment: &Figment) -> Result<Self, Self::Error> {
+        let config: Config = figment.extract().unwrap();
+        let bucket_name = "thuburrow-image";
+        let bucket_region = Region::Custom {
+            region: "".to_string(),
+            endpoint: config.url.to_string(),
+        };
+        // TODO(config): should pass config from outside
+        let bucket_credentials = Credentials {
+            access_key: Some("minio".to_owned()),
+            secret_key: Some("miniopassword".to_owned()),
+            security_token: None,
+            session_token: None,
+        };
+        // instantiate the bucket
+        let bucket = Bucket::new_with_path_style(bucket_name, bucket_region, bucket_credentials)
+            .expect("Can not instantiate bucket");
+        // create a new bucket if not already exists
+        let (_, code) = bucket.head_object("/").await.unwrap();
+        if code == 404 {
+            match Bucket::create_with_path_style(
+                bucket.name.as_str(),
+                bucket.region.clone(),
+                bucket.credentials.clone(),
+                BucketConfiguration::default(),
+            )
+            .await
+            {
+                Ok(create_result) => println!(
+                    "Bucket {} created! {} - {}",
+                    bucket.name, create_result.response_code, create_result.response_text
+                ),
+                Err(e) => panic!("Can not create bucket: {}", e),
+            }
+        }
+        Ok(MinioImagePool { connection: bucket })
     }
 
     async fn get(&self) -> Result<Self::Connection, Self::Error> {

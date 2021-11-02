@@ -1,0 +1,89 @@
+use rocket::response::status;
+use rocket::serde::json::Json;
+use rocket::{Build, Rocket};
+use rocket_db_pools::Connection;
+
+use crypto::digest::Digest;
+use crypto::md5::Md5;
+
+use crate::pool::MinioImageStorage;
+use crate::req::storage::{SaveImage, SaveImageResponse};
+
+pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
+    rocket.mount(
+        "/storage",
+        routes![upload_image, download_image, get_images],
+    )
+}
+
+#[post("/image", data = "<image>")]
+async fn upload_image(
+    bucket: Connection<MinioImageStorage>,
+    image: SaveImage,
+) -> Json<SaveImageResponse> {
+    // put a file
+    // check content type
+    match image.content_type.as_str() {
+        "jpg" | "jpeg" | "png" | "gif" => {}
+        _ => {
+            return Json(SaveImageResponse {
+                name: "".to_string(),
+                success: false,
+                error: "Invalid content type".to_string(),
+            });
+        }
+    }
+    let mut hash_md5 = Md5::new();
+    hash_md5.input(image.content.as_slice());
+    let filename = hash_md5.result_str() + "." + &image.content_type;
+    match bucket
+        .put_object(filename.as_str(), image.content.as_slice())
+        .await
+    {
+        Ok((_, 200)) => Json(SaveImageResponse {
+            name: filename,
+            success: true,
+            error: "".to_string(),
+        }),
+        Ok((_, code)) => Json(SaveImageResponse {
+            name: "".to_string(),
+            success: false,
+            error: format!("Error: {}", code),
+        }),
+        Err(e) => Json(SaveImageResponse {
+            name: "".to_string(),
+            success: false,
+            error: format!("Error: {}", e),
+        }),
+    }
+}
+
+#[get("/image/<filename>")]
+async fn download_image(
+    bucket: Connection<MinioImageStorage>,
+    filename: &str,
+) -> Result<Vec<u8>, status::NotFound<String>> {
+    // get a file
+    let (data, code) = bucket.get_object(filename).await.unwrap();
+
+    match code {
+        200 => Ok(data),
+        _ => Err(status::NotFound(format!("Error code: {}", code))),
+    }
+}
+
+#[get("/images")]
+async fn get_images(bucket: Connection<MinioImageStorage>) -> Json<Vec<(String, u64)>> {
+    // list files
+    let bucket_list = bucket
+        .list("/".to_owned(), Some("/".to_owned()))
+        .await
+        .expect("Can not list");
+    let mut results: Vec<(String, u64)> = Vec::new();
+    for result in bucket_list {
+        for item in result.contents {
+            results.push((item.key, item.size));
+        }
+    }
+    Json(results)
+}

@@ -1,9 +1,15 @@
 [default]
 address = "0.0.0.0"
 
+[global.limits]
+"minio-image" = "1 MiB"
+
 [debug.databases.pgdb]
 # postgres://username:password@host:port/dbname
 url = "postgres://postgres:postgres@127.0.0.1:5432/pgdb"
 
 [debug.databases.keydb]
 url = "redis://:keypassword@127.0.0.1:6300"
+
+[debug.databases.minio]
+url = "http://127.0.0.1:9000"
