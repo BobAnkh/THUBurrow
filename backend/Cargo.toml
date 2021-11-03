@@ -32,3 +32,6 @@ redis = { version = "0.21"}
 idgenerator = "1.2.0"
 rocket_cors = { git = "https://github.com/BobAnkh/rocket_cors.git", branch = "master"}
 pulsar = "4.1.1"
+futures = "0.3"
+tokio = { version = "1.0", features = ["macros", "rt-multi-thread"] }
+env_logger = "0.9"
