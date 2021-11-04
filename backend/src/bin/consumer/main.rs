@@ -1,12 +1,16 @@
 #[macro_use]
 extern crate serde;
 use futures::TryStreamExt;
+use futures::io::Read;
 use pulsar::{
     Authentication, Consumer, DeserializeMessage, Payload, Pulsar, SubType, TokioExecutor,
 };
+use rocket::figment::Error;
 use std::env;
 use tokio::time::sleep;
 use tokio::time::Duration;
+use reqwest;
+use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize)]
 struct TestData {
@@ -31,6 +35,24 @@ impl DeserializeMessage for TestData {
     }
 }
 
+async fn initialize_typesense() -> Result<reqwest::Client, reqwest::Error> {
+        //initialize typesense
+        let client = reqwest::Client::new();
+        let res = client.post("http://localhost:8108/collections")
+        .header("Content-Type", "application/json")
+        .header("X-TYPESENSE-API-KEY", "xyz")
+        .body(r#"{
+            "name": "burrows",
+            "fields": [
+              {"name": "title", "type": "string" },
+              {"name": "index", "type": "int32"},  
+            ],
+            "default_sorting_field": "title"
+          }"#)
+        .send()
+        .await?;
+        Ok(client)
+}
 #[tokio::main]
 async fn main() -> Result<(), pulsar::Error> {
     let addr = env::var("PULSAR_ADDRESS")
@@ -63,26 +85,52 @@ async fn main() -> Result<(), pulsar::Error> {
         .await?;
 
     let mut counter = 0usize;
+
+    let client = match initialize_typesense().await {
+        Ok(client) => {
+            println!("typesense succesfully");
+            client
+        },
+        Err(e) => {
+            println!("initialze_typesense failed: {:?}", e);
+            return Ok(());
+        }
+    };
+
     while let Some(msg) = consumer.try_next().await? {
         consumer.ack(&msg).await?;
-        log::info!("metadata: {:?},id: {:?}", msg.metadata(), msg.message_id());
+        println!("metadata: {:?},id: {:?}", msg.metadata(), msg.message_id());
         let data = match msg.deserialize() {
             Ok(data) => data,
             Err(e) => {
-                log::error!("could not deserialize message: {:?}", e);
+                println!("could not deserialize message: {:?}", e);
                 continue;
             }
         };
         println!("Consumer receive: {} operation to {} NO.{} at time{}, data:{}",
         data.operation_type, data.operation_level, data.index, data.operation_time, data.data);
         // if data.data.as_str() != "data" {
-        //     log::error!("Unexpected payload: {}", &data.data);
+        //     println!("Unexpected payload: {}", &data.data);
         //     break;
         // }
         counter += 1;
-        log::info!("got {} messages", counter);
-        sleep(Duration::from_millis(1000)).await;
-        println!("1000ms have elapsed");
+        println!("got {} messages", counter);
+        // sleep(Duration::from_millis(1000)).await;
+        // println!("1000ms have elapsed");
+
+        //post to typesense
+        match client.post("http://localhost:8108/collections/burrows/documents")
+        .header("Content-Type", "application/json")
+        .header("X-TYPESENSE-API-KEY", "xyz")
+        .body(r#"{
+            "title": "First Burrow, motherfucker!",
+            "index":1
+        }"#)
+        .send()
+        .await {
+            Ok(a) => println!("add new burrow.{:?}",a),
+            Err(e) => println!("post new burrow failed {:?}", e)
+        }
     }
     Ok(())
 }

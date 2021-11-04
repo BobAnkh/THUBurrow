@@ -19,6 +19,8 @@ use crypto::digest::Digest;
 use crypto::sha3::Sha3;
 
 use idgenerator::IdHelper;
+use serde_json::json;
+use serde_json::value;
 
 pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
     rocket.mount(
@@ -38,21 +40,23 @@ pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
 
 #[get("/pulsar/<name>")]
 async fn pulsar_produce(mut producer: Connection<PulsarSearchProducerMq>, name: &str) -> String {
-    let operation = r#"{
+    let index:i32 = 1;
+    let operation_time:i64 =23423424;
+    let operation = json!({
         "operation_level": "burrow",
         "operation_type": "new",
-        "index": 1,
-        "operation_time":2342341515,
+        "index": index,
+        "operation_time":operation_time,
         "data": "Hello motherfucker!"
-    }"#;
-    let msg:TestData = serde_json::from_str(operation).unwrap();
+    });
+    let msg:TestData = serde_json::from_value(operation).unwrap();
     match producer.send(msg).await {
         // Ok(r) => match r.await {
         //     Ok(cs) => format!("send data successfully!, {}", cs.producer_id),
         //     Err(e) => format!("Err: {}", e),
         // },
         // Err(e) => format!("Err: {}", e),
-        Ok(_) => format!("send data to pulsarsuccessfully!,{}",name),
+        Ok(_) => format!("send data to pulsar successfully!,{}",name),
         Err(e) => format!("Err: {}", e),
     }
     // let f1 = r.await?;
