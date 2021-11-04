@@ -10,7 +10,7 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: pgdb 
     volumes:
-     - ./pg-data:/var/lib/postgresql/data
+      - ./pg-data:/var/lib/postgresql/data
     ports:
       - 5432:5432
 
@@ -30,3 +30,4 @@ services:
       - "db:database"
     ports:
       - "${PGADMIN_PORT:-8080}:80"
+      
