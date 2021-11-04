@@ -6,7 +6,7 @@ use rocket_db_pools::Database;
 
 use backend::cors;
 use backend::pool::{PgDb, RedisDb};
-use backend::routes::sample;
+use backend::routes::{self, sample};
 use backend::utils::id_gen;
 
 #[launch]
@@ -17,5 +17,6 @@ fn rocket() -> _ {
         .attach(PgDb::init())
         .attach(RedisDb::init())
         .attach(cors_handler)
+        .attach(AdHoc::on_ignite("mount_routes", routes::routes_init))
         .attach(AdHoc::on_ignite("mount_user", sample::init))
 }
