@@ -122,7 +122,6 @@ pub async fn user_log_in(
     let mut login_response = UserLoginResponse {
         success: false,
         errors: Vec::new(),
-        token: String::new(),
     };
     // get user info from request
     let user = user_info.into_inner();
