@@ -1,3 +1,6 @@
+use std::time;
+
+use pulsar::OperationRetryOptions;
 use rocket::http::{Cookie, CookieJar};
 use rocket::response::status;
 use rocket::serde::json::Json;
@@ -35,18 +38,26 @@ pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
 
 #[get("/pulsar/<name>")]
 async fn pulsar_produce(mut producer: Connection<PulsarSearchProducerMq>, name: &str) -> String {
-    let msg = format!("Hello, {}!", name);
-    match producer.send(TestData { data: msg }).await {
+    let operation = r#"{
+        "operation_level": "burrow",
+        "operation_type": "new",
+        "index": 1,
+        "operation_time":2342341515,
+        "data": "Hello motherfucker!"
+    }"#;
+    let msg:TestData = serde_json::from_str(operation).unwrap();
+    match producer.send(msg).await {
         // Ok(r) => match r.await {
         //     Ok(cs) => format!("send data successfully!, {}", cs.producer_id),
         //     Err(e) => format!("Err: {}", e),
         // },
         // Err(e) => format!("Err: {}", e),
-        Ok(_) => format!("send data successfully!, {}", name),
+        Ok(_) => format!("send data to pulsarsuccessfully!,{}",name),
         Err(e) => format!("Err: {}", e),
     }
     // let f1 = r.await?;
 }
+
 
 #[get("/hello/<name>", rank = 2)]
 async fn hello(name: &str) -> String {

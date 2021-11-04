@@ -5,11 +5,23 @@ use pulsar::{
     Authentication, Consumer, DeserializeMessage, Payload, Pulsar, SubType, TokioExecutor,
 };
 use std::env;
+use tokio::time::sleep;
+use tokio::time::Duration;
 
 #[derive(Serialize, Deserialize)]
 struct TestData {
+    operation_type: String,     //("new","remove", "update“)
+    operation_level: String,    //("burrow","post", "reply")
+    index: i64,
+    operation_time: i64,
     data: String,
+
+    #[serde(default = "default_reply_to_whom")]
+    reply_to_whom: i32
+
 }
+//set default value
+fn default_reply_to_whom() -> i32{-1}
 
 impl DeserializeMessage for TestData {
     type Output = Result<TestData, serde_json::Error>;
@@ -21,25 +33,23 @@ impl DeserializeMessage for TestData {
 
 #[tokio::main]
 async fn main() -> Result<(), pulsar::Error> {
-    env_logger::init();
-
     let addr = env::var("PULSAR_ADDRESS")
         .ok()
-        .unwrap_or_else(|| "pulsar://127.0.0.1:6650".to_string());
+        .unwrap_or("pulsar://127.0.0.1:6650".to_string());
     let topic = env::var("PULSAR_TOPIC")
         .ok()
-        .unwrap_or_else(|| "persistent://public/default/search".to_string());
+        .unwrap_or("persistent://public/default/search".to_string());
 
     let mut builder = Pulsar::builder(addr, TokioExecutor);
 
-    if let Ok(token) = env::var("PULSAR_TOKEN") {
-        let authentication = Authentication {
-            name: "token".to_string(),
-            data: token.into_bytes(),
-        };
+    // if let Ok(token) = env::var("PULSAR_TOKEN") {
+    //     let authentication = Authentication {
+    //         name: "token".to_string(),
+    //         data: token.into_bytes(),
+    //     };
 
-        builder = builder.with_auth(authentication);
-    }
+    //     builder = builder.with_auth(authentication);
+    // }
 
     let pulsar: Pulsar<_> = builder.build().await?;
 
@@ -55,23 +65,24 @@ async fn main() -> Result<(), pulsar::Error> {
     let mut counter = 0usize;
     while let Some(msg) = consumer.try_next().await? {
         consumer.ack(&msg).await?;
-        log::info!("metadata: {:?}", msg.metadata());
-        log::info!("id: {:?}", msg.message_id());
+        log::info!("metadata: {:?},id: {:?}", msg.metadata(), msg.message_id());
         let data = match msg.deserialize() {
             Ok(data) => data,
             Err(e) => {
                 log::error!("could not deserialize message: {:?}", e);
-                break;
+                continue;
             }
         };
-        println!("{}",data.data);
+        println!("Consumer receive: {} operation to {} NO.{} at time{}, data:{}",
+        data.operation_type, data.operation_level, data.index, data.operation_time, data.data);
         // if data.data.as_str() != "data" {
         //     log::error!("Unexpected payload: {}", &data.data);
         //     break;
         // }
         counter += 1;
         log::info!("got {} messages", counter);
+        sleep(Duration::from_millis(1000)).await;
+        println!("1000ms have elapsed");
     }
-
     Ok(())
 }
