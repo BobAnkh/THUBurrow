@@ -9,8 +9,20 @@ use backend::pool::{MinioImageStorage, PgDb, RedisDb};
 use backend::routes::{sample, storage};
 use backend::utils::id_gen;
 
+#[cfg(debug_assertions)]
+fn log_init() {}
+
+#[cfg(not(debug_assertions))]
+fn log_init()  {
+    match log4rs::init_file("conf/log4rs.yml", Default::default()) {
+        Ok(_) => (),
+        Err(e) => panic!("Error initial logger: {}", e),
+    }
+}
+
 #[launch]
 fn rocket() -> _ {
+    log_init();
     id_gen::init(1);
     let cors_handler = cors::init();
     rocket::build()

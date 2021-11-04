@@ -12,4 +12,7 @@ url = "postgres://postgres:postgres@127.0.0.1:5432/pgdb"
 url = "redis://:keypassword@127.0.0.1:6300"
 
 [debug.databases.minio]
-url = "http://127.0.0.1:9000"
+url = "minio://minio:miniopassword@127.0.0.1:9000"
+
+[release]
+cli_colors = false

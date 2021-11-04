@@ -102,15 +102,30 @@ impl Pool for MinioImagePool {
 
     async fn init(figment: &Figment) -> Result<Self, Self::Error> {
         let config: Config = figment.extract().unwrap();
+        let info: Vec<&str> = config.url.split("://").collect();
+        let info = info[1];
+        let info: Vec<&str> = info.split("@").collect();
+        let mut user: Option<String> = None;
+        let mut password: Option<String> = None;
+        let host: String;
+        if info.len() == 1{
+            host = "http://".to_string() + info[0];
+        } else if info.len() == 2 {
+            let user_info: Vec<&str> = info[0].split(":").collect();
+            user = Some(user_info[0].to_string());
+            password = Some(user_info[1].to_string());
+            host = "http://".to_string() + info[1];
+        } else {
+            panic!("Invalid minio url.");
+        }
         let bucket_name = "thuburrow-image";
         let bucket_region = Region::Custom {
             region: "".to_string(),
-            endpoint: config.url.to_string(),
+            endpoint: host,
         };
-        // TODO(config): should pass config from outside
         let bucket_credentials = Credentials {
-            access_key: Some("minio".to_owned()),
-            secret_key: Some("miniopassword".to_owned()),
+            access_key: user,
+            secret_key: password,
             security_token: None,
             session_token: None,
         };

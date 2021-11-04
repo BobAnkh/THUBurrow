@@ -32,3 +32,4 @@ redis = { version = "0.21"}
 idgenerator = "1.2.0"
 rocket_cors = { git = "https://github.com/BobAnkh/rocket_cors.git", branch = "master"}
 rust-s3 = "0.27.0"
+log4rs = "1.0.0"
