@@ -1,13 +1,21 @@
 #[macro_use]
 extern crate rocket;
 
-use rocket::fairing::AdHoc;
+use rocket::{Build, Rocket};
+use rocket::fairing::{self, AdHoc};
 use rocket_db_pools::Database;
 
 use backend::cors;
 use backend::pool::{PgDb, RedisDb};
-use backend::routes::sample;
+use backend::routes::{sample, user};
 use backend::utils::id_gen;
+use backend::setup;
+
+async fn run_migrations(rocket: Rocket<Build>) -> fairing::Result {
+    let conn = &PgDb::fetch(&rocket).unwrap().connection;
+    let _ = setup::create_post_table(conn).await;
+    Ok(rocket)
+}
 
 #[launch]
 fn rocket() -> _ {
@@ -18,6 +26,6 @@ fn rocket() -> _ {
         .attach(RedisDb::init())
         .attach(cors_handler)
         .attach(AdHoc::on_ignite("mount_user", sample::init))
-        .attach(AdHoc::on_ignite("mount_user", user_signup::init))
-        .attach(AdHoc::on_ignite("mount_user", user_login::init))
+        .attach(AdHoc::on_ignite("mount_user", user::init))
+        .attach(AdHoc::try_on_ignite("Migrations", run_migrations))
 }

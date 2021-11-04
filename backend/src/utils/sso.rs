@@ -33,7 +33,8 @@ async fn is_valid<'r>(
 ) -> ValidToken {
     let redis_result: Result<u32, redis::RedisError> = redis::cmd("EXPIRE")
         .arg(token)
-        .arg(14400)
+        // .arg(4*3600)
+        .arg(20)
         .query_async(con)
         .await;
     match redis_result {
@@ -49,61 +50,81 @@ async fn is_valid<'r>(
         // token does not exist
         Ok(_) => {
             // hash token to refresh token
-            let mut hash_sha3 = Sha3::sha3_256();
+            let mut hash_sha3 = Sha3::sha3_384();
             hash_sha3.input_str(&token);
             let refresh_token = hash_sha3.result_str();
             // generate new token
-            // TODO: might be replace
             let new_token: String = thread_rng()
                 .sample_iter(&Alphanumeric)
-                .take(30)
+                .take(32)
                 .map(char::from)
                 .collect();
             // hash new token to new refresh token
+            let mut hash_sha3 = Sha3::sha3_384();
             hash_sha3.input_str(&new_token);
             let new_refresh_token = hash_sha3.result_str();
             // try to rename old refresh token to new refresh token
             let refresh_result: Result<u32, redis::RedisError> = redis::cmd("RENAMENX")
-                .arg(refresh_token)
-                .arg(new_refresh_token)
+                .arg(&refresh_token)
+                .arg(&new_refresh_token)
                 .query_async(con)
                 .await;
             match refresh_result {
                 // successfully rename refresh token to new refresh token
                 Ok(1) => {
-                    // set token
-                    let refresh_set: Result<String, redis::RedisError> = redis::cmd("SETEX")
-                        .arg(&new_token)
-                        .arg(14400)
-                        .arg("user")
-                        .query_async(con)
-                        .await;
-                    match refresh_set {
-                        Ok(_) => {
-                            let get_result: Result<i64, redis::RedisError> =
-                                redis::cmd("GET").arg(&new_token).query_async(con).await;
-                            let id: i64 = match get_result {
-                                Ok(id) => id,
+                    // find id by get refresh_token 
+                    let get_result: Result<i64, redis::RedisError> =
+                        redis::cmd("GET").arg(&new_refresh_token).query_async(con).await;
+                    let id: i64 = match get_result {
+                        Ok(id) => {
+                            // set id -> new_token
+                            let old_token_get: Result<String, redis::RedisError> = 
+                                redis::cmd("GETSET").arg(id).arg(&new_token).query_async(con).await;
+                            // clear old_token -> id
+                            match old_token_get {
+                                Ok(old_token) => {
+                                    let _: Result<i64, redis::RedisError> = 
+                                        redis::cmd("DEL").arg(&old_token).query_async(con).await;
+                                },
                                 _ => return ValidToken::DatabaseErr,
                             };
-                            // set cookie to the new token
-                            let cookie = Cookie::build("token", new_token)
-                                .domain("thuburrow.com")
-                                .path("/")
-                                .same_site(SameSite::None)
-                                .finish();
-                            request.cookies().add_private(cookie);
-                            ValidToken::Refresh(id)
-                        }
-                        _ => ValidToken::DatabaseErr,
-                    }
-                }
+                            // set new_token -> id
+                            let refresh_set: Result<String, redis::RedisError> = redis::cmd("SETEX")
+                                .arg(&new_token)
+                                // .arg(4*3600)
+                                .arg(20)
+                                .arg(id)
+                                .query_async(con)
+                                .await;
+                            match refresh_set {
+                                Ok(_) => {
+                                    // set cookie to the new token
+                                    let cookie = Cookie::build("token", new_token)
+                                        .domain("thuburrow.com")
+                                        .path("/")
+                                        .same_site(SameSite::None)
+                                        .finish();
+                                    request.cookies().add_private(cookie);
+                                },
+                                _ => return ValidToken::DatabaseErr,
+                            };
+                            id
+                        },
+                        _ => return ValidToken::DatabaseErr,
+                        
+                    };
+                    ValidToken::Refresh(id)
+                },
                 // database error, new refresh token already exists
                 Ok(_) => ValidToken::DatabaseErr,
                 // refresh token does not exist
-                _ => ValidToken::Invalid,
+                _ => {
+                    // println!("{:?}", e.to_string());
+                    ValidToken::Invalid
+                },
             }
-        }
+                    
+        },
         // database connection error
         _ => ValidToken::DatabaseErr,
     }
