@@ -11,7 +11,6 @@ use crate::pgdb;
 use crate::pgdb::user::Entity as User;
 use crate::pool::{PgDb, RedisDb};
 use crate::req::user::*;
-use crate::utils::sso;
 
 use crypto::digest::Digest;
 use crypto::sha3::Sha3;
@@ -23,7 +22,7 @@ use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 
 pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
-    rocket.mount("/users", routes![user_log_in, user_sign_up, sso_test])
+    rocket.mount("/users", routes![user_log_in, user_sign_up])
 }
 
 pub async fn gen_salt() -> String {
@@ -35,56 +34,52 @@ pub async fn gen_salt() -> String {
     salt
 }
 
-#[get("/test/sso")]
-pub async fn sso_test(a: sso::SsoAuth) -> Json<i64> {
-    Json(a.id)
-}
-
 #[post("/sign-up", data = "<user_info>", format = "json")]
 pub async fn user_sign_up(
     db: Connection<PgDb>,
     user_info: Json<UserInfo<'_>>,
-) -> (Status, Json<UserSignupResponse>) {
-    // create a response struct
-    let mut signup_response = UserSignupResponse {
-        success: false,
-        errors: Vec::new(),
-    };
+) -> (Status, Option<Json<UserResponse>>) {
+    // create vec of errors
+    let mut error_collector = Vec::new();
     // get user info from request
     let user = user_info.into_inner();
     // check if email address is valid, add corresponding error if so
     if !user.email.ends_with("tsinghua.edu.cn") {
-        signup_response
-            .errors
-            .push("Illegal Email Address".to_string());
+        error_collector.push("Illegal Email Address".to_string());
     }
     // check if email address is duplicated, add corresponding error if so
     let email_dup_result = User::find()
         .filter(pgdb::user::Column::Email.eq(user.email))
         .one(&db)
-        .await
-        .expect("cannot fetch email data from pgdb");
-    if email_dup_result.is_some() {
-        signup_response
-            .errors
-            .push("Duplicated Email Address".to_string());
+        .await;
+    match email_dup_result {
+        Ok(res) => {
+            if res.is_some() {
+                error_collector.push("Duplicated Email Address".to_string());
+            }
+        }
+        _ => return (Status::InternalServerError, None),
     }
     // check if username is duplicated, add corresponding error if so
     let username_dup_result = User::find()
         .filter(pgdb::user::Column::Username.eq(user.username))
         .one(&db)
-        .await
-        .expect("cannot fetch username data from pgdb");
-    if username_dup_result.is_some() {
-        signup_response
-            .errors
-            .push("Duplicated Username".to_string());
+        .await;
+    match username_dup_result {
+        Ok(res) => {
+            if res.is_some() {
+                error_collector.push("Duplicated Username".to_string());
+            }
+        }
+        _ => return (Status::InternalServerError, None),
     }
     // if error exists, refuse to add user
-    if !signup_response.errors.is_empty() {
-        (Status::BadRequest, Json(signup_response))
+    if !error_collector.is_empty() {
+        let user_response = UserResponse {
+            errors: error_collector,
+        };
+        (Status::BadRequest, Some(Json(user_response)))
     } else {
-        signup_response.success = true;
         // generate salt
         let salt = gen_salt().await;
         // encrypt password
@@ -103,10 +98,14 @@ pub async fn user_sign_up(
             ..Default::default()
         };
         // insert the row in database
-        let res = users.insert(&db).await.expect("Cannot save user");
-        println!("{:?}", res.uid);
-        // return the response
-        (Status::Ok, Json(signup_response))
+        let ins_result = users.insert(&db).await;
+        match ins_result {
+            Ok(res) => {
+                info!("User signup Succ, save user: {:?}", res.uid);
+                (Status::Ok, None)
+            }
+            _ => (Status::InternalServerError, None),
+        }
     }
 }
 
@@ -116,13 +115,10 @@ pub async fn user_log_in(
     kvdb: Connection<RedisDb>,
     cookies: &CookieJar<'_>,
     user_info: Json<UserLoginInfo<'_>>,
-) -> (Status, Option<Json<UserLoginResponse>>) {
+) -> (Status, Option<Json<UserResponse>>) {
     let mut con = kvdb.into_inner();
     // create a response struct
-    let mut login_response = UserLoginResponse {
-        success: false,
-        errors: Vec::new(),
-    };
+    let mut user_response = UserResponse { errors: Vec::new() };
     // get user info from request
     let user = user_info.into_inner();
     // check if username is existed, add corresponding error if so
@@ -134,16 +130,17 @@ pub async fn user_log_in(
     match username_existence_result {
         Ok(s) => match s {
             Some(matched_user) => {
+                info!("username exists, continue...");
                 let salt = match matched_user.salt {
                     Some(s) => s,
-                    None => return (Status::BadRequest, None),
+                    None => return (Status::InternalServerError, None),
                 };
                 // encrypt input password same as sign-up
                 let mut hash_sha3 = Sha3::sha3_256();
                 hash_sha3.input_str(&(String::from(&salt) + user.password));
                 let password = hash_sha3.result_str();
                 if matched_user.password.eq(&Some(password.to_string())) {
-                    login_response.success = true;
+                    info!("password correct, continue...");
                     // find old token by get uid
                     let old_token_get: Result<String, redis::RedisError> = redis::cmd("GET")
                         .arg(matched_user.uid)
@@ -151,14 +148,14 @@ pub async fn user_log_in(
                         .await;
                     // if old token -> uid exists
                     if let Ok(old_token) = old_token_get {
-                        println!("old token:{:?}", old_token);
+                        info!("find old token:{:?}, continue...", old_token);
                         // clear old token -> uid
                         let delete_result: Result<i64, redis::RedisError> = redis::cmd("DEL")
                             .arg(&old_token)
                             .query_async(con.as_mut())
                             .await;
                         match delete_result {
-                            Ok(_) => println!("delete token->id"),
+                            Ok(_) => info!("delete token->id"),
                             _ => return (Status::InternalServerError, None),
                         };
                         // find old refresh_token by hashing old token
@@ -171,7 +168,7 @@ pub async fn user_log_in(
                             .query_async(con.as_mut())
                             .await;
                         match delete_result {
-                            Ok(_) => println!("delete ref_token->id"),
+                            Ok(_) => info!("delete ref_token->id"),
                             _ => return (Status::InternalServerError, None),
                         };
                     };
@@ -200,7 +197,7 @@ pub async fn user_log_in(
                         .query_async(con.as_mut())
                         .await;
                     match uid_result {
-                        Ok(s) => println!("setex token->id: {:?} -> {}", &token, s),
+                        Ok(s) => info!("setex token->id: {:?} -> {}", &token, s),
                         _ => return (Status::InternalServerError, None),
                     };
                     // set refresh_token -> uid
@@ -211,7 +208,7 @@ pub async fn user_log_in(
                         .query_async(con.as_mut())
                         .await;
                     match uid_result {
-                        Ok(s) => println!("setex refresh_token->id: {:?} -> {}", &refresh_token, s),
+                        Ok(s) => info!("setex refresh_token->id: {:?} -> {}", &refresh_token, s),
                         _ => return (Status::InternalServerError, None),
                     };
                     // set uid -> token
@@ -221,20 +218,21 @@ pub async fn user_log_in(
                         .query_async(con.as_mut())
                         .await;
                     match token_result {
-                        Ok(s) => println!("set id->token: {} -> {:?}", matched_user.uid, s),
+                        Ok(s) => info!("set id->token: {} -> {:?}", matched_user.uid, s),
                         _ => return (Status::InternalServerError, None),
                     };
-                    (Status::Ok, Some(Json(login_response)))
+                    info!("User login complete.");
+                    (Status::Ok, Some(Json(user_response)))
                 } else {
-                    login_response.errors.push("Wrong password".to_string());
-                    (Status::BadRequest, Some(Json(login_response)))
+                    user_response.errors.push("Wrong password".to_string());
+                    (Status::BadRequest, Some(Json(user_response)))
                 }
             }
             None => {
-                login_response
+                user_response
                     .errors
                     .push("Username does not exist".to_string());
-                (Status::BadRequest, Some(Json(login_response)))
+                (Status::BadRequest, Some(Json(user_response)))
             }
         },
         _ => (Status::InternalServerError, None),

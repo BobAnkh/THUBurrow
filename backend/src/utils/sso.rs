@@ -42,7 +42,10 @@ async fn is_valid<'r>(
             let get_result: Result<i64, redis::RedisError> =
                 redis::cmd("GET").arg(token).query_async(con).await;
             match get_result {
-                Ok(id) => ValidToken::Valid(id),
+                Ok(id) => {
+                    info!("token -> id exists");
+                    ValidToken::Valid(id)
+                }
                 _ => ValidToken::DatabaseErr,
             }
         }
@@ -120,7 +123,7 @@ async fn is_valid<'r>(
                     ValidToken::Refresh(id)
                 }
                 // database error, new refresh token already exists
-                Ok(_) => ValidToken::DatabaseErr,
+                Ok(0) => ValidToken::DatabaseErr,
                 // refresh token does not exist
                 _ => ValidToken::Invalid,
             }

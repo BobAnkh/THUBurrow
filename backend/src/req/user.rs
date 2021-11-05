@@ -12,6 +12,7 @@ pub struct UserInfo<'r> {
     pub username: &'r str,
     pub password: &'r str,
     pub email: &'r str,
+    pub verify_code: &'r str,
 }
 
 #[derive(Deserialize)]
@@ -21,13 +22,6 @@ pub struct UserLoginInfo<'r> {
 }
 
 #[derive(Serialize)]
-pub struct UserSignupResponse {
-    pub success: bool,
-    pub errors: Vec<String>,
-}
-
-#[derive(Serialize)]
-pub struct UserLoginResponse {
-    pub success: bool,
+pub struct UserResponse {
     pub errors: Vec<String>,
 }

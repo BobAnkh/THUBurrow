@@ -32,13 +32,19 @@ pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
                 redis_save,
                 redis_read,
                 auth_name,
-                auth_new
+                auth_new,
+                sso_test
             ],
         )
         .register(
             "/sample/auth/new",
             catchers![auth_new_bad_request, auth_new_unauthorized],
         )
+}
+
+#[get("/test/sso")]
+pub async fn sso_test(a: sso::SsoAuth) -> Json<i64> {
+    Json(a.id)
 }
 
 #[get("/auth/<name>")]
