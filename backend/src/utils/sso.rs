@@ -33,8 +33,7 @@ async fn is_valid<'r>(
 ) -> ValidToken {
     let redis_result: Result<u32, redis::RedisError> = redis::cmd("EXPIRE")
         .arg(token)
-        // .arg(4 * 3600)
-        .arg(15)
+        .arg(4 * 3600)
         .query_async(con)
         .await;
     match redis_result {
@@ -105,8 +104,7 @@ async fn is_valid<'r>(
                             let refresh_set: Result<String, redis::RedisError> =
                                 redis::cmd("SETEX")
                                     .arg(&new_token)
-                                    // .arg(4 * 3600)
-                                    .arg(15)
+                                    .arg(4 * 3600)
                                     .arg(id)
                                     .query_async(con)
                                     .await;
@@ -192,8 +190,8 @@ impl<'r> FromRequest<'r> for SsoAuth {
                 ValidToken::DatabaseErr => {
                     Outcome::Failure((Status::InternalServerError, AuthTokenError::DatabaseErr))
                 }
-                ValidToken::Refresh(id) => Outcome::Success(SsoAuth { id: id.clone() }),
-                ValidToken::Valid(id) => Outcome::Success(SsoAuth { id: id.clone() }),
+                ValidToken::Refresh(id) => Outcome::Success(SsoAuth { id: *id }),
+                ValidToken::Valid(id) => Outcome::Success(SsoAuth { id: *id }),
             },
             None => Outcome::Failure((Status::InternalServerError, AuthTokenError::DatabaseErr)),
         }

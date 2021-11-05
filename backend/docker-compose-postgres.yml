@@ -30,4 +30,3 @@ services:
       - "db:database"
     ports:
       - "${PGADMIN_PORT:-8080}:80"
-      

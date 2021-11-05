@@ -158,19 +158,10 @@ pub async fn user_log_in(
                     let mut hash_sha3 = Sha3::sha3_384();
                     hash_sha3.input_str(&token);
                     let refresh_token = hash_sha3.result_str();
-                    // build cookie
-                    let cookie = Cookie::build("token", token.clone())
-                        .domain("thuburrow.com")
-                        .path("/")
-                        .same_site(SameSite::None)
-                        .finish();
-                    // set cookie
-                    cookies.add_private(cookie);
                     // set token -> id
                     let uid_result: Result<String, redis::RedisError> = redis::cmd("SETEX")
                         .arg(&token)
-                        // .arg(4 * 3600)
-                        .arg(15)
+                        .arg(4 * 3600)
                         .arg(matched_user.uid)
                         .query_async(con.as_mut())
                         .await;
@@ -184,8 +175,7 @@ pub async fn user_log_in(
                     // set refresh_token -> id
                     let uid_result: Result<String, redis::RedisError> = redis::cmd("SETEX")
                         .arg(&refresh_token)
-                        // .arg(15 * 24 * 3600)
-                        .arg(30)
+                        .arg(15 * 24 * 3600)
                         .arg(matched_user.uid)
                         .query_async(con.as_mut())
                         .await;
@@ -252,6 +242,14 @@ pub async fn user_log_in(
                             return (Status::InternalServerError, None);
                         }
                     };
+                    // build cookie
+                    let cookie = Cookie::build("token", token.clone())
+                        .domain("thuburrow.com")
+                        .path("/")
+                        .same_site(SameSite::None)
+                        .finish();
+                    // set cookie
+                    cookies.add_private(cookie);
                     info!("User login complete.");
                     (Status::Ok, Some("Success".to_string()))
                 } else {
