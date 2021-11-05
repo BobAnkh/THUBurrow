@@ -180,7 +180,7 @@ async fn user_login(
 async fn user_sign_up(
     db: Connection<PgDb>,
     cookies: &CookieJar<'_>,
-    user_info: Json<UserInfo<'_>>,
+    user_info: Json<UserLoginInfo<'_>>,
 ) -> Json<Uuid> {
     // get user info from request
     let user = user_info.into_inner();
