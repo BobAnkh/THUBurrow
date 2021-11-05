@@ -12,7 +12,7 @@ pub struct UserInfo<'r> {
     pub username: &'r str,
     pub password: &'r str,
     pub email: &'r str,
-    pub verify_code: &'r str,
+    pub verification_code: Option<&'r str>,
 }
 
 #[derive(Deserialize)]

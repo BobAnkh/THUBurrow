@@ -102,7 +102,10 @@ pub async fn user_sign_up(
         match ins_result {
             Ok(res) => {
                 info!("User signup Succ, save user: {:?}", res.uid);
-                (Status::Ok, None)
+                let user_response = UserResponse {
+                    errors: error_collector,
+                };
+                (Status::Ok, Some(Json(user_response)))
             }
             _ => (Status::InternalServerError, None),
         }
@@ -133,7 +136,10 @@ pub async fn user_log_in(
                 info!("username exists, continue...");
                 let salt = match matched_user.salt {
                     Some(s) => s,
-                    None => return (Status::InternalServerError, None),
+                    None => {
+                        error!("cannot find user's salt.");
+                        return (Status::InternalServerError, None);
+                    }
                 };
                 // encrypt input password same as sign-up
                 let mut hash_sha3 = Sha3::sha3_256();
@@ -141,35 +147,43 @@ pub async fn user_log_in(
                 let password = hash_sha3.result_str();
                 if matched_user.password.eq(&Some(password.to_string())) {
                     info!("password correct, continue...");
-                    // find old token by get uid
+                    // find old token by get id
                     let old_token_get: Result<String, redis::RedisError> = redis::cmd("GET")
                         .arg(matched_user.uid)
                         .query_async(con.as_mut())
                         .await;
-                    // if old token -> uid exists
+                    // if old token -> id exists
                     if let Ok(old_token) = old_token_get {
                         info!("find old token:{:?}, continue...", old_token);
-                        // clear old token -> uid
+                        // clear old token -> id
                         let delete_result: Result<i64, redis::RedisError> = redis::cmd("DEL")
                             .arg(&old_token)
                             .query_async(con.as_mut())
                             .await;
                         match delete_result {
-                            Ok(_) => info!("delete token->id"),
-                            _ => return (Status::InternalServerError, None),
+                            Ok(1) => info!("delete token->id"),
+                            Ok(0) => info!("no ref_token->id found"),
+                            _ => {
+                                error!("failed to delete token -> id when login.");
+                                return (Status::InternalServerError, None);
+                            }
                         };
                         // find old refresh_token by hashing old token
                         let mut hash_sha3 = Sha3::sha3_384();
                         hash_sha3.input_str(&old_token);
                         let old_refresh_token = hash_sha3.result_str();
-                        // clear old refresh_token -> uid
+                        // clear old refresh_token -> id
                         let delete_result: Result<i64, redis::RedisError> = redis::cmd("DEL")
                             .arg(&old_refresh_token)
                             .query_async(con.as_mut())
                             .await;
                         match delete_result {
-                            Ok(_) => info!("delete ref_token->id"),
-                            _ => return (Status::InternalServerError, None),
+                            Ok(1) => info!("delete ref_token->id"),
+                            Ok(0) => info!("no ref_token->id found"),
+                            _ => {
+                                error!("failed to delete ref_token -> id when login.");
+                                return (Status::InternalServerError, None);
+                            }
                         };
                     };
                     // generate token and refresh token
@@ -189,29 +203,37 @@ pub async fn user_log_in(
                         .finish();
                     // set cookie
                     cookies.add_private(cookie);
-                    // set token -> uid
+                    // set token -> id
                     let uid_result: Result<String, redis::RedisError> = redis::cmd("SETEX")
                         .arg(&token)
-                        .arg(4 * 3600)
+                        // .arg(4 * 3600)
+                        .arg(15)
                         .arg(matched_user.uid)
                         .query_async(con.as_mut())
                         .await;
                     match uid_result {
                         Ok(s) => info!("setex token->id: {:?} -> {}", &token, s),
-                        _ => return (Status::InternalServerError, None),
+                        _ => {
+                            error!("failed to set token -> id when login.");
+                            return (Status::InternalServerError, None);
+                        }
                     };
-                    // set refresh_token -> uid
+                    // set refresh_token -> id
                     let uid_result: Result<String, redis::RedisError> = redis::cmd("SETEX")
                         .arg(&refresh_token)
-                        .arg(15 * 24 * 3600)
+                        // .arg(15 * 24 * 3600)
+                        .arg(30)
                         .arg(matched_user.uid)
                         .query_async(con.as_mut())
                         .await;
                     match uid_result {
                         Ok(s) => info!("setex refresh_token->id: {:?} -> {}", &refresh_token, s),
-                        _ => return (Status::InternalServerError, None),
+                        _ => {
+                            error!("failed to set refresh_token -> id when login.");
+                            return (Status::InternalServerError, None);
+                        }
                     };
-                    // set uid -> token
+                    // set id -> token
                     let token_result: Result<String, redis::RedisError> = redis::cmd("SET")
                         .arg(matched_user.uid)
                         .arg(&token)
@@ -219,16 +241,21 @@ pub async fn user_log_in(
                         .await;
                     match token_result {
                         Ok(s) => info!("set id->token: {} -> {:?}", matched_user.uid, s),
-                        _ => return (Status::InternalServerError, None),
+                        _ => {
+                            error!("failed to set id -> token when login.");
+                            return (Status::InternalServerError, None);
+                        }
                     };
                     info!("User login complete.");
                     (Status::Ok, Some(Json(user_response)))
                 } else {
+                    info!("wrong password.");
                     user_response.errors.push("Wrong password".to_string());
                     (Status::BadRequest, Some(Json(user_response)))
                 }
             }
             None => {
+                info!("username does not exists.");
                 user_response
                     .errors
                     .push("Username does not exist".to_string());

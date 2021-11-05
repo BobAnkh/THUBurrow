@@ -33,7 +33,8 @@ async fn is_valid<'r>(
 ) -> ValidToken {
     let redis_result: Result<u32, redis::RedisError> = redis::cmd("EXPIRE")
         .arg(token)
-        .arg(4 * 3600)
+        // .arg(4 * 3600)
+        .arg(15)
         .query_async(con)
         .await;
     match redis_result {
@@ -51,6 +52,7 @@ async fn is_valid<'r>(
         }
         // token does not exist
         Ok(_) => {
+            info!("token -> id has expired, try to find refresh_token...");
             // hash token to refresh token
             let mut hash_sha3 = Sha3::sha3_384();
             hash_sha3.input_str(token);
@@ -74,6 +76,7 @@ async fn is_valid<'r>(
             match refresh_result {
                 // successfully rename refresh token to new refresh token
                 Ok(1) => {
+                    info!("refresh_token exists.");
                     // find id by get refresh_token
                     let get_result: Result<i64, redis::RedisError> = redis::cmd("GET")
                         .arg(&new_refresh_token)
@@ -91,8 +94,10 @@ async fn is_valid<'r>(
                             // clear old_token -> id
                             match old_token_get {
                                 Ok(old_token) => {
+                                    info!("set id -> new_token");
                                     let _: Result<i64, redis::RedisError> =
                                         redis::cmd("DEL").arg(&old_token).query_async(con).await;
+                                    info!("delete old_token -> id");
                                 }
                                 _ => return ValidToken::DatabaseErr,
                             };
@@ -100,7 +105,8 @@ async fn is_valid<'r>(
                             let refresh_set: Result<String, redis::RedisError> =
                                 redis::cmd("SETEX")
                                     .arg(&new_token)
-                                    .arg(4 * 3600)
+                                    // .arg(4 * 3600)
+                                    .arg(15)
                                     .arg(id)
                                     .query_async(con)
                                     .await;
@@ -113,6 +119,7 @@ async fn is_valid<'r>(
                                         .same_site(SameSite::None)
                                         .finish();
                                     request.cookies().add_private(cookie);
+                                    info!("set new_token -> id");
                                 }
                                 _ => return ValidToken::DatabaseErr,
                             };
@@ -123,13 +130,22 @@ async fn is_valid<'r>(
                     ValidToken::Refresh(id)
                 }
                 // database error, new refresh token already exists
-                Ok(0) => ValidToken::DatabaseErr,
+                Ok(0) => {
+                    error!("new_refresh_token already exists in redis.");
+                    ValidToken::DatabaseErr
+                }
                 // refresh token does not exist
-                _ => ValidToken::Invalid,
+                _ => {
+                    info!("refresh_token expired, need to re-login.");
+                    ValidToken::Invalid
+                }
             }
         }
         // database connection error
-        _ => ValidToken::DatabaseErr,
+        _ => {
+            error!("failed to connect redis.");
+            ValidToken::DatabaseErr
+        }
     }
 }
 
