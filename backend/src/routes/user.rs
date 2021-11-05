@@ -101,10 +101,9 @@ pub async fn user_sign_up(
         match ins_result {
             Ok(res) => {
                 info!("User signup Succ, save user: {:?}", res.uid);
-                let user_response = UserResponse {
+                (Status::Ok, Some(Json(UserResponse {
                     errors: error_collector,
-                };
-                (Status::Ok, Some(Json(user_response)))
+                })))
             }
             _ => (Status::InternalServerError, None),
         }
