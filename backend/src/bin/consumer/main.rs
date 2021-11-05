@@ -1,32 +1,31 @@
 #[macro_use]
 extern crate serde;
-use futures::TryStreamExt;
 use futures::io::Read;
+use futures::TryStreamExt;
 use pulsar::{
     Authentication, Consumer, DeserializeMessage, Payload, Pulsar, SubType, TokioExecutor,
 };
-use rocket::figment::Error;
+use reqwest;
+use serde_json::json;
 use std::env;
 use tokio::time::sleep;
 use tokio::time::Duration;
-use reqwest;
-use std::collections::HashMap;
-use serde_json::json;
 
 #[derive(Serialize, Deserialize)]
 struct TestData {
-    operation_type: String,     //("new","remove", "update“)
-    operation_level: String,    //("burrow","post", "reply")
+    operation_type: String,  //("new","remove", "update“)
+    operation_level: String, //("burrow","post", "reply")
     index: i64,
     operation_time: i64,
     data: String,
 
     #[serde(default = "default_reply_to_whom")]
-    reply_to_whom: i32
-
+    reply_to_whom: i32,
 }
 //set default value
-fn default_reply_to_whom() -> i32{-1}
+fn default_reply_to_whom() -> i32 {
+    -1
+}
 
 impl DeserializeMessage for TestData {
     type Output = Result<TestData, serde_json::Error>;
@@ -37,25 +36,27 @@ impl DeserializeMessage for TestData {
 }
 
 async fn initialize_typesense() -> Result<reqwest::Client, reqwest::Error> {
-        //initialize typesense
-        let body = json!({
-            "name": "burrows",
-            "fields": [
-              {"name": "title", "type": "string" },
-              {"name": "index", "type": "int32"} 
-            ]
-          });
-        let client = reqwest::Client::new();
-        match client.post("http://localhost:8108/collections")
+    //initialize typesense
+    let body = json!({
+      "name": "burrows",
+      "fields": [
+        {"name": "title", "type": "string" },
+        {"name": "index", "type": "int32"}
+      ]
+    });
+    let client = reqwest::Client::new();
+    match client
+        .post("http://localhost:8108/collections")
         // .header("Content-Type", "application/json")
         .header("X-TYPESENSE-API-KEY", "xyz")
         .json(&body)
         .send()
-        .await{
-            Ok(a) => println!("Responce to initialize colloection{:?}",a),
-            Err(e) => println!("Err to initialize colloection{}",e),
-        };
-        Ok(client)
+        .await
+    {
+        Ok(a) => println!("Responce to initialize colloection{:?}", a),
+        Err(e) => println!("Err to initialize colloection{}", e),
+    };
+    Ok(client)
 }
 #[tokio::main]
 async fn main() -> Result<(), pulsar::Error> {
@@ -66,7 +67,7 @@ async fn main() -> Result<(), pulsar::Error> {
         .ok()
         .unwrap_or("persistent://public/default/search".to_string());
 
-    let mut builder = Pulsar::builder(addr, TokioExecutor);
+    let builder = Pulsar::builder(addr, TokioExecutor);
 
     // if let Ok(token) = env::var("PULSAR_TOKEN") {
     //     let authentication = Authentication {
@@ -94,7 +95,7 @@ async fn main() -> Result<(), pulsar::Error> {
         Ok(client) => {
             println!("typesense succesfully");
             client
-        },
+        }
         Err(e) => {
             println!("initialze_typesense failed: {:?}", e);
             return Ok(());
@@ -111,8 +112,10 @@ async fn main() -> Result<(), pulsar::Error> {
                 continue;
             }
         };
-        println!("Consumer receive: {} operation to {} NO.{} at time{}, data:{}",
-        data.operation_type, data.operation_level, data.index, data.operation_time, data.data);
+        println!(
+            "Consumer receive: {} operation to {} NO.{} at time{}, data:{}",
+            data.operation_type, data.operation_level, data.index, data.operation_time, data.data
+        );
         // if data.data.as_str() != "data" {
         //     println!("Unexpected payload: {}", &data.data);
         //     break;
@@ -121,17 +124,21 @@ async fn main() -> Result<(), pulsar::Error> {
         println!("got {} messages", counter);
 
         //post to typesense
-        match client.post("http://localhost:8108/collections/burrows/documents")
-        .header("Content-Type", "application/json")
-        .header("X-TYPESENSE-API-KEY", "xyz")
-        .body(r#"{
+        match client
+            .post("http://localhost:8108/collections/burrows/documents")
+            .header("Content-Type", "application/json")
+            .header("X-TYPESENSE-API-KEY", "xyz")
+            .body(
+                r#"{
             "title": "First Burrow, motherfucker!",
             "index":1
-        }"#)
-        .send()
-        .await {
-            Ok(a) => println!("add new burrow.{:?}",a),
-            Err(e) => println!("post new burrow failed {:?}", e)
+        }"#,
+            )
+            .send()
+            .await
+        {
+            Ok(a) => println!("add new burrow.{:?}", a),
+            Err(e) => println!("post new burrow failed {:?}", e),
         }
         sleep(Duration::from_millis(10000)).await;
         println!("10000ms have elapsed");

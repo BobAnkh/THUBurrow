@@ -1,2 +1,2 @@
-pub mod user;
 pub mod sample_req;
+pub mod user;

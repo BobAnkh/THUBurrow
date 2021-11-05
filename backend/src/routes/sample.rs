@@ -12,7 +12,7 @@ use uuid::Uuid;
 
 use crate::db;
 use crate::pool::{PgDb, PulsarSearchProducerMq, RedisDb};
-use crate::req::{user::*, sample_req::*};
+use crate::req::{sample_req::*, user::*};
 
 use chrono::Local;
 use crypto::digest::Digest;
@@ -41,7 +41,7 @@ pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
 #[get("/pulsar/<name>")]
 async fn pulsar_produce(mut producer: Connection<PulsarSearchProducerMq>, name: &str) -> String {
     let index: i32 = 1;
-    let operation_time: i64 =23423424;
+    let operation_time: i64 = 23423424;
     let operation = json!({
         "operation_level": "burrow",
         "operation_type": "new",
@@ -49,19 +49,18 @@ async fn pulsar_produce(mut producer: Connection<PulsarSearchProducerMq>, name: 
         "operation_time": operation_time,
         "data": "Hello motherfucker!"
     });
-    let msg:TestData = serde_json::from_value(operation).unwrap();
+    let msg: TestData = serde_json::from_value(operation).unwrap();
     match producer.send(msg).await {
         // Ok(r) => match r.await {
         //     Ok(cs) => format!("send data successfully!, {}", cs.producer_id),
         //     Err(e) => format!("Err: {}", e),
         // },
         // Err(e) => format!("Err: {}", e),
-        Ok(_) => format!("send data to pulsar successfully!,{}",name),
+        Ok(_) => format!("send data to pulsar successfully!,{}", name),
         Err(e) => format!("Err: {}", e),
     }
     // let f1 = r.await?;
 }
-
 
 #[get("/hello/<name>", rank = 2)]
 async fn hello(name: &str) -> String {
@@ -167,9 +166,9 @@ async fn user_sign_up(
     // fill the row
     let user = db::user::ActiveModel {
         uuid: Set(uuid.to_owned()),
-        username: Set(Some(user.username.to_string()).to_owned()),
-        password: Set(Some(user.password.to_string()).to_owned()),
-        token: Set(Some(token).to_owned()),
+        username: Set(Some(user.username.to_string())),
+        password: Set(Some(user.password.to_string())),
+        token: Set(Some(token)),
         ..Default::default()
     };
     // insert the row in database
