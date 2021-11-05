@@ -4,16 +4,10 @@ extern crate rocket;
 use rocket::fairing::AdHoc;
 use rocket_db_pools::Database;
 
-mod cors;
-mod db;
-mod pool;
-mod req;
-mod routes;
-mod utils;
-
-use pool::{PgDb, RedisDb};
-use routes::sample;
-use utils::id_gen;
+use backend::cors;
+use backend::pool::{PgDb, RedisDb};
+use backend::routes::{self, sample};
+use backend::utils::id_gen;
 
 #[launch]
 fn rocket() -> _ {
@@ -23,5 +17,6 @@ fn rocket() -> _ {
         .attach(PgDb::init())
         .attach(RedisDb::init())
         .attach(cors_handler)
+        .attach(AdHoc::on_ignite("mount_routes", routes::routes_init))
         .attach(AdHoc::on_ignite("mount_user", sample::init))
 }

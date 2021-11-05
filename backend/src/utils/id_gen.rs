@@ -1,4 +1,4 @@
-use idgenerator::{IdHelper, IdGeneratorOptions};
+use idgenerator::{IdGeneratorOptions, IdHelper};
 
 pub fn init(worker_id: u32) {
     IdHelper::init();
