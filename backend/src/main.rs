@@ -7,7 +7,10 @@ use rocket_db_pools::Database;
 
 use backend::cors;
 use backend::pool::{PgDb, RedisDb};
-use backend::routes::{sample, user};
+use backend::routes::{self, sample, user};
+use backend::utils::id_gen;
+use backend::setup;
+
 async fn run_migrations(rocket: Rocket<Build>) -> fairing::Result {
     let conn = &PgDb::fetch(&rocket).unwrap().connection;
     let _ = setup::create_post_table(conn).await;
