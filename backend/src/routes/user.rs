@@ -75,10 +75,9 @@ pub async fn user_sign_up(
     }
     // if error exists, refuse to add user
     if !error_collector.is_empty() {
-        let user_response = UserResponse {
+        (Status::BadRequest, Some(Json(UserResponse {
             errors: error_collector,
-        };
-        (Status::BadRequest, Some(Json(user_response)))
+        })))
     } else {
         // generate salt
         let salt = gen_salt().await;
