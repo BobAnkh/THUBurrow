@@ -75,9 +75,12 @@ pub async fn user_sign_up(
     }
     // if error exists, refuse to add user
     if !error_collector.is_empty() {
-        (Status::BadRequest, Some(Json(UserResponse {
-            errors: error_collector,
-        })))
+        (
+            Status::BadRequest,
+            Some(Json(UserResponse {
+                errors: error_collector,
+            })),
+        )
     } else {
         // generate salt
         let salt = gen_salt().await;
@@ -101,9 +104,12 @@ pub async fn user_sign_up(
         match ins_result {
             Ok(res) => {
                 info!("User signup Succ, save user: {:?}", res.uid);
-                (Status::Ok, Some(Json(UserResponse {
-                    errors: error_collector,
-                })))
+                (
+                    Status::Ok,
+                    Some(Json(UserResponse {
+                        errors: error_collector,
+                    })),
+                )
             }
             _ => (Status::InternalServerError, None),
         }
@@ -116,10 +122,8 @@ pub async fn user_log_in(
     kvdb: Connection<RedisDb>,
     cookies: &CookieJar<'_>,
     user_info: Json<UserLoginInfo<'_>>,
-) -> (Status, Option<Json<UserResponse>>) {
+) -> (Status, Option<String>) {
     let mut con = kvdb.into_inner();
-    // create a response struct
-    let mut user_response = UserResponse { errors: Vec::new() };
     // get user info from request
     let user = user_info.into_inner();
     // check if username is existed, add corresponding error if so
@@ -145,45 +149,6 @@ pub async fn user_log_in(
                 let password = hash_sha3.result_str();
                 if matched_user.password.eq(&Some(password.to_string())) {
                     info!("password correct, continue...");
-                    // find old token by get id
-                    let old_token_get: Result<String, redis::RedisError> = redis::cmd("GET")
-                        .arg(matched_user.uid)
-                        .query_async(con.as_mut())
-                        .await;
-                    // if old token -> id exists
-                    if let Ok(old_token) = old_token_get {
-                        info!("find old token:{:?}, continue...", old_token);
-                        // clear old token -> id
-                        let delete_result: Result<i64, redis::RedisError> = redis::cmd("DEL")
-                            .arg(&old_token)
-                            .query_async(con.as_mut())
-                            .await;
-                        match delete_result {
-                            Ok(1) => info!("delete token->id"),
-                            Ok(0) => info!("no ref_token->id found"),
-                            _ => {
-                                error!("failed to delete token -> id when login.");
-                                return (Status::InternalServerError, None);
-                            }
-                        };
-                        // find old refresh_token by hashing old token
-                        let mut hash_sha3 = Sha3::sha3_384();
-                        hash_sha3.input_str(&old_token);
-                        let old_refresh_token = hash_sha3.result_str();
-                        // clear old refresh_token -> id
-                        let delete_result: Result<i64, redis::RedisError> = redis::cmd("DEL")
-                            .arg(&old_refresh_token)
-                            .query_async(con.as_mut())
-                            .await;
-                        match delete_result {
-                            Ok(1) => info!("delete ref_token->id"),
-                            Ok(0) => info!("no ref_token->id found"),
-                            _ => {
-                                error!("failed to delete ref_token -> id when login.");
-                                return (Status::InternalServerError, None);
-                            }
-                        };
-                    };
                     // generate token and refresh token
                     let token: String = iter::repeat(())
                         .map(|()| thread_rng().sample(Alphanumeric))
@@ -231,33 +196,72 @@ pub async fn user_log_in(
                             return (Status::InternalServerError, None);
                         }
                     };
-                    // set id -> token
-                    let token_result: Result<String, redis::RedisError> = redis::cmd("SET")
-                        .arg(matched_user.uid)
-                        .arg(&token)
-                        .query_async(con.as_mut())
-                        .await;
-                    match token_result {
-                        Ok(s) => info!("set id->token: {} -> {:?}", matched_user.uid, s),
+                    // get old token and set new token by getset id -> token
+                    let old_token_get: Result<Option<String>, redis::RedisError> =
+                        redis::cmd("GETSET")
+                            .arg(matched_user.uid)
+                            .arg(&token)
+                            .query_async(con.as_mut())
+                            .await;
+                    match old_token_get {
+                        Ok(res) => match res {
+                            // if old token -> id exists
+                            Some(old_token) => {
+                                info!("find old token:{:?}, continue...", old_token);
+                                // clear old token -> id
+                                let delete_result: Result<i64, redis::RedisError> =
+                                    redis::cmd("DEL")
+                                        .arg(&old_token)
+                                        .query_async(con.as_mut())
+                                        .await;
+                                match delete_result {
+                                    Ok(1) => info!("delete token->id"),
+                                    Ok(0) => info!("no token->id found"),
+                                    _ => {
+                                        error!("failed to delete token -> id when login.");
+                                        return (Status::InternalServerError, None);
+                                    }
+                                };
+                                // find old refresh_token by hashing old token
+                                let mut hash_sha3 = Sha3::sha3_384();
+                                hash_sha3.input_str(&old_token);
+                                let old_refresh_token = hash_sha3.result_str();
+                                // clear old refresh_token -> id
+                                let delete_result: Result<i64, redis::RedisError> =
+                                    redis::cmd("DEL")
+                                        .arg(&old_refresh_token)
+                                        .query_async(con.as_mut())
+                                        .await;
+                                match delete_result {
+                                    Ok(1) => info!("delete ref_token->id"),
+                                    Ok(0) => info!("no ref_token->id found"),
+                                    _ => {
+                                        error!("failed to delete ref_token -> id when login.");
+                                        return (Status::InternalServerError, None);
+                                    }
+                                };
+                                info!("set id->token: {} -> {:?}", matched_user.uid, token);
+                            }
+                            None => {
+                                info!("no id->token found");
+                                info!("set id->token: {} -> {:?}", matched_user.uid, token);
+                            },
+                        },
                         _ => {
                             error!("failed to set id -> token when login.");
                             return (Status::InternalServerError, None);
                         }
                     };
                     info!("User login complete.");
-                    (Status::Ok, Some(Json(user_response)))
+                    (Status::Ok, Some("Success".to_string()))
                 } else {
                     info!("wrong password.");
-                    user_response.errors.push("Wrong password".to_string());
-                    (Status::BadRequest, Some(Json(user_response)))
+                    (Status::BadRequest, Some("Wrong username or password".to_string()))
                 }
             }
             None => {
                 info!("username does not exists.");
-                user_response
-                    .errors
-                    .push("Username does not exist".to_string());
-                (Status::BadRequest, Some(Json(user_response)))
+                (Status::BadRequest, Some("Wrong username or password".to_string()))
             }
         },
         _ => (Status::InternalServerError, None),
