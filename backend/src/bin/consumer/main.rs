@@ -11,6 +11,7 @@ use tokio::time::sleep;
 use tokio::time::Duration;
 use reqwest;
 use std::collections::HashMap;
+use serde_json::json;
 
 #[derive(Serialize, Deserialize)]
 struct TestData {
@@ -37,20 +38,23 @@ impl DeserializeMessage for TestData {
 
 async fn initialize_typesense() -> Result<reqwest::Client, reqwest::Error> {
         //initialize typesense
-        let client = reqwest::Client::new();
-        let res = client.post("http://localhost:8108/collections")
-        .header("Content-Type", "application/json")
-        .header("X-TYPESENSE-API-KEY", "xyz")
-        .body(r#"{
+        let body = json!({
             "name": "burrows",
             "fields": [
               {"name": "title", "type": "string" },
-              {"name": "index", "type": "int32"},  
-            ],
-            "default_sorting_field": "title"
-          }"#)
+              {"name": "index", "type": "int32"} 
+            ]
+          });
+        let client = reqwest::Client::new();
+        match client.post("http://localhost:8108/collections")
+        // .header("Content-Type", "application/json")
+        .header("X-TYPESENSE-API-KEY", "xyz")
+        .json(&body)
         .send()
-        .await?;
+        .await{
+            Ok(a) => println!("Responce to initialize colloection{:?}",a),
+            Err(e) => println!("Err to initialize colloection{}",e),
+        };
         Ok(client)
 }
 #[tokio::main]
@@ -115,8 +119,6 @@ async fn main() -> Result<(), pulsar::Error> {
         // }
         counter += 1;
         println!("got {} messages", counter);
-        // sleep(Duration::from_millis(1000)).await;
-        // println!("1000ms have elapsed");
 
         //post to typesense
         match client.post("http://localhost:8108/collections/burrows/documents")
@@ -131,6 +133,8 @@ async fn main() -> Result<(), pulsar::Error> {
             Ok(a) => println!("add new burrow.{:?}",a),
             Err(e) => println!("post new burrow failed {:?}", e)
         }
+        sleep(Duration::from_millis(10000)).await;
+        println!("10000ms have elapsed");
     }
     Ok(())
 }

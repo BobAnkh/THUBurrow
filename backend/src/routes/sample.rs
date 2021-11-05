@@ -40,13 +40,13 @@ pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
 
 #[get("/pulsar/<name>")]
 async fn pulsar_produce(mut producer: Connection<PulsarSearchProducerMq>, name: &str) -> String {
-    let index:i32 = 1;
-    let operation_time:i64 =23423424;
+    let index: i32 = 1;
+    let operation_time: i64 =23423424;
     let operation = json!({
         "operation_level": "burrow",
         "operation_type": "new",
         "index": index,
-        "operation_time":operation_time,
+        "operation_time": operation_time,
         "data": "Hello motherfucker!"
     });
     let msg:TestData = serde_json::from_value(operation).unwrap();
