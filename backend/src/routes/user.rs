@@ -53,7 +53,7 @@ pub async fn user_sign_up(
     // get user info from request
     let user = user_info.into_inner();
     // check if email address is valid, add corresponding error if so
-    if !user.email.ends_with("tsinghua.edu.cn"){
+    if !user.email.ends_with("tsinghua.edu.cn") {
         signup_response
             .errors
             .push("Illegal Email Address".to_string());
@@ -64,7 +64,7 @@ pub async fn user_sign_up(
         .one(&db)
         .await
         .expect("cannot fetch email data from pgdb");
-    if let Some(_) = email_dup_result {
+    if email_dup_result.is_some() {
         signup_response
             .errors
             .push("Duplicated Email Address".to_string());
@@ -75,7 +75,7 @@ pub async fn user_sign_up(
         .one(&db)
         .await
         .expect("cannot fetch username data from pgdb");
-    if let Some(_) = username_dup_result {
+    if username_dup_result.is_some() {
         signup_response
             .errors
             .push("Duplicated Username".to_string());
@@ -96,10 +96,10 @@ pub async fn user_sign_up(
         // fill the row
         let users = pgdb::user::ActiveModel {
             uid: Set(uid.to_owned()),
-            username: Set(Some(user.username.to_string()).to_owned()),
-            password: Set(Some(password).to_owned()),
-            email: Set(Some(user.email.to_string()).to_owned()),
-            salt: Set(Some(salt.to_string().to_owned())),
+            username: Set(Some(user.username.to_string())),
+            password: Set(Some(password)),
+            email: Set(Some(user.email.to_string())),
+            salt: Set(Some(salt.to_string())),
             ..Default::default()
         };
         // insert the row in database
@@ -150,7 +150,7 @@ pub async fn user_log_in(
                         .query_async(con.as_mut())
                         .await;
                     // if old token -> uid exists
-                    if let Ok(old_token) = old_token_get { 
+                    if let Ok(old_token) = old_token_get {
                         println!("old token:{:?}", old_token);
                         // clear old token -> uid
                         let delete_result: Result<i64, redis::RedisError> = redis::cmd("DEL")
@@ -173,7 +173,7 @@ pub async fn user_log_in(
                         match delete_result {
                             Ok(_) => println!("delete ref_token->id"),
                             _ => return (Status::InternalServerError, None),
-                        };       
+                        };
                     };
                     // generate token and refresh token
                     let token: String = iter::repeat(())
@@ -195,7 +195,7 @@ pub async fn user_log_in(
                     // set token -> uid
                     let uid_result: Result<String, redis::RedisError> = redis::cmd("SETEX")
                         .arg(&token)
-                        .arg(4*3600)
+                        .arg(4 * 3600)
                         .arg(matched_user.uid)
                         .query_async(con.as_mut())
                         .await;
@@ -206,7 +206,7 @@ pub async fn user_log_in(
                     // set refresh_token -> uid
                     let uid_result: Result<String, redis::RedisError> = redis::cmd("SETEX")
                         .arg(&refresh_token)
-                        .arg(15*24*3600)
+                        .arg(15 * 24 * 3600)
                         .arg(matched_user.uid)
                         .query_async(con.as_mut())
                         .await;
@@ -225,18 +225,17 @@ pub async fn user_log_in(
                         _ => return (Status::InternalServerError, None),
                     };
                     (Status::Ok, Some(Json(login_response)))
-                }
-                else {
+                } else {
                     login_response.errors.push("Wrong password".to_string());
                     (Status::BadRequest, Some(Json(login_response)))
                 }
-            },
+            }
             None => {
                 login_response
                     .errors
                     .push("Username does not exist".to_string());
                 (Status::BadRequest, Some(Json(login_response)))
-            },
+            }
         },
         _ => (Status::InternalServerError, None),
     }

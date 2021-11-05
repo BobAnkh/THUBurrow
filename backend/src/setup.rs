@@ -1,6 +1,6 @@
+use crate::pgdb;
 use sea_orm::sea_query::{ColumnDef, TableCreateStatement};
 use sea_orm::{error::*, sea_query, DbConn, ExecResult};
-use crate::pgdb;
 
 async fn create_table(db: &DbConn, stmt: &TableCreateStatement) -> Result<ExecResult, DbErr> {
     let builder = db.get_database_backend();
@@ -32,11 +32,7 @@ pub async fn create_post_table(db: &DbConn) -> Result<ExecResult, DbErr> {
                 .string()
                 .not_null(),
         )
-        .col(
-            ColumnDef::new(pgdb::user::Column::Salt)
-                .string()
-                .not_null(),
-        )
+        .col(ColumnDef::new(pgdb::user::Column::Salt).string().not_null())
         .to_owned();
 
     create_table(db, &stmt).await

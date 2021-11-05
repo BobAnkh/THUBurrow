@@ -1,15 +1,15 @@
 #[macro_use]
 extern crate rocket;
 
-use rocket::{Build, Rocket};
 use rocket::fairing::{self, AdHoc};
+use rocket::{Build, Rocket};
 use rocket_db_pools::Database;
 
 use backend::cors;
 use backend::pool::{PgDb, RedisDb};
 use backend::routes::{self, sample, user};
-use backend::utils::id_gen;
 use backend::setup;
+use backend::utils::id_gen;
 
 async fn run_migrations(rocket: Rocket<Build>) -> fairing::Result {
     let conn = &PgDb::fetch(&rocket).unwrap().connection;

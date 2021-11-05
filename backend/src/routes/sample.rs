@@ -65,9 +65,9 @@ async fn auth_new_bad_request(request: &Request<'_>) -> String {
         .await;
     match user_result {
         Some(e) => match e {
-            ValidToken::Invalid => return "Invalid token".to_string(),
-            ValidToken::Missing => return "Missing token".to_string(),
-            ValidToken::DatabaseErr => return "DatabaseErr token".to_string(),
+            ValidToken::Invalid => "Invalid token".to_string(),
+            ValidToken::Missing => "Missing token".to_string(),
+            ValidToken::DatabaseErr => "DatabaseErr token".to_string(),
             ValidToken::Valid(id) => format!("User Id found: {}", id),
             ValidToken::Refresh(id) => format!("User Id found: {}", id),
         },
