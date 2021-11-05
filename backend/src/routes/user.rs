@@ -245,7 +245,7 @@ pub async fn user_log_in(
                             None => {
                                 info!("no id->token found");
                                 info!("set id->token: {} -> {:?}", matched_user.uid, token);
-                            },
+                            }
                         },
                         _ => {
                             error!("failed to set id -> token when login.");
@@ -256,12 +256,18 @@ pub async fn user_log_in(
                     (Status::Ok, Some("Success".to_string()))
                 } else {
                     info!("wrong password.");
-                    (Status::BadRequest, Some("Wrong username or password".to_string()))
+                    (
+                        Status::BadRequest,
+                        Some("Wrong username or password".to_string()),
+                    )
                 }
             }
             None => {
                 info!("username does not exists.");
-                (Status::BadRequest, Some("Wrong username or password".to_string()))
+                (
+                    Status::BadRequest,
+                    Some("Wrong username or password".to_string()),
+                )
             }
         },
         _ => (Status::InternalServerError, None),
