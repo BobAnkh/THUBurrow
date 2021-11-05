@@ -7,7 +7,7 @@ async fn create_table(db: &DbConn, stmt: &TableCreateStatement) -> Result<ExecRe
     db.execute(builder.build(stmt)).await
 }
 
-pub async fn create_post_table(db: &DbConn) -> Result<ExecResult, DbErr> {
+pub async fn create_user_table(db: &DbConn) -> Result<ExecResult, DbErr> {
     let stmt = sea_query::Table::create()
         .table(pgdb::user::Entity)
         .if_not_exists()
