@@ -108,7 +108,7 @@ impl Pool for MinioImagePool {
         let mut user: Option<String> = None;
         let mut password: Option<String> = None;
         let host: String;
-        if info.len() == 1{
+        if info.len() == 1 {
             host = "http://".to_string() + info[0];
         } else if info.len() == 2 {
             let user_info: Vec<&str> = info[0].split(":").collect();
