@@ -7,7 +7,7 @@ use rocket_db_pools::Database;
 
 use backend::cors;
 use backend::pool::{MinioImageStorage, PgDb, RedisDb};
-use backend::routes::{self, sample, storage};
+use backend::routes::{self, sample};
 use backend::setup;
 use backend::utils::id_gen;
 
@@ -20,6 +20,7 @@ fn log_init() {
         Ok(_) => (),
         Err(e) => panic!("Error initial logger: {}", e),
     }
+}
 
 async fn user_table_setup(rocket: Rocket<Build>) -> fairing::Result {
     let conn = &PgDb::fetch(&rocket).unwrap().connection;
@@ -39,6 +40,5 @@ fn rocket() -> _ {
         .attach(cors_handler)
         .attach(AdHoc::on_ignite("mount_routes", routes::routes_init))
         .attach(AdHoc::on_ignite("mount_user", sample::init))
-        .attach(AdHoc::on_ignite("mount_storage", storage::init))
         .attach(AdHoc::try_on_ignite("Migrations", user_table_setup))
 }

@@ -10,6 +10,8 @@ use crypto::md5::Md5;
 use crate::pool::MinioImageStorage;
 use crate::req::storage::{SaveAvatar, SaveImage};
 
+use crate::utils::sso::SsoAuth;
+
 pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
     rocket.mount(
         "/storage",
@@ -17,11 +19,13 @@ pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
     )
 }
 
-#[post("/image", data = "<image>")]
+#[post("/images", data = "<image>")]
 async fn upload_image(
+    auth: SsoAuth,
     bucket: Connection<MinioImageStorage>,
     image: SaveImage,
 ) -> (Status, Option<String>) {
+    info!("[IMAGE] User {} id uploading image.", auth.id);
     // put a file
     // check content type
     match image.content_type.as_str() {
@@ -43,11 +47,13 @@ async fn upload_image(
     }
 }
 
-#[post("/avatar", data = "<image>")]
+#[post("/avatars", data = "<image>")]
 async fn upload_avatar(
+    auth: SsoAuth,
     bucket: Connection<MinioImageStorage>,
     image: SaveAvatar,
 ) -> (Status, Option<String>) {
+    info!("[IMAGE] User {} id uploading avatar.", auth.id);
     // put a file
     // check content type
     match image.content_type.as_str() {
@@ -71,9 +77,11 @@ async fn upload_avatar(
 
 #[get("/image/<filename>")]
 async fn download_image(
+    auth: SsoAuth,
     bucket: Connection<MinioImageStorage>,
     filename: &str,
 ) -> Result<Vec<u8>, status::NotFound<String>> {
+    info!("[IMAGE] User {} id downloading image.", auth.id);
     // get a file
     let (data, code) = bucket.get_object(filename).await.unwrap();
 
@@ -84,8 +92,12 @@ async fn download_image(
 }
 
 #[get("/images")]
-async fn get_images(bucket: Connection<MinioImageStorage>) -> Json<Vec<(String, u64)>> {
+async fn get_images(
+    auth: SsoAuth,
+    bucket: Connection<MinioImageStorage>,
+) -> Json<Vec<(String, u64)>> {
     // list files
+    info!("[IMAGE] User {} id fetching image list.", auth.id);
     let bucket_list = bucket
         .list("/".to_owned(), Some("/".to_owned()))
         .await
