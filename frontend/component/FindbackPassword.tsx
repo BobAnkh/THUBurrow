@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import 'antd/dist/antd.css';
-import styles from './Register.module.css';
+import styles from './register.module.css';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { Form, Input, Row, Col, Button } from 'antd';
 

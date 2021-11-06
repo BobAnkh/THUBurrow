@@ -2,7 +2,7 @@ import React, { ChangeEvent, Component } from 'react';
 import { Form, Input, Button, Checkbox, message } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import 'antd/dist/antd.css';
-import styles from './Register.module.css';
+import styles from './register.module.css';
 import CryptoJS from 'crypto-js';
 import Config from '../config.json';
 //加密
