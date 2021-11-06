@@ -112,14 +112,14 @@ impl Pool for MinioImagePool {
         let config: Config = figment.extract().unwrap();
         let info: Vec<&str> = config.url.split("://").collect();
         let info = info[1];
-        let info: Vec<&str> = info.split("@").collect();
+        let info: Vec<&str> = info.split('@').collect();
         let mut user: Option<String> = None;
         let mut password: Option<String> = None;
         let host: String;
         if info.len() == 1 {
             host = "http://".to_string() + info[0];
         } else if info.len() == 2 {
-            let user_info: Vec<&str> = info[0].split(":").collect();
+            let user_info: Vec<&str> = info[0].split(':').collect();
             user = Some(user_info[0].to_string());
             password = Some(user_info[1].to_string());
             host = "http://".to_string() + info[1];

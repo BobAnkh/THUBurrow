@@ -51,7 +51,7 @@ impl<'r> FromData<'r> for SaveImage {
         };
 
         // Use a configured limit with name 'person' or fallback to default.
-        let limit = req.limits().get("minio-image").unwrap_or(1.mebibytes());
+        let limit = req.limits().get("minio-image").unwrap_or_else(|| 1.mebibytes());
 
         // Read the data into a string.
         let content = match data.open(limit).into_bytes().await {
@@ -96,7 +96,7 @@ impl<'r> FromData<'r> for SaveAvatar {
         };
 
         // Use a configured limit with name 'person' or fallback to default.
-        let limit = req.limits().get("minio-avatar").unwrap_or(200.kibibytes());
+        let limit = req.limits().get("minio-avatar").unwrap_or_else(|| 200.kibibytes());
 
         // Read the data into a string.
         let content = match data.open(limit).into_bytes().await {
