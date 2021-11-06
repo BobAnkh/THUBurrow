@@ -2,6 +2,8 @@ import React from 'react';
 import styles from './register.module.css';
 import 'antd/dist/antd.css';
 import CryptoJS from 'crypto-js';
+import Config from '../config.json';
+import { validate_password } from './findbackPassword';
 import {
   Form,
   Input,
@@ -126,25 +128,25 @@ class Register extends React.Component<Iprops, any> {
     const data = {
       username: values.username,
       password: CryptoJS.MD5(values.password).toString(),
-    }; //console.log(data)
+      email: values.email,
+      code: values.code,
+    };
     try {
-      const res = await fetch('http://127.0.0.1:4523/mock2/435762/6381347', {
+      const res = await fetch(`${Config.url1}/6381347`, {
         method: 'POST',
         body: JSON.stringify(data),
       });
       if (res.status === 200) {
-        const json = await res.json(); //   localStorage.setItem(json,"value")
-        message.success('登录成功');
-        console.log('success', json);
+        message.success('注册成功');
         window.location.href = '../Login';
       } else {
         const json = await res.json();
-        message.error('登录失败');
         console.log(json);
-        alert(json.error);
+        message.error('注册失败');
+        alert(json.errors);
       }
     } catch (e) {
-      message.error('登录失败');
+      message.error('注册失败');
     }
   };
 
@@ -167,9 +169,7 @@ class Register extends React.Component<Iprops, any> {
             <Form name='register' onFinish={this.onFinish}>
               <Form.Item
                 name='username'
-                rules={[
-                  { required: true, message: 'Please input your Username!' },
-                ]}
+                rules={[{ required: true, message: '请输入你的用户名!' }]}
                 className={styles.formStyle}
               >
                 <Row>
@@ -186,16 +186,16 @@ class Register extends React.Component<Iprops, any> {
               <Form.Item
                 name='password'
                 rules={[
-                  { required: true, message: 'Please input your password!' },
-                  ({ getFieldValue }) => ({
-                    validator(role, value) {
-                      let password_value = getFieldValue('password_confirm');
-                      if (password_value && value !== password_value)
-                        return Promise.reject('两次输入的密码不一致');
-                      return Promise.resolve();
-                    },
-                  }),
+                  {
+                    required: true,
+                    message: '请在此输入你的密码!',
+                  },
+                  {
+                    pattern: validate_password,
+                    message: '请输入字母和数字的6到20位组合',
+                  },
                 ]}
+                hasFeedback
                 className={styles.formStyle}
               >
                 <Row>
@@ -211,9 +211,21 @@ class Register extends React.Component<Iprops, any> {
               </Form.Item>
               <Form.Item
                 name='password_confirm'
+                hasFeedback
                 rules={[
-                  { required: true, message: 'Please input your password!' },
-                  // ({get)
+                  {
+                    required: true,
+                    message: '请再次确认你的密码',
+                  },
+                  ({ getFieldValue }) => ({
+                    validator(_, value) {
+                      if (!value || getFieldValue('password') === value) {
+                        return Promise.resolve();
+                      }
+
+                      return Promise.reject(new Error('两次密码不一致'));
+                    },
+                  }),
                 ]}
                 className={styles.formStyle}
               >
@@ -227,18 +239,17 @@ class Register extends React.Component<Iprops, any> {
                   </Col>
                 </Row>
               </Form.Item>
-              {/* <Space direction="vertical"> */}
+
               <Form.Item
                 name='email'
                 rules={[
                   {
                     required: true,
-                    message: 'Please input a valid email address!',
+                    message: '请输入有效的邮箱',
                   },
                   {
                     pattern: /^[0-9a-z-A-Z-]{1,}$/,
-                    message:
-                      "the address should only contains letters, numbers and '-'",
+                    message: '只包含字母，数组和-',
                   },
                 ]}
                 className={styles.formStyle}
@@ -254,7 +265,7 @@ class Register extends React.Component<Iprops, any> {
                   </Col>
                 </Row>
               </Form.Item>
-              <Form.Item>
+              <Form.Item name='code'>
                 <Row>
                   <Col span={6}>邮箱验证码:</Col>
                   <Col span={12}>
@@ -280,7 +291,7 @@ class Register extends React.Component<Iprops, any> {
                     validator: (_, value) =>
                       value
                         ? Promise.resolve()
-                        : Promise.reject(new Error('Should accept agreement')),
+                        : Promise.reject(new Error('请同意服务条款')),
                   },
                 ]}
                 {...tailFormItemLayout}

@@ -2,9 +2,9 @@ import React, { ChangeEvent, Component } from 'react';
 import { Form, Input, Button, Checkbox, message } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import 'antd/dist/antd.css';
-import styles from './register.module.css';
+import styles from './Register.module.css';
 import CryptoJS from 'crypto-js';
-import Link from 'next/link';
+import Config from '../config.json';
 //加密
 interface Iprops {
   switchform: any;
@@ -20,22 +20,18 @@ class LoginForm extends Component<Iprops> {
       username: values.username,
       password: CryptoJS.MD5(values.password).toString(),
     };
-    //console.log(data)
     try {
-      const res = await fetch('http://127.0.0.1:4523/mock/435762/users/login', {
+      const res = await fetch(`${Config.url}/users/login`, {
         method: 'POST',
         body: JSON.stringify(data),
       });
 
       if (res.status === 200) {
-        const json = await res.json();
         message.success('登录成功');
-        console.log('success', json);
-        window.location.href = '../home';
+        window.location.href = '../';
       } else {
         const json = await res.json();
         message.error('登录失败');
-        console.log(json);
         alert(json.errors);
       }
     } catch (e) {

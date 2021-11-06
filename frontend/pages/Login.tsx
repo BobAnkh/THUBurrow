@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 //组件
-import LoginForm from '../component/LoginForm';
-import FindbackPassword from '../component/FindbackPassword';
+import LoginForm from '../component/loginForm';
+import FindbackPassword from '../component/findbackPassword';
 import Register from '../component/register';
 interface IState {
   FormType: string;
