@@ -3,7 +3,6 @@ import styles from './register.module.css';
 import 'antd/dist/antd.css';
 import CryptoJS from 'crypto-js';
 import Config from '../config.json';
-import { validate_password } from './findbackPassword';
 import {
   Form,
   Input,
@@ -49,6 +48,7 @@ const tailFormItemLayout = {
 interface Iprops {
   switchform: any;
 }
+const validate_password = /^(?![0-9]+$)(?![a-zA-Z]+$)[0-9A-Za-z-_]{6,20}$/;
 
 class Register extends React.Component<Iprops, any> {
   constructor(props: any) {
