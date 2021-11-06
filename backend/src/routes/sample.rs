@@ -155,7 +155,10 @@ async fn user_login(
         Some(cookie) => {
             let token = cookie.value().to_string();
             println!("{:?}", uuid);
-            match db::user::Entity::find_by_id(uuid).one(&db).await {
+            match db::user::Entity::find_by_id(uuid)
+                .one(&db.into_inner())
+                .await
+            {
                 Ok(Some(user)) => match user.token {
                     Some(s) => {
                         if s != token {
@@ -210,7 +213,10 @@ async fn user_sign_up(
         ..Default::default()
     };
     // insert the row in database
-    let res = user.insert(&db).await.expect("Cannot save user");
+    let res = user
+        .insert(&db.into_inner())
+        .await
+        .expect("Cannot save user");
     println!("{}", res.token.unwrap().unwrap());
     // return the response
     Json(res.uuid.unwrap())

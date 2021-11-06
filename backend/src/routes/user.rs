@@ -39,6 +39,7 @@ pub async fn user_sign_up(
     db: Connection<PgDb>,
     user_info: Json<UserInfo<'_>>,
 ) -> (Status, Option<Json<UserResponse>>) {
+    let pg_con = db.into_inner();
     // create vec of errors
     let mut error_collector = Vec::new();
     // get user info from request
@@ -50,7 +51,7 @@ pub async fn user_sign_up(
     // check if email address is duplicated, add corresponding error if so
     let email_dup_result = User::find()
         .filter(pgdb::user::Column::Email.eq(user.email))
-        .one(&db)
+        .one(&pg_con)
         .await;
     match email_dup_result {
         Ok(res) => {
@@ -63,7 +64,7 @@ pub async fn user_sign_up(
     // check if username is duplicated, add corresponding error if so
     let username_dup_result = User::find()
         .filter(pgdb::user::Column::Username.eq(user.username))
-        .one(&db)
+        .one(&pg_con)
         .await;
     match username_dup_result {
         Ok(res) => {
@@ -100,10 +101,10 @@ pub async fn user_sign_up(
             ..Default::default()
         };
         // insert the row in database
-        let ins_result = users.insert(&db).await;
+        let ins_result = users.insert(&pg_con).await;
         match ins_result {
             Ok(res) => {
-                info!("User signup Succ, save user: {:?}", res.uid);
+                info!("[SIGN-UP] User signup Succ, save user: {:?}", res.uid);
                 (
                     Status::Ok,
                     Some(Json(UserResponse {
@@ -129,17 +130,17 @@ pub async fn user_log_in(
     // check if username is existed, add corresponding error if so
     let username_existence_result = User::find()
         .filter(pgdb::user::Column::Username.eq(user.username))
-        .one(&db)
+        .one(&db.into_inner())
         .await;
     // check if password is wrong, add corresponding error if so
     match username_existence_result {
         Ok(s) => match s {
             Some(matched_user) => {
-                info!("username exists, continue...");
+                info!("[LOGIN] username exists, continue...");
                 let salt = match matched_user.salt {
                     Some(s) => s,
                     None => {
-                        error!("cannot find user's salt.");
+                        error!("[LOGIN] cannot find user's salt.");
                         return (Status::InternalServerError, None);
                     }
                 };
@@ -148,7 +149,7 @@ pub async fn user_log_in(
                 hash_sha3.input_str(&(String::from(&salt) + user.password));
                 let password = hash_sha3.result_str();
                 if matched_user.password.eq(&Some(password.to_string())) {
-                    info!("password correct, continue...");
+                    info!("[LOGIN] password correct, continue...");
                     // generate token and refresh token
                     let token: String = iter::repeat(())
                         .map(|()| thread_rng().sample(Alphanumeric))
@@ -161,28 +162,31 @@ pub async fn user_log_in(
                     // set token -> id
                     let uid_result: Result<String, redis::RedisError> = redis::cmd("SETEX")
                         .arg(&token)
-                        .arg(4 * 3600)
+                        .arg(4 * 3600i32)
                         .arg(matched_user.uid)
                         .query_async(con.as_mut())
                         .await;
                     match uid_result {
-                        Ok(s) => info!("setex token->id: {:?} -> {}", &token, s),
+                        Ok(s) => info!("[LOGIN] setex token->id: {:?} -> {}", &token, s),
                         _ => {
-                            error!("failed to set token -> id when login.");
+                            error!("[LOGIN] failed to set token -> id when login.");
                             return (Status::InternalServerError, None);
                         }
                     };
                     // set refresh_token -> id
                     let uid_result: Result<String, redis::RedisError> = redis::cmd("SETEX")
                         .arg(&refresh_token)
-                        .arg(15 * 24 * 3600)
+                        .arg(15 * 24 * 3600i32)
                         .arg(matched_user.uid)
                         .query_async(con.as_mut())
                         .await;
                     match uid_result {
-                        Ok(s) => info!("setex refresh_token->id: {:?} -> {}", &refresh_token, s),
+                        Ok(s) => info!(
+                            "[LOGIN] setex refresh_token->id: {:?} -> {}",
+                            &refresh_token, s
+                        ),
                         _ => {
-                            error!("failed to set refresh_token -> id when login.");
+                            error!("[LOGIN] failed to set refresh_token -> id when login.");
                             return (Status::InternalServerError, None);
                         }
                     };
@@ -197,7 +201,7 @@ pub async fn user_log_in(
                         Ok(res) => match res {
                             // if old token -> id exists
                             Some(old_token) => {
-                                info!("find old token:{:?}, continue...", old_token);
+                                info!("[LOGIN] find old token:{:?}, continue...", old_token);
                                 // clear old token -> id
                                 let delete_result: Result<i64, redis::RedisError> =
                                     redis::cmd("DEL")
@@ -205,10 +209,10 @@ pub async fn user_log_in(
                                         .query_async(con.as_mut())
                                         .await;
                                 match delete_result {
-                                    Ok(1) => info!("delete token->id"),
-                                    Ok(0) => info!("no token->id found"),
+                                    Ok(1) => info!("[LOGIN] delete token->id"),
+                                    Ok(0) => info!("[LOGIN] no token->id found"),
                                     _ => {
-                                        error!("failed to delete token -> id when login.");
+                                        error!("[LOGIN] failed to delete token -> id when login.");
                                         return (Status::InternalServerError, None);
                                     }
                                 };
@@ -223,22 +227,24 @@ pub async fn user_log_in(
                                         .query_async(con.as_mut())
                                         .await;
                                 match delete_result {
-                                    Ok(1) => info!("delete ref_token->id"),
-                                    Ok(0) => info!("no ref_token->id found"),
+                                    Ok(1) => info!("[LOGIN] delete ref_token->id"),
+                                    Ok(0) => info!("[LOGIN] no ref_token->id found"),
                                     _ => {
-                                        error!("failed to delete ref_token -> id when login.");
+                                        error!(
+                                            "[LOGIN] failed to delete ref_token -> id when login."
+                                        );
                                         return (Status::InternalServerError, None);
                                     }
                                 };
-                                info!("set id->token: {} -> {:?}", matched_user.uid, token);
+                                info!("[LOGIN] set id->token: {} -> {:?}", matched_user.uid, token);
                             }
                             None => {
-                                info!("no id->token found");
-                                info!("set id->token: {} -> {:?}", matched_user.uid, token);
+                                info!("[LOGIN] no id->token found");
+                                info!("[LOGIN] set id->token: {} -> {:?}", matched_user.uid, token);
                             }
                         },
                         _ => {
-                            error!("failed to set id -> token when login.");
+                            error!("[LOGIN] failed to set id -> token when login.");
                             return (Status::InternalServerError, None);
                         }
                     };
@@ -250,10 +256,10 @@ pub async fn user_log_in(
                         .finish();
                     // set cookie
                     cookies.add_private(cookie);
-                    info!("User login complete.");
+                    info!("[LOGIN] User login complete.");
                     (Status::Ok, Some("Success".to_string()))
                 } else {
-                    info!("wrong password.");
+                    info!("[LOGIN] wrong password.");
                     (
                         Status::BadRequest,
                         Some("Wrong username or password".to_string()),
@@ -261,7 +267,7 @@ pub async fn user_log_in(
                 }
             }
             None => {
-                info!("username does not exists.");
+                info!("[LOGIN] username does not exists.");
                 (
                     Status::BadRequest,
                     Some("Wrong username or password".to_string()),
