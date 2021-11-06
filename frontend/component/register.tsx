@@ -138,7 +138,7 @@ class Register extends React.Component<Iprops, any> {
       });
       if (res.status === 200) {
         message.success('注册成功');
-        window.location.href = '../Login';
+        window.location.href = '../login';
       } else {
         const json = await res.json();
         console.log(json);
