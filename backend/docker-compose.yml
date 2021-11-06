@@ -14,12 +14,11 @@ services:
       - "8000"
     networks:
       innerdb:
-        aliases:
-          - backend
       proxy:
       messagequeue:
+      miniostorage:
     environment:
-      ROCKET_DATABASES: '{pgdb={url=postgres://postgres:${PG_PASSWORD:-postgres}@pgdb:5432/${PG_DB:-pgdb}},keydb={url=redis://:${KEYDB_PASSWORD}@keydb:6379}}'
+      ROCKET_DATABASES: '{pgdb={url=postgres://postgres:${PG_PASSWORD:-postgres}@pgdb:5432/${PG_DB:-pgdb}},keydb={url=redis://:${KEYDB_PASSWORD}@keydb:6379},minio={url=minio://${MINIO_USER:-minio}:${MINIO_PASSWORD:-miniopassword}@minio:9000}}'
       ROCKET_SECRET_KEY: ${ROCKET_SECRET_KEY}
       ROCKET_ADDRESS: "0.0.0.0"
       VIRTUAL_HOST: ${BACKEND_HOST}
@@ -89,11 +88,36 @@ services:
   #     messagequeue:
   #     proxy:
 
+  minio:
+    image: quay.io/minio/minio
+    restart: unless-stopped
+    container_name: minio_container
+    expose:
+      - "9000"
+      - "9001"
+    volumes:
+      - ./data/minio-data:/data
+    networks:
+      miniostorage:
+        aliases:
+          - minio
+    environment:
+      MINIO_ROOT_USER: ${MINIO_USER:-minio}
+      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD:-miniopassword}
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
 networks:
   innerdb:
     name: innerdb
   messagequeue:
     name: messagequeue
+  miniostorage:
+    name: miniostorage
   proxy:
     name: proxy
     external: true
