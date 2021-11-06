@@ -60,7 +60,7 @@ class FindbackPassword extends Component<Iprops> {
               >
                 <Input
                   prefix={<UserOutlined className='site-form-item-icon' />}
-                  placeholder='请输入你的邮箱'
+                  placeholder='请输入你的邮箱:'
                 />
               </Form.Item>
 
