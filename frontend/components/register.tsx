@@ -66,7 +66,6 @@ class Register extends React.Component<Iprops, any> {
   }
 
   handleSuffix = (value: any) => {
-    console.log('You enter this!');
     this.setState(() => ({ suffix: value }));
   };
 
@@ -138,10 +137,9 @@ class Register extends React.Component<Iprops, any> {
       });
       if (res.status === 200) {
         message.success('注册成功');
-        window.location.href = '../login';
+        window.location.href = './home';
       } else {
         const json = await res.json();
-        console.log(json);
         message.error('注册失败');
         alert(json.errors);
       }
@@ -150,13 +148,7 @@ class Register extends React.Component<Iprops, any> {
     }
   };
 
-  sendCode = () =>
-    console.log(
-      'This is :',
-      this.state.usrname,
-      this.state.password,
-      this.state.email + this.state.suffix
-    );
+  sendCode = () => {};
 
   render() {
     return (
