@@ -1,6 +1,6 @@
-FROM rustlang/rust:nightly AS chef
+FROM rustlang/rust:nightly-buster-slim AS chef
 
-RUN apt update -qq && apt install libssl-dev \
+RUN apt update -qq && apt install libssl-dev && \
     cargo install cargo-chef
 WORKDIR /app
 
@@ -18,7 +18,7 @@ RUN cargo build --release --bin backend
 
 # FINAL
 
-FROM debian:buster
+FROM debian:buster-slim
 
 COPY --from=builder /app/target/release/backend /usr/local/bin/backend
 COPY --from=builder /app/conf/log4rs.yml /etc/backend/conf/log4rs.yml
