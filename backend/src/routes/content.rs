@@ -1,8 +1,5 @@
-// use rocket::http::{Cookie, CookieJar};
-// use rocket::response::status;
-use rocket::serde::json::Json;
-// use rocket::serde::Serialize;
 use rocket::http::Status;
+use rocket::serde::json::Json;
 use rocket::{Build, Rocket};
 use rocket_db_pools::Connection;
 
@@ -13,7 +10,6 @@ use sea_orm::{entity::*, ActiveModelTrait, Condition, QueryOrder};
 use crate::pgdb;
 use crate::pgdb::prelude::*;
 use crate::pool::PgDb;
-// use crate::pool::{PgDb, RedisDb};
 use crate::req::content::*;
 
 use chrono::prelude::*;
@@ -42,6 +38,7 @@ pub async fn content_post(
     db: Connection<PgDb>,
     content_info: Json<ContentInfo<'_>>,
 ) -> (Status, Json<PostResponse>) {
+    let pg_con = db.into_inner();
     // create a response struct
     let mut post_response = PostResponse {
         success: false,
@@ -77,20 +74,20 @@ pub async fn content_post(
             if !content.tag2.to_string().is_empty() {
                 if !content.tag2.to_string().is_empty() {
                     tag = Some(format!(
-                        "[{},{},{}]",
+                        "{{{},{},{}}}",
                         content.tag1.to_string(),
                         content.tag2.to_string(),
                         content.tag3.to_string(),
                     ));
                 } else {
                     tag = Some(format!(
-                        "[{},{}]",
+                        "{{{},{}}}",
                         content.tag1.to_string(),
                         content.tag2.to_string(),
                     ));
                 }
             } else {
-                tag = Some(format!("[{}]", content.tag1.to_string(),));
+                tag = Some(format!("{{{}}}", content.tag1.to_string()));
             }
         }
         // fill the row in content_subject
@@ -107,7 +104,7 @@ pub async fn content_post(
         };
         // insert the row in database
         let res1 = content_subject
-            .insert(&db)
+            .insert(&pg_con)
             .await
             .expect("Cannot save content");
         // println!("{:?}", res1.post_id.unwrap());
@@ -124,7 +121,7 @@ pub async fn content_post(
         };
         // insert the row into database
         let res2 = content_reply
-            .insert(&db)
+            .insert(&pg_con)
             .await
             .expect("Cannot save content");
         // println!("{:?}", res2.reply_id.unwrap());
@@ -141,12 +138,13 @@ pub async fn content_read(
     post_id: i32,
     page: i32,
 ) -> (Status, Json<ReadResponse>) {
+    let pg_con = db.into_inner();
     // create a response struct
     let mut read_response = ReadResponse {
         success: false,
         error: Vec::new(),
         subject_info: Subject {
-            post_id,
+            post_id: post_id,
             title: String::new(),
             author: String::new(),
             anonymous: false,
@@ -162,7 +160,7 @@ pub async fn content_read(
     };
     // check if the post not exsits, add corresponding error if so
     let subject_info = ContentSubject::find_by_id(post_id)
-        .one(&db)
+        .one(&pg_con)
         .await
         .expect("cannot fetch content from pgdb");
     if subject_info == None {
@@ -182,7 +180,7 @@ pub async fn content_read(
                         .add(pgdb::content_reply::Column::ReplyId.gte((page - 1) * item_display)),
                 )
                 .order_by_asc(pgdb::content_reply::Column::ReplyId)
-                .all(&db)
+                .all(&pg_con)
                 .await
                 .expect("cannot fetch content from pgdb");
         } else {
@@ -197,7 +195,7 @@ pub async fn content_read(
                         ),
                 )
                 .order_by_asc(pgdb::content_reply::Column::ReplyId)
-                .all(&db)
+                .all(&pg_con)
                 .await
                 .expect("cannot fetch content from pgdb");
         }
@@ -240,8 +238,7 @@ pub async fn content_read(
             read_response.reply_info.push(data);
         }
         /* TODO */
-        // process the author string(if anonymous), using some unknown techniques??
-
+        // process the author string(if anonymous)
         // if the author is anonymous, return an empty string for the "author"
         // if subject_info.anonymous {
         //     subject_info.author = String::new();
@@ -260,11 +257,12 @@ pub async fn content_reply(
     db: Connection<PgDb>,
     reply_info: Json<ReplyInfo<'_>>,
 ) -> (Status, Json<ReplyResponse>) {
+    let pg_con = db.into_inner();
     // create a response struct
     let mut reply_response = ReplyResponse {
         success: false,
         error: Vec::new(),
-        post_id,
+        post_id: post_id,
         reply_id: 0i32,
     };
     // get content info from request
@@ -283,7 +281,7 @@ pub async fn content_reply(
         (Status::BadRequest, Json(reply_response))
     } else {
         let subject_info = ContentSubject::find_by_id(post_id)
-            .one(&db)
+            .one(&pg_con)
             .await
             .expect("cannot fetch content from pgdb");
         if None == subject_info {
@@ -307,7 +305,7 @@ pub async fn content_reply(
             };
             // insert the row in database
             let res1 = content_reply
-                .insert(&db)
+                .insert(&pg_con)
                 .await
                 .expect("Cannot save content");
             // println!("{:?}", res1.reply_id.unwrap());
@@ -320,7 +318,7 @@ pub async fn content_reply(
             subject_content.post_len = Set(reply_response.reply_id + 1);
             // insert the row in database
             let res2 = subject_content
-                .update(&db)
+                .update(&pg_con)
                 .await
                 .expect("Cannot update content");
             println!("{:?}", res2.post_id.unwrap());
@@ -336,6 +334,7 @@ pub async fn content_delete_post(
     db: Connection<PgDb>,
     post_id: i32,
 ) -> (Status, Json<PostResponse>) {
+    let pg_con = db.into_inner();
     // create a response struct
     let mut post_response = PostResponse {
         success: false,
@@ -344,23 +343,25 @@ pub async fn content_delete_post(
     };
     // check if the post not exsits, add corresponding error if so
     let subject_info = ContentSubject::find_by_id(post_id)
-        .one(&db)
+        .one(&pg_con)
         .await
         .expect("cannot fetch content from pgdb");
     if None == subject_info {
         post_response.error.push("Post not exsits".to_string());
         (Status::BadRequest, Json(post_response))
     } else {
-        //delete data in content_subject
+        /* TODO */
+        // check if time is within limit, if so, allow user to delete
+        // delete data in content_subject
         let subject_info: pgdb::content_subject::ActiveModel = subject_info.unwrap().into();
         subject_info
-            .delete(&db)
+            .delete(&pg_con)
             .await
             .expect("cannot delete content from content_subject");
-        //delete data in content_reply
+        // delete data in content_reply
         ContentReply::delete_many()
             .filter(pgdb::content_reply::Column::PostId.eq(post_id))
-            .exec(&db)
+            .exec(&pg_con)
             .await
             .expect("cannot delete content from content_reply");
         // return the response
@@ -376,6 +377,7 @@ pub async fn content_delete_reply(
     post_id: i32,
     reply_id: i32,
 ) -> (Status, Json<ReplyResponse>) {
+    let pg_con = db.into_inner();
     // create a response struct
     let mut reply_response = ReplyResponse {
         success: false,
@@ -385,21 +387,23 @@ pub async fn content_delete_reply(
     };
     // check if the post not exsits, add corresponding error if so
     let reply_info = ContentReply::find_by_id((post_id, reply_id))
-        .one(&db)
+        .one(&pg_con)
         .await
         .expect("cannot fetch content from pgdb");
     if None == reply_info {
         reply_response.error.push("Reply not exsits".to_string());
         (Status::BadRequest, Json(reply_response))
     } else {
+        /* TODO */
+        // check if time is within limit, if so, allow user to delete
         //delete data in content_reply
         let reply_info: pgdb::content_reply::ActiveModel = reply_info.unwrap().into();
         reply_info
-            .delete(&db)
+            .delete(&pg_con)
             .await
             .expect("cannot delete content from content_reply");
         /* TODO */
-        // modify post_len in content_subject??
+        // modify post_len in content_subject
         // return the response
         reply_response.success = true;
         reply_response.post_id = post_id;
