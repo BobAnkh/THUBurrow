@@ -18,6 +18,7 @@ import {
 import { UserOutlined } from '@ant-design/icons';
 import moment from 'moment';
 import PostList from '../components/post-list';
+import Config from '../config.json';
 import '../node_modules/antd/dist/antd.css';
 
 const { Header, Content, Footer } = Layout;
@@ -37,7 +38,7 @@ const onFinish = async (values: any) => {
     tag3: 'le',
   };
   try {
-    const res = await fetch('http://127.0.0.1:4523/mock/435762/content', {
+    const res = await fetch(`${Config.url}/content`, {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -46,7 +47,7 @@ const onFinish = async (values: any) => {
       message.error('发帖失败');
     } else {
       message.success('发帖成功');
-      window.location.href = './';
+      window.location.reload();
     }
   } catch (e) {
     message.error('发帖失败');
@@ -54,7 +55,7 @@ const onFinish = async (values: any) => {
 };
 
 const onFinishFailed = (errorInfo: any) => {
-  console.log('Failed:', errorInfo);
+  message.error(errorInfo);
 };
 
 const Home = (props: any) => {
@@ -162,7 +163,7 @@ const Home = (props: any) => {
   );
 };
 export async function getStaticProps() {
-  const res = await fetch('http://127.0.0.1:4523/mock/435762/contents', {
+  const res = await fetch(`${Config.url}/contents`, {
     method: 'GET',
   });
   if (res.status === 401) {
@@ -182,7 +183,7 @@ export async function getStaticProps() {
     }
 
     return {
-      props: { data }, // will be passed to the page component as props
+      props: { data },
     };
   }
 }

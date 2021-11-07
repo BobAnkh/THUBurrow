@@ -153,15 +153,15 @@
   resolved "https://registry.npmmirror.com/@humanwhocodes/object-schema/download/@humanwhocodes/object-schema-1.2.1.tgz?cache=0&sync_timestamp=1635880763805&other_urls=https%3A%2F%2Fregistry.npmmirror.com%2F%40humanwhocodes%2Fobject-schema%2Fdownload%2F%40humanwhocodes%2Fobject-schema-1.2.1.tgz#b520529ec21d8e5945a1851dfd1c32e94e39ff45"
   integrity sha1-tSBSnsIdjllFoYUd/Rwy6U45/0U=
 
-"@napi-rs/triples@^1.0.3":
+"@napi-rs/triples@1.0.3":
   version "1.0.3"
   resolved "https://registry.nlark.com/@napi-rs/triples/download/@napi-rs/triples-1.0.3.tgz#76d6d0c3f4d16013c61e45dfca5ff1e6c31ae53c"
   integrity sha1-dtbQw/TRYBPGHkXfyl/x5sMa5Tw=
 
-"@next/env@12.0.1":
-  version "12.0.1"
-  resolved "https://registry.npmmirror.com/@next/env/download/@next/env-12.0.1.tgz#d57141ef1fe844f6f7c18cdaf29a712788c18ca4"
-  integrity sha1-1XFB7x/oRPb3wYza8ppxJ4jBjKQ=
+"@next/env@12.0.2":
+  version "12.0.2"
+  resolved "https://registry.npmmirror.com/@next/env/download/@next/env-12.0.2.tgz#e823e0784ba932982568589e8e1fda1bf4949715"
+  integrity sha1-6CPgeEupMpglaFiejh/aG/SUlxU=
 
 "@next/eslint-plugin-next@12.0.1":
   version "12.0.1"
@@ -170,15 +170,15 @@
   dependencies:
     glob "7.1.7"
 
-"@next/polyfill-module@12.0.1":
-  version "12.0.1"
-  resolved "https://registry.npmmirror.com/@next/polyfill-module/download/@next/polyfill-module-12.0.1.tgz#d20abf06f686ee7a8bd0d9056accfd0662f19e87"
-  integrity sha1-0gq/BvaG7nqL0NkFasz9BmLxnoc=
+"@next/polyfill-module@12.0.2":
+  version "12.0.2"
+  resolved "https://registry.npmmirror.com/@next/polyfill-module/download/@next/polyfill-module-12.0.2.tgz#1b329fcc8b54092ea936e0aaad259215fd76753f"
+  integrity sha1-GzKfzItUCS6pNuCqrSWSFf12dT8=
 
-"@next/react-dev-overlay@12.0.1":
-  version "12.0.1"
-  resolved "https://registry.npmmirror.com/@next/react-dev-overlay/download/@next/react-dev-overlay-12.0.1.tgz#134299ae44fad5a59448d5e671518074f37cba95"
-  integrity sha1-E0KZrkT61aWUSNXmcVGAdPN8upU=
+"@next/react-dev-overlay@12.0.2":
+  version "12.0.2"
+  resolved "https://registry.npmmirror.com/@next/react-dev-overlay/download/@next/react-dev-overlay-12.0.2.tgz#0a8a6b614678ab34a23c4e2165e563489c1e38bd"
+  integrity sha1-CoprYUZ4qzSiPE4hZeVjSJweOL0=
   dependencies:
     "@babel/code-frame" "7.12.11"
     anser "1.4.9"
@@ -187,77 +187,70 @@
     css.escape "1.5.1"
     data-uri-to-buffer "3.0.1"
     platform "1.3.6"
-    shell-quote "1.7.2"
+    shell-quote "1.7.3"
     source-map "0.8.0-beta.0"
     stacktrace-parser "0.1.10"
     strip-ansi "6.0.1"
 
-"@next/react-refresh-utils@12.0.1":
-  version "12.0.1"
-  resolved "https://registry.npmmirror.com/@next/react-refresh-utils/download/@next/react-refresh-utils-12.0.1.tgz#219be7a81696a7bd1e2d4ee397ca100eb8262f23"
-  integrity sha1-IZvnqBaWp70eLU7jl8oQDrgmLyM=
+"@next/react-refresh-utils@12.0.2":
+  version "12.0.2"
+  resolved "https://registry.npmmirror.com/@next/react-refresh-utils/download/@next/react-refresh-utils-12.0.2.tgz#cfed1047ea2be314747e83a95f4d139c6f100742"
+  integrity sha1-z+0QR+or4xR0foOpX00TnG8QB0I=
 
-"@next/swc-android-arm64@12.0.1":
-  version "12.0.1"
-  resolved "https://registry.npmmirror.com/@next/swc-android-arm64/download/@next/swc-android-arm64-12.0.1.tgz#c776853e0911c12fcc69a69cd7ab111dff29f8d2"
-  integrity sha1-x3aFPgkRwS/Maaac16sRHf8p+NI=
+"@next/swc-android-arm64@12.0.2":
+  version "12.0.2"
+  resolved "https://registry.npmmirror.com/@next/swc-android-arm64/download/@next/swc-android-arm64-12.0.2.tgz#3e08f4781031c8f671a42f7dbf1bd152d4c57207"
+  integrity sha1-Pgj0eBAxyPZxpC99vxvRUtTFcgc=
 
-"@next/swc-darwin-arm64@12.0.1":
-  version "12.0.1"
-  resolved "https://registry.npmmirror.com/@next/swc-darwin-arm64/download/@next/swc-darwin-arm64-12.0.1.tgz#bee9c5932511c993ab384ef9aedb86c02532d41e"
-  integrity sha1-vunFkyURyZOrOE75rtuGwCUy1B4=
+"@next/swc-darwin-arm64@12.0.2":
+  version "12.0.2"
+  resolved "https://registry.npmmirror.com/@next/swc-darwin-arm64/download/@next/swc-darwin-arm64-12.0.2.tgz#6d546b230610b3a7417ebef545865192e6cf3590"
+  integrity sha1-bVRrIwYQs6dBfr71RYZRkubPNZA=
 
-"@next/swc-darwin-x64@12.0.1":
-  version "12.0.1"
-  resolved "https://registry.npmmirror.com/@next/swc-darwin-x64/download/@next/swc-darwin-x64-12.0.1.tgz#a0bdcbcf11b8b62190ec8e0406cecbbcc810b7fc"
-  integrity sha1-oL3LzxG4tiGQ7I4EBs7LvMgQt/w=
+"@next/swc-darwin-x64@12.0.2":
+  version "12.0.2"
+  resolved "https://registry.npmmirror.com/@next/swc-darwin-x64/download/@next/swc-darwin-x64-12.0.2.tgz#a49e48c188fe083bb23f84ed22db03e9560a0635"
+  integrity sha1-pJ5IwYj+CDuyP4TtItsD6VYKBjU=
 
-"@next/swc-linux-arm-gnueabihf@12.0.1":
-  version "12.0.1"
-  resolved "https://registry.npmmirror.com/@next/swc-linux-arm-gnueabihf/download/@next/swc-linux-arm-gnueabihf-12.0.1.tgz#d0132637288f452ad5c6a6161e42aebcd4355f82"
-  integrity sha1-0BMmNyiPRSrVxqYWHkKuvNQ1X4I=
+"@next/swc-linux-arm-gnueabihf@12.0.2":
+  version "12.0.2"
+  resolved "https://registry.npmmirror.com/@next/swc-linux-arm-gnueabihf/download/@next/swc-linux-arm-gnueabihf-12.0.2.tgz#154987bd7a5634f87faef13238541cef6d304279"
+  integrity sha1-FUmHvXpWNPh/rvEyOFQc720wQnk=
 
-"@next/swc-linux-arm64-gnu@12.0.1":
-  version "12.0.1"
-  resolved "https://registry.npmmirror.com/@next/swc-linux-arm64-gnu/download/@next/swc-linux-arm64-gnu-12.0.1.tgz#6b310344b9bac7700eaff8f4c536540b1226e378"
-  integrity sha1-azEDRLm6x3AOr/j0xTZUCxIm43g=
+"@next/swc-linux-arm64-gnu@12.0.2":
+  version "12.0.2"
+  resolved "https://registry.npmmirror.com/@next/swc-linux-arm64-gnu/download/@next/swc-linux-arm64-gnu-12.0.2.tgz#7c7d3df354960dfd8eaafcd945d5ebc7e218a125"
+  integrity sha1-fH0981SWDf2OqvzZRdXrx+IYoSU=
 
-"@next/swc-linux-arm64-musl@12.0.1":
-  version "12.0.1"
-  resolved "https://registry.npmmirror.com/@next/swc-linux-arm64-musl/download/@next/swc-linux-arm64-musl-12.0.1.tgz#8ab1fc81d18bbb70bb15bcc4250382257bba6298"
-  integrity sha1-irH8gdGLu3C7FbzEJQOCJXu6Ypg=
+"@next/swc-linux-arm64-musl@12.0.2":
+  version "12.0.2"
+  resolved "https://registry.npmmirror.com/@next/swc-linux-arm64-musl/download/@next/swc-linux-arm64-musl-12.0.2.tgz#aad8d6a66d463ca6e6330c2d7ec361beb7ad78df"
+  integrity sha1-qtjWpm1GPKbmMwwtfsNhvreteN8=
 
-"@next/swc-linux-x64-gnu@12.0.1":
-  version "12.0.1"
-  resolved "https://registry.npmmirror.com/@next/swc-linux-x64-gnu/download/@next/swc-linux-x64-gnu-12.0.1.tgz#a664268aedec402da5df34efac1b337d9b0e492e"
-  integrity sha1-pmQmiu3sQC2l3zTvrBszfZsOSS4=
+"@next/swc-linux-x64-gnu@12.0.2":
+  version "12.0.2"
+  resolved "https://registry.npmmirror.com/@next/swc-linux-x64-gnu/download/@next/swc-linux-x64-gnu-12.0.2.tgz#79a6eb1287c2b185dd7271eec561dac23a1c3506"
+  integrity sha1-eabrEofCsYXdcnHuxWHawjocNQY=
 
 "@next/swc-linux-x64-musl@12.0.1":
   version "12.0.1"
   resolved "https://registry.npmmirror.com/@next/swc-linux-x64-musl/download/@next/swc-linux-x64-musl-12.0.1.tgz#4b7e5fee5a62adb6d9c9aad1a4aa00a6a09b53dc"
   integrity sha1-S35f7lpirbbZyarRpKoApqCbU9w=
 
-"@next/swc-win32-arm64-msvc@12.0.1":
-  version "12.0.1"
-  resolved "https://registry.npmmirror.com/@next/swc-win32-arm64-msvc/download/@next/swc-win32-arm64-msvc-12.0.1.tgz#9ff0c2a2f00f41d40bd44d6da195bdf649d807c6"
-  integrity sha1-n/DCovAPQdQL1E1toZW99knYB8Y=
+"@next/swc-win32-arm64-msvc@12.0.2":
+  version "12.0.2"
+  resolved "https://registry.npmmirror.com/@next/swc-win32-arm64-msvc/download/@next/swc-win32-arm64-msvc-12.0.2.tgz#0783cf20f211a921facf2dfcd847f7b17048209a"
+  integrity sha1-B4PPIPIRqSH6zy382Ef3sXBIIJo=
 
-"@next/swc-win32-ia32-msvc@12.0.1":
-  version "12.0.1"
-  resolved "https://registry.npmmirror.com/@next/swc-win32-ia32-msvc/download/@next/swc-win32-ia32-msvc-12.0.1.tgz#5a927ec832b184ce2e35f8ec668daa34175e47d0"
-  integrity sha1-WpJ+yDKxhM4uNfjsZo2qNBdeR9A=
+"@next/swc-win32-ia32-msvc@12.0.2":
+  version "12.0.2"
+  resolved "https://registry.npmmirror.com/@next/swc-win32-ia32-msvc/download/@next/swc-win32-ia32-msvc-12.0.2.tgz#c48f8f5be7728f8bbb0a864727dcbd816f06784f"
+  integrity sha1-xI+PW+dyj4u7CoZHJ9y9gW8GeE8=
 
-"@next/swc-win32-x64-msvc@12.0.1":
-  version "12.0.1"
-  resolved "https://registry.npmmirror.com/@next/swc-win32-x64-msvc/download/@next/swc-win32-x64-msvc-12.0.1.tgz#fe145cf7baf79564159a87a545e430f96c835578"
-  integrity sha1-/hRc97r3lWQVmoelReQw+WyDVXg=
-
-"@node-rs/helper@1.2.1":
-  version "1.2.1"
-  resolved "https://registry.nlark.com/@node-rs/helper/download/@node-rs/helper-1.2.1.tgz#e079b05f21ff4329d82c4e1f71c0290e4ecdc70c"
-  integrity sha1-4HmwXyH/QynYLE4fccApDk7Nxww=
-  dependencies:
-    "@napi-rs/triples" "^1.0.3"
+"@next/swc-win32-x64-msvc@12.0.2":
+  version "12.0.2"
+  resolved "https://registry.npmmirror.com/@next/swc-win32-x64-msvc/download/@next/swc-win32-x64-msvc-12.0.2.tgz#5eb3f054395fb2b1c57b981c446df17d0507febd"
+  integrity sha1-XrPwVDlfsrHFe5gcRG3xfQUH/r0=
 
 "@nodelib/fs.scandir@2.1.5":
   version "2.1.5"
@@ -284,6 +277,11 @@
   version "1.0.9"
   resolved "https://registry.npmmirror.com/@rushstack/eslint-patch/download/@rushstack/eslint-patch-1.0.9.tgz#1168db664faab4c3bb82c76124b393970e80bf89"
   integrity sha1-EWjbZk+qtMO7gsdhJLOTlw6Av4k=
+
+"@types/crypto-js@^4.0.2":
+  version "4.0.2"
+  resolved "https://registry.nlark.com/@types/crypto-js/download/@types/crypto-js-4.0.2.tgz#4524325a175bf819fec6e42560c389ce1fb92c97"
+  integrity sha1-RSQyWhdb+Bn+xuQlYMOJzh+5LJc=
 
 "@types/json5@^0.0.29":
   version "0.0.29"
@@ -367,11 +365,6 @@ acorn@8.5.0:
   version "8.5.0"
   resolved "https://registry.nlark.com/acorn/download/acorn-8.5.0.tgz?cache=0&sync_timestamp=1630916517167&other_urls=https%3A%2F%2Fregistry.nlark.com%2Facorn%2Fdownload%2Facorn-8.5.0.tgz#4512ccb99b3698c752591e9bb4472e38ad43cee2"
   integrity sha1-RRLMuZs2mMdSWR6btEcuOK1DzuI=
-
-acorn@^6.2.1:
-  version "6.4.2"
-  resolved "https://registry.nlark.com/acorn/download/acorn-6.4.2.tgz?cache=0&sync_timestamp=1630916517167&other_urls=https%3A%2F%2Fregistry.nlark.com%2Facorn%2Fdownload%2Facorn-6.4.2.tgz#35866fd710528e92de10cf06016498e47e39e1e6"
-  integrity sha1-NYZv1xBSjpLeEM8GAWSY5H454eY=
 
 acorn@^7.4.0:
   version "7.4.1"
@@ -931,6 +924,11 @@ crypto-browserify@3.12.0:
     public-encrypt "^4.0.0"
     randombytes "^2.0.0"
     randomfill "^1.0.3"
+
+crypto-js@^4.1.1:
+  version "4.1.1"
+  resolved "https://registry.nlark.com/crypto-js/download/crypto-js-4.1.1.tgz#9e485bcf03521041bd85844786b83fb7619736cf"
+  integrity sha1-nkhbzwNSEEG9hYRHhrg/t2GXNs8=
 
 css.escape@1.5.1:
   version "1.5.1"
@@ -2146,23 +2144,18 @@ natural-compare@^1.4.0:
   resolved "https://registry.nlark.com/natural-compare/download/natural-compare-1.4.0.tgz#4abebfeed7541f2c27acfb29bdbbd15c8d5ba4f7"
   integrity sha1-Sr6/7tdUHywnrPspvbvRXI1bpPc=
 
-neo-async@^2.6.1:
-  version "2.6.2"
-  resolved "https://registry.nlark.com/neo-async/download/neo-async-2.6.2.tgz#b4aafb93e3aeb2d8174ca53cf163ab7d7308305f"
-  integrity sha1-tKr7k+OustgXTKU88WOrfXMIMF8=
-
-next@12.0.1:
-  version "12.0.1"
-  resolved "https://registry.npmmirror.com/next/download/next-12.0.1.tgz#7b82a73bc185bfda7372e7e8309f9b38e6be9cb0"
-  integrity sha1-e4KnO8GFv9pzcufoMJ+bOOa+nLA=
+next@^12.0.1:
+  version "12.0.2"
+  resolved "https://registry.npmmirror.com/next/download/next-12.0.2.tgz#269512cdf14d12c535c12240280da95e7be2d006"
+  integrity sha1-JpUSzfFNEsU1wSJAKA2pXnvi0AY=
   dependencies:
     "@babel/runtime" "7.15.4"
     "@hapi/accept" "5.0.2"
-    "@next/env" "12.0.1"
-    "@next/polyfill-module" "12.0.1"
-    "@next/react-dev-overlay" "12.0.1"
-    "@next/react-refresh-utils" "12.0.1"
-    "@node-rs/helper" "1.2.1"
+    "@napi-rs/triples" "1.0.3"
+    "@next/env" "12.0.2"
+    "@next/polyfill-module" "12.0.2"
+    "@next/react-dev-overlay" "12.0.2"
+    "@next/react-refresh-utils" "12.0.2"
     acorn "8.5.0"
     assert "2.0.0"
     browserify-zlib "0.2.0"
@@ -2194,7 +2187,6 @@ next@12.0.1:
     raw-body "2.4.1"
     react-is "17.0.2"
     react-refresh "0.8.3"
-    react-server-dom-webpack "0.0.0-experimental-3c4c1c470-20211021"
     regenerator-runtime "0.13.4"
     stream-browserify "3.0.0"
     stream-http "3.1.1"
@@ -2206,19 +2198,18 @@ next@12.0.1:
     util "0.12.4"
     vm-browserify "1.1.2"
     watchpack "2.1.1"
-    web-streams-polyfill "3.0.3"
   optionalDependencies:
-    "@next/swc-android-arm64" "12.0.1"
-    "@next/swc-darwin-arm64" "12.0.1"
-    "@next/swc-darwin-x64" "12.0.1"
-    "@next/swc-linux-arm-gnueabihf" "12.0.1"
-    "@next/swc-linux-arm64-gnu" "12.0.1"
-    "@next/swc-linux-arm64-musl" "12.0.1"
-    "@next/swc-linux-x64-gnu" "12.0.1"
+    "@next/swc-android-arm64" "12.0.2"
+    "@next/swc-darwin-arm64" "12.0.2"
+    "@next/swc-darwin-x64" "12.0.2"
+    "@next/swc-linux-arm-gnueabihf" "12.0.2"
+    "@next/swc-linux-arm64-gnu" "12.0.2"
+    "@next/swc-linux-arm64-musl" "12.0.2"
+    "@next/swc-linux-x64-gnu" "12.0.2"
     "@next/swc-linux-x64-musl" "12.0.1"
-    "@next/swc-win32-arm64-msvc" "12.0.1"
-    "@next/swc-win32-ia32-msvc" "12.0.1"
-    "@next/swc-win32-x64-msvc" "12.0.1"
+    "@next/swc-win32-arm64-msvc" "12.0.2"
+    "@next/swc-win32-ia32-msvc" "12.0.2"
+    "@next/swc-win32-x64-msvc" "12.0.2"
 
 node-fetch@2.6.1:
   version "2.6.1"
@@ -2590,7 +2581,7 @@ rc-align@^4.0.0:
 
 rc-cascader@~1.4.0:
   version "1.4.3"
-  resolved "https://registry.npmmirror.com/rc-cascader/download/rc-cascader-1.4.3.tgz#d91b0dcf8157b60ebe9ec3e58b4db054d5299464"
+  resolved "https://registry.npmmirror.com/rc-cascader/download/rc-cascader-1.4.3.tgz?cache=0&sync_timestamp=1634632528875&other_urls=https%3A%2F%2Fregistry.npmmirror.com%2Frc-cascader%2Fdownload%2Frc-cascader-1.4.3.tgz#d91b0dcf8157b60ebe9ec3e58b4db054d5299464"
   integrity sha1-2RsNz4FXtg6+nsPli02wVNUplGQ=
   dependencies:
     "@babel/runtime" "^7.12.5"
@@ -2821,7 +2812,7 @@ rc-switch@~3.2.0:
 
 rc-table@~7.15.1:
   version "7.15.2"
-  resolved "https://registry.npmmirror.com/rc-table/download/rc-table-7.15.2.tgz?cache=0&sync_timestamp=1636025451787&other_urls=https%3A%2F%2Fregistry.npmmirror.com%2Frc-table%2Fdownload%2Frc-table-7.15.2.tgz#f6ab73b2cfb1c76f3cf9682c855561423c6b5b22"
+  resolved "https://registry.npmmirror.com/rc-table/download/rc-table-7.15.2.tgz#f6ab73b2cfb1c76f3cf9682c855561423c6b5b22"
   integrity sha1-9qtzss+xx288+WgshVVhQjxrWyI=
   dependencies:
     "@babel/runtime" "^7.10.1"
@@ -2920,9 +2911,9 @@ rc-virtual-list@^3.0.1, rc-virtual-list@^3.2.0:
     rc-resize-observer "^1.0.0"
     rc-util "^5.0.7"
 
-react-dom@17.0.2:
+react-dom@^17.0.2:
   version "17.0.2"
-  resolved "https://registry.npmmirror.com/react-dom/download/react-dom-17.0.2.tgz#ecffb6845e3ad8dbfcdc498f0d0a939736502c23"
+  resolved "https://registry.npmmirror.com/react-dom/download/react-dom-17.0.2.tgz?cache=0&sync_timestamp=1635956490485&other_urls=https%3A%2F%2Fregistry.npmmirror.com%2Freact-dom%2Fdownload%2Freact-dom-17.0.2.tgz#ecffb6845e3ad8dbfcdc498f0d0a939736502c23"
   integrity sha1-7P+2hF462Nv83EmPDQqTlzZQLCM=
   dependencies:
     loose-envify "^1.1.0"
@@ -2936,7 +2927,7 @@ react-is@17.0.2:
 
 react-is@^16.12.0, react-is@^16.8.1:
   version "16.13.1"
-  resolved "https://registry.npmmirror.com/react-is/download/react-is-16.13.1.tgz?cache=0&sync_timestamp=1635215108351&other_urls=https%3A%2F%2Fregistry.npmmirror.com%2Freact-is%2Fdownload%2Freact-is-16.13.1.tgz#789729a4dc36de2999dc156dd6c1d9c18cea56a4"
+  resolved "https://registry.npmmirror.com/react-is/download/react-is-16.13.1.tgz#789729a4dc36de2999dc156dd6c1d9c18cea56a4"
   integrity sha1-eJcppNw23imZ3BVt1sHZwYzqVqQ=
 
 react-refresh@0.8.3:
@@ -2944,19 +2935,9 @@ react-refresh@0.8.3:
   resolved "https://registry.npmmirror.com/react-refresh/download/react-refresh-0.8.3.tgz#721d4657672d400c5e3c75d063c4a85fb2d5d68f"
   integrity sha1-ch1GV2ctQAxePHXQY8SoX7LV1o8=
 
-react-server-dom-webpack@0.0.0-experimental-3c4c1c470-20211021:
-  version "0.0.0-experimental-3c4c1c470-20211021"
-  resolved "https://registry.npmmirror.com/react-server-dom-webpack/download/react-server-dom-webpack-0.0.0-experimental-3c4c1c470-20211021.tgz#cdcaa2f19c8d820c1f4d31252319fb05e2de0e88"
-  integrity sha1-zcqi8ZyNggwfTTElIxn7BeLeDog=
-  dependencies:
-    acorn "^6.2.1"
-    loose-envify "^1.1.0"
-    neo-async "^2.6.1"
-    object-assign "^4.1.1"
-
-react@17.0.2:
+react@^17.0.2:
   version "17.0.2"
-  resolved "https://registry.npmmirror.com/react/download/react-17.0.2.tgz#d0b5cc516d29eb3eee383f75b62864cfb6800037"
+  resolved "https://registry.npmmirror.com/react/download/react-17.0.2.tgz?cache=0&sync_timestamp=1635956491584&other_urls=https%3A%2F%2Fregistry.npmmirror.com%2Freact%2Fdownload%2Freact-17.0.2.tgz#d0b5cc516d29eb3eee383f75b62864cfb6800037"
   integrity sha1-0LXMUW0p6z7uOD91tihkz7aAADc=
   dependencies:
     loose-envify "^1.1.0"
@@ -3136,10 +3117,10 @@ shebang-regex@^3.0.0:
   resolved "https://registry.nlark.com/shebang-regex/download/shebang-regex-3.0.0.tgz?cache=0&sync_timestamp=1628896304371&other_urls=https%3A%2F%2Fregistry.nlark.com%2Fshebang-regex%2Fdownload%2Fshebang-regex-3.0.0.tgz#ae16f1644d873ecad843b0307b143362d4c42172"
   integrity sha1-rhbxZE2HPsrYQ7AwexQzYtTEIXI=
 
-shell-quote@1.7.2:
-  version "1.7.2"
-  resolved "https://registry.npmmirror.com/shell-quote/download/shell-quote-1.7.2.tgz#67a7d02c76c9da24f99d20808fcaded0e0e04be2"
-  integrity sha1-Z6fQLHbJ2iT5nSCAj8re0ODgS+I=
+shell-quote@1.7.3:
+  version "1.7.3"
+  resolved "https://registry.npmmirror.com/shell-quote/download/shell-quote-1.7.3.tgz#aa40edac170445b9a431e17bb62c0b881b9c4123"
+  integrity sha1-qkDtrBcERbmkMeF7tiwLiBucQSM=
 
 side-channel@^1.0.4:
   version "1.0.4"
@@ -3513,11 +3494,6 @@ watchpack@2.1.1:
   dependencies:
     glob-to-regexp "^0.4.1"
     graceful-fs "^4.1.2"
-
-web-streams-polyfill@3.0.3:
-  version "3.0.3"
-  resolved "https://registry.nlark.com/web-streams-polyfill/download/web-streams-polyfill-3.0.3.tgz#f49e487eedeca47a207c1aee41ee5578f884b42f"
-  integrity sha1-9J5Ifu3spHogfBruQe5VePiEtC8=
 
 webidl-conversions@^4.0.2:
   version "4.0.2"

@@ -11,7 +11,7 @@ const NotFoundPage: NextPage = () => {
       subTitle='未找到您要访问的页面'
       extra={
         <Button type='primary'>
-          <Link href='/'> 返回主页</Link>
+          <Link href='/home'> 返回主页</Link>
         </Button>
       }
     />

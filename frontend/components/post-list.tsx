@@ -1,6 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
-import { List, Avatar, Space } from 'antd';
+import { List, Space } from 'antd';
 import {
   MessageOutlined,
   LikeOutlined,
@@ -30,9 +30,6 @@ export default function PostList({ listData }: Props) {
       itemLayout='vertical'
       size='large'
       pagination={{
-        onChange: (page) => {
-          console.log(page);
-        },
         pageSize: 10,
       }}
       dataSource={listData}
@@ -68,7 +65,7 @@ export default function PostList({ listData }: Props) {
           ]}
         >
           <List.Item.Meta
-            title={<Link href={`post/${item.post_id}`}>{item.title}</Link>}
+            title={<Link href={`./post/${item.post_id}`}>{item.title}</Link>}
             description={item.author}
           />
           {item.content}
