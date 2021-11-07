@@ -10,6 +10,7 @@ services:
     depends_on:
       - pgdb
       - keydb
+      - minio
     expose:
       - "8000"
     networks:

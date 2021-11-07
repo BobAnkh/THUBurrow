@@ -1,6 +1,6 @@
 FROM rustlang/rust:nightly-alpine AS chef
 
-RUN apk add --no-cach musl-dev && \
+RUN apk add --no-cach musl-dev openssl-dev && \
     cargo install cargo-chef
 WORKDIR /app
 
@@ -21,4 +21,5 @@ RUN cargo build --release --bin backend
 FROM alpine:latest
 
 COPY --from=builder /app/target/release/backend /usr/local/bin/backend
+COPY --from=builder /app/conf/log4rs.yml /etc/backend/conf/log4rs.yml
 ENTRYPOINT [ "backend" ]
