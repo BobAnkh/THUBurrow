@@ -1,6 +1,8 @@
 FROM rustlang/rust:nightly-buster-slim AS chef
 
-RUN apt update -qq && apt install libssl-dev && \
+RUN apt update -qq && \
+    apt install --no-install-recommends libssl-dev pkg-config -y && \
+    rm -rf /var/lib/apt/lists/* && \
     cargo install cargo-chef
 WORKDIR /app
 
@@ -17,9 +19,15 @@ COPY . .
 RUN cargo build --release --bin backend
 
 # FINAL
-
 FROM debian:buster-slim
 
+RUN apt update -qq && \
+    apt install --no-install-recommends libssl-dev -y && \
+    rm -rf /var/lib/apt/lists/*
 COPY --from=builder /app/target/release/backend /usr/local/bin/backend
+COPY --from=builder /app/Rocket.toml /etc/backend/Rocket.toml
 COPY --from=builder /app/conf/log4rs.yml /etc/backend/conf/log4rs.yml
+
+ENV ROCKET_CONFIG /etc/backend/Rocket.toml
+
 ENTRYPOINT [ "backend" ]
