@@ -1,5 +1,5 @@
 use crate::pgdb;
-use sea_orm::query::ConnectionTrait;
+// use sea_orm::query::ConnectionTrait;
 use sea_orm::sea_query::{ColumnDef, TableCreateStatement};
 use sea_orm::{error::*, sea_query, DbConn, ExecResult};
 
