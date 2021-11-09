@@ -16,7 +16,7 @@ fn log_init() {}
 
 #[cfg(not(debug_assertions))]
 fn log_init() {
-    match log4rs::init_file("conf/log4rs.yml", Default::default()) {
+    match log4rs::init_file("/etc/backend/conf/log4rs.yml", Default::default()) {
         Ok(_) => (),
         Err(e) => panic!("Error initial logger: {}", e),
     }
