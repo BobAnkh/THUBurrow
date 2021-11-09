@@ -17,3 +17,7 @@
 1. 注意从`backend`分支checkout出一个新分支开发你的功能或修复bug，分支名称尽量与功能相关
 2. Rust编写规范：[coding-style](https://wiki.jikexueyuan.com/project/rust-primer/coding-style/style.html)，主要注意其中的命名规范和注释规范
 3. 编写完代码提交前，请运行`cargo clippy`和`cargo fmt`进行格式规范和代码优化校验，`cargo fmt`也可由vscode中右键菜单里的`Format Document`(`格式化文档`)来代替
+
+## Deployment
+
+`openssl rand -base64 32`
