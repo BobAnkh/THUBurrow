@@ -11,6 +11,7 @@ services:
       - pgdb
       - keydb
       - minio
+      - typesense
     expose:
       - "8000"
     networks:
@@ -72,23 +73,6 @@ services:
         aliases:
           - pulsar
 
-  # pulsar-manager:
-  #   image: apachepulsar/pulsar-manager:v0.2.0
-  #   container_name: pulsar_manager_container
-  #   expose:
-  #     - "7750"
-  #     - "9527"
-  #   restart: unless-stopped
-  #   depends_on:
-  #     - pulsar
-  #   environment:
-  #     SPRING_CONFIGURATION_FILE: /pulsar-manager/pulsar-manager/application.properties
-  #     VIRTUAL_HOST: ${PULSAR_MANAGE_HOST}
-  #     VIRTUAL_PORT: 9527
-  #   networks:
-  #     messagequeue:
-  #     proxy:
-
   minio:
     image: quay.io/minio/minio
     restart: unless-stopped
@@ -111,6 +95,22 @@ services:
       interval: 30s
       timeout: 20s
       retries: 3
+
+  typesense:
+    image: typesense/typesense:0.21.0
+    container_name: typesense_container
+    restart: unless-stopped
+    environment:
+      TYPESENSE_API_KEY: ${TYPESENSE_API_KEY:-8Dz4jRrsBjYgdCD/VGP1bleph7oBThJr5IcF43l0U24=}
+      TYPESENSE_DATA_DIR: "/data"
+    depends_on:
+      - pulsar
+    expose:
+      - "8108"
+    volumes:
+      - ./data/typesense-data:/data
+    networks:
+      messagequeue:
 
 networks:
   innerdb:
