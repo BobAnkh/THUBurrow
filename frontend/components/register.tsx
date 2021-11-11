@@ -127,13 +127,17 @@ class Register extends React.Component<Iprops, any> {
     const data = {
       username: values.username,
       password: CryptoJS.MD5(values.password).toString(),
-      email: values.email,
+      email: `${values.email}@mails.tsinghua.edu.cn`,
       code: values.code,
     };
+    console.log(data);
     try {
-      const res = await fetch(`${Config.url1}/6381347`, {
+      const res = await fetch(`${Config.url1}/users/sign-up`, {
         method: 'POST',
         body: JSON.stringify(data),
+        headers: new Headers({
+          'Content-Type': 'application/json',
+        }),
       });
       if (res.status === 200) {
         message.success('注册成功');
@@ -141,6 +145,7 @@ class Register extends React.Component<Iprops, any> {
       } else {
         const json = await res.json();
         message.error('注册失败');
+        console.log(json.error);
         alert(json.errors);
       }
     } catch (e) {

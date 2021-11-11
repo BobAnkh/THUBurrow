@@ -24,11 +24,14 @@ class LoginForm extends Component<Iprops> {
       const res = await fetch(`${Config.url}/users/login`, {
         method: 'POST',
         body: JSON.stringify(data),
+        headers: new Headers({
+          'Content-Type': 'application/json',
+        }),
       });
 
       if (res.status === 200) {
         message.success('登录成功');
-        window.location.href = '../home';
+        // window.location.href = '../home';
       } else {
         const json = await res.json();
         message.error('登录失败');
