@@ -1,6 +1,3 @@
-use std::time;
-
-use pulsar::OperationRetryOptions;
 use rocket::http::{Cookie, CookieJar};
 use rocket::response::status;
 use rocket::serde::json::Json;
@@ -12,7 +9,7 @@ use uuid::Uuid;
 
 use crate::db;
 use crate::pool::{PgDb, PulsarSearchProducerMq, RedisDb};
-use crate::req::{sample_req::*, user::*};
+use crate::req::{pulsar_msg::*, user::*};
 
 use chrono::Local;
 use crypto::digest::Digest;
@@ -20,7 +17,6 @@ use crypto::sha3::Sha3;
 
 use idgenerator::IdHelper;
 use serde_json::json;
-use serde_json::value;
 
 pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
     rocket.mount(
@@ -40,13 +36,10 @@ pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
 
 #[get("/pulsar/<name>")]
 async fn pulsar_produce(mut producer: Connection<PulsarSearchProducerMq>, name: &str) -> String {
-    let index: i32 = 1;
-    let operation_time: i64 = 23423424;
     let operation = json!({
         "operation_level": "burrow",
         "operation_type": "new",
-        "index": index,
-        "operation_time": operation_time,
+        "operation_time": 2394823i64,
         "data": "Hello motherfucker!"
     });
     let msg: TestData = serde_json::from_value(operation).unwrap();
