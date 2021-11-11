@@ -1,5 +1,5 @@
 import type { NextPage, GetStaticProps } from 'next';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import {
@@ -38,7 +38,8 @@ const onFinish = async (values: any) => {
     tag3: 'le',
   };
   try {
-    const res = await fetch(`${Config.url}/content`, {
+    //const res = await fetch(`${Config.url}/content`, {
+    const res = await fetch('http://127.0.0.1:4523/mock/435762/content/post', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -58,11 +59,31 @@ const onFinishFailed = (errorInfo: any) => {
   message.error(errorInfo);
 };
 
-const Home = (props: any) => {
-  const listData: any = props.data;
+const Home: NextPage = () => {
   const [menuMode, setMenuMode] = useState<'inline' | 'horizontal'>(
     'horizontal'
   );
+  //   const res = await fetch(`${Config.url}/content/list/${page}`, {
+  const [postList, setPostList] = useState([]);
+  const [page, setPage] = useState(1);
+  useEffect(() => {
+    const fetchPostList = async () => {
+      const res = await fetch(
+        'http://127.0.0.1:4523/mock/435762/content/list/1',
+        {
+          method: 'GET',
+        }
+      );
+      if (res.status === 401) {
+        message.info('请先登录！');
+        router.push('/login');
+      } else {
+        const postlist = await res.json();
+        setPostList(postlist);
+      }
+    };
+    fetchPostList();
+  }, []);
   const router = useRouter();
   const site = router.pathname.split('/')[1];
   const menu = (
@@ -104,6 +125,7 @@ const Home = (props: any) => {
       </Menu.Item>
     </Menu>
   );
+
   return (
     <Layout className='layout'>
       <Header>
@@ -124,7 +146,7 @@ const Home = (props: any) => {
           <Breadcrumb.Item>App</Breadcrumb.Item>
         </Breadcrumb>
         <Card>
-          <PostList listData={listData} />
+          <PostList listData={postList} setPage={setPage} />
           <Form
             labelCol={{ span: 5 }}
             wrapperCol={{ span: 14 }}
@@ -162,30 +184,5 @@ const Home = (props: any) => {
     </Layout>
   );
 };
-export async function getStaticProps() {
-  const res = await fetch(`${Config.url}/contents`, {
-    method: 'GET',
-  });
-  if (res.status === 401) {
-    message.info('请先登录！');
-    return {
-      redirect: {
-        destination: '/login',
-        permanent: false,
-      },
-    };
-  } else {
-    const data = await res.json();
-    if (!data) {
-      return {
-        notFound: true,
-      };
-    }
-
-    return {
-      props: { data },
-    };
-  }
-}
 
 export default Home;
