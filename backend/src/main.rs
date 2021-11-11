@@ -5,11 +5,10 @@ use rocket::fairing::{self, AdHoc};
 use rocket::{Build, Rocket};
 use rocket_db_pools::Database;
 
-use backend::cors;
 use backend::pool::{MinioImageStorage, PgDb, RedisDb};
 use backend::routes::{self, sample};
 use backend::setup;
-use backend::utils::id_gen;
+use backend::utils::{cors, id_gen};
 
 #[cfg(debug_assertions)]
 fn log_init() {}
