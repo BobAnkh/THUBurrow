@@ -38,8 +38,7 @@ const onFinish = async (values: any) => {
     tag3: 'le',
   };
   try {
-    //const res = await fetch(`${Config.url}/content`, {
-    const res = await fetch('http://127.0.0.1:4523/mock/435762/content/post', {
+    const res = await fetch(`${Config.url}/content/post`, {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -63,17 +62,13 @@ const Home: NextPage = () => {
   const [menuMode, setMenuMode] = useState<'inline' | 'horizontal'>(
     'horizontal'
   );
-  //   const res = await fetch(`${Config.url}/content/list/${page}`, {
   const [postList, setPostList] = useState([]);
   const [page, setPage] = useState(1);
   useEffect(() => {
     const fetchPostList = async () => {
-      const res = await fetch(
-        'http://127.0.0.1:4523/mock/435762/content/list/1',
-        {
-          method: 'GET',
-        }
-      );
+      const res = await fetch(`${Config.url}/content/list/${page}`, {
+        method: 'GET',
+      });
       if (res.status === 401) {
         message.info('请先登录！');
         router.push('/login');
