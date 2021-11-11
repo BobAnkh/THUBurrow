@@ -198,9 +198,12 @@ async fn user_sign_up(
     let uuid = Uuid::new_v5(&Uuid::NAMESPACE_OID, user_key.as_bytes());
     // build cookie
     let cookie = Cookie::build("token", token.clone())
-        .domain("thuburrow.com")
+        .domain(".thuburrow.com")
         .path("/")
-        .same_site(SameSite::None)
+        .same_site(SameSite::Strict)
+        .secure(true)
+        .http_only(true)
+        .max_age(time::Duration::weeks(1))
         .finish();
     // set cookie
     cookies.add_private(cookie);
