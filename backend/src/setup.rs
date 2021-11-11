@@ -1,4 +1,7 @@
 use crate::pgdb;
+use crate::pool::PgDb;
+use rocket::{fairing, Build, Rocket};
+use rocket_db_pools::Database;
 use sea_orm::query::ConnectionTrait;
 use sea_orm::sea_query::{ColumnDef, TableCreateStatement};
 use sea_orm::{error::*, sea_query, DbConn, ExecResult};
@@ -37,4 +40,10 @@ pub async fn create_user_table(db: &DbConn) -> Result<ExecResult, DbErr> {
         .to_owned();
 
     create_table(db, &stmt).await
+}
+
+pub async fn user_table_setup(rocket: Rocket<Build>) -> fairing::Result {
+    let conn = &PgDb::fetch(&rocket).unwrap().connection;
+    let _ = create_user_table(conn).await;
+    Ok(rocket)
 }
