@@ -15,6 +15,7 @@ type IconProps = {
 
 type Props = {
   listData: any;
+  setPage: any;
 };
 
 const IconText = ({ icon, text }: IconProps) => (
@@ -24,13 +25,16 @@ const IconText = ({ icon, text }: IconProps) => (
   </Space>
 );
 
-export default function PostList({ listData }: Props) {
+export default function PostList({ listData, setPage }: Props) {
   return (
     <List
       itemLayout='vertical'
       size='large'
       pagination={{
-        pageSize: 10,
+        onChange: (page) => {
+          setPage(page);
+        },
+        pageSize: 3,
       }}
       dataSource={listData}
       footer={
