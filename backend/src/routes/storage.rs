@@ -8,14 +8,14 @@ use crypto::digest::Digest;
 use crypto::md5::Md5;
 
 use crate::pool::MinioImageStorage;
-use crate::req::storage::{SaveAvatar, SaveImage};
+use crate::req::storage::{ReferrerCheck, SaveImage};
 
 use crate::utils::sso::SsoAuth;
 
 pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
     rocket.mount(
         "/storage",
-        routes![upload_image, download_image, get_images, upload_avatar],
+        routes![upload_image, download_image, get_images],
     )
 }
 
@@ -47,37 +47,10 @@ async fn upload_image(
     }
 }
 
-#[post("/avatars", data = "<image>")]
-async fn upload_avatar(
-    auth: SsoAuth,
-    bucket: Connection<MinioImageStorage>,
-    image: SaveAvatar,
-) -> (Status, Option<String>) {
-    info!("[IMAGE] User {} id uploading avatar.", auth.id);
-    // put a file
-    // check content type
-    match image.content_type.as_str() {
-        "jpg" | "jpeg" | "png" | "gif" => {}
-        _ => {
-            return (Status::UnsupportedMediaType, None);
-        }
-    }
-    let mut hash_md5 = Md5::new();
-    hash_md5.input(image.content.as_slice());
-    let filename = hash_md5.result_str() + "." + &image.content_type;
-    match bucket
-        .put_object(filename.as_str(), image.content.as_slice())
-        .await
-    {
-        Ok((_, 200)) => (Status::Ok, Some(filename)),
-        Ok((_, code)) => (Status::new(code), None),
-        Err(e) => (Status::InternalServerError, Some(format!("{}", e))),
-    }
-}
-
 #[get("/image/<filename>")]
 async fn download_image(
     auth: SsoAuth,
+    _ref: ReferrerCheck,
     bucket: Connection<MinioImageStorage>,
     filename: &str,
 ) -> Result<Vec<u8>, status::NotFound<String>> {
