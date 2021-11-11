@@ -10,7 +10,7 @@ pub fn init() -> Cors {
     let cors = rocket_cors::CorsOptions {
         allowed_origins,
         allow_credentials: true,
-        max_age: Some(300),
+        max_age: Some(3600),
         ..Default::default()
     }
     .to_cors();
