@@ -249,10 +249,13 @@ pub async fn user_log_in(
                         }
                     };
                     // build cookie
-                    let cookie = Cookie::build("token", token.clone())
-                        .domain("thuburrow.com")
+                    let cookie = Cookie::build("token", token)
+                        .domain(".thuburrow.com")
                         .path("/")
-                        .same_site(SameSite::None)
+                        .same_site(SameSite::Strict)
+                        .secure(true)
+                        .http_only(true)
+                        .max_age(time::Duration::weeks(1))
                         .finish();
                     // set cookie
                     cookies.add_private(cookie);
