@@ -97,7 +97,6 @@ impl Pool for SeaOrmPool {
     }
 }
 
-<<<<<<< HEAD
 // pulsar
 #[derive(Database)]
 #[database("pulsar-mq")]
@@ -133,7 +132,8 @@ impl Pool for PulsarSearchProducerPool {
             .build()
             .await?;
         Ok(connection)
-=======
+    }
+}
 #[derive(Database)]
 #[database("minio")]
 pub struct MinioImageStorage(MinioImagePool);
@@ -202,6 +202,5 @@ impl Pool for MinioImagePool {
 
     async fn get(&self) -> Result<Self::Connection, Self::Error> {
         Ok(self.connection.clone())
->>>>>>> backend
     }
 }

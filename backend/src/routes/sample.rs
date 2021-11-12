@@ -11,6 +11,7 @@ use uuid::Uuid;
 use crate::db;
 use crate::pool::{PgDb, PulsarSearchProducerMq, RedisDb};
 use crate::req::user::*;
+use crate::req::pulsar_msg::*;
 use crate::utils::sso::{self, AuthTokenError, SsoAuth, ValidToken};
 
 use chrono::Local;
