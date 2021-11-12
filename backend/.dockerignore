@@ -1,4 +1,5 @@
 conf
+!conf/log4rs.yml
 data
 target
 .git

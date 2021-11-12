@@ -1,0 +1,63 @@
+version: '3'
+
+services:
+
+  db:
+    image: postgres
+    container_name: postgres_container
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: pgdb 
+    volumes:
+      - ./data/pg-data:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+
+  pgadmin:
+    container_name: pgadmin_container
+    image: dpage/pgadmin4
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-pgadmin4@pgadmin.org}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    depends_on:
+      - db
+    volumes:
+        - ./data/pgadmin:/var/lib/pgadmin
+    links:
+      - "db:database"
+    ports:
+      - "${PGADMIN_PORT:-8080}:80"
+
+  minio:
+    image: quay.io/minio/minio
+    restart: unless-stopped
+    container_name: minio_container
+    ports:
+      - "9000:9000"
+      - "9011:9001"
+    volumes:
+      - ./data/minio-data:/data      
+    environment:
+      MINIO_ROOT_USER: ${MINIO_USER:-minio}
+      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD:-miniopassword}
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  redis:
+    image: eqalpha/keydb:latest
+    restart: unless-stopped
+    container_name: redis_container
+    ports:
+      - "6300:6379"
+    volumes:
+      - ./conf/keydb_conf/keydb.conf:/etc/keydb/keydb.conf
+      - ./data/keydb-data:/data   
+    command: keydb-server --requirepass keypassword
+    privileged: true

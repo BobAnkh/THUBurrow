@@ -10,16 +10,17 @@ services:
     depends_on:
       - pgdb
       - keydb
+      - minio
+      - typesense
     expose:
       - "8000"
     networks:
       innerdb:
-        aliases:
-          - backend
       proxy:
       messagequeue:
+      miniostorage:
     environment:
-      ROCKET_DATABASES: '{pgdb={url=postgres://postgres:${PG_PASSWORD:-postgres}@pgdb:5432/${PG_DB:-pgdb}},keydb={url=redis://:${KEYDB_PASSWORD}@keydb:6379}}'
+      ROCKET_DATABASES: '{pgdb={url=postgres://postgres:${PG_PASSWORD:-postgres}@pgdb:5432/${PG_DB:-pgdb}},keydb={url=redis://:${KEYDB_PASSWORD}@keydb:6379},minio={url=minio://${MINIO_USER:-minio}:${MINIO_PASSWORD:-miniopassword}@minio:9000}}'
       ROCKET_SECRET_KEY: ${ROCKET_SECRET_KEY}
       ROCKET_ADDRESS: "0.0.0.0"
       VIRTUAL_HOST: ${BACKEND_HOST}
@@ -72,28 +73,52 @@ services:
         aliases:
           - pulsar
 
-  # pulsar-manager:
-  #   image: apachepulsar/pulsar-manager:v0.2.0
-  #   container_name: pulsar_manager_container
-  #   expose:
-  #     - "7750"
-  #     - "9527"
-  #   restart: unless-stopped
-  #   depends_on:
-  #     - pulsar
-  #   environment:
-  #     SPRING_CONFIGURATION_FILE: /pulsar-manager/pulsar-manager/application.properties
-  #     VIRTUAL_HOST: ${PULSAR_MANAGE_HOST}
-  #     VIRTUAL_PORT: 9527
-  #   networks:
-  #     messagequeue:
-  #     proxy:
+  minio:
+    image: quay.io/minio/minio
+    restart: unless-stopped
+    container_name: minio_container
+    expose:
+      - "9000"
+      - "9001"
+    volumes:
+      - ./data/minio-data:/data
+    networks:
+      miniostorage:
+        aliases:
+          - minio
+    environment:
+      MINIO_ROOT_USER: ${MINIO_USER:-minio}
+      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD:-miniopassword}
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  typesense:
+    image: typesense/typesense:0.21.0
+    container_name: typesense_container
+    restart: unless-stopped
+    environment:
+      TYPESENSE_API_KEY: ${TYPESENSE_API_KEY:-8Dz4jRrsBjYgdCD/VGP1bleph7oBThJr5IcF43l0U24=}
+      TYPESENSE_DATA_DIR: "/data"
+    depends_on:
+      - pulsar
+    expose:
+      - "8108"
+    volumes:
+      - ./data/typesense-data:/data
+    networks:
+      messagequeue:
 
 networks:
   innerdb:
     name: innerdb
   messagequeue:
     name: messagequeue
+  miniostorage:
+    name: miniostorage
   proxy:
     name: proxy
     external: true

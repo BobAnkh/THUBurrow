@@ -17,7 +17,7 @@ rocket = { git = "https://github.com/SergioBenitez/Rocket", branch = "master", f
 rocket_db_pools = { git = "https://github.com/SergioBenitez/Rocket", branch = "master", features = [
     "sqlx_postgres",
 ] }
-sea-orm = { version = "0.2", features = [
+sea-orm = { version = "0.3", features = [
     "sqlx-postgres",
     "runtime-tokio-rustls",
     "macros",
@@ -31,7 +31,16 @@ deadpool-redis = { version = "0.10.0", features = ["rt_tokio_1", "serde"] }
 redis = { version = "0.21"}
 idgenerator = "1.2.0"
 rocket_cors = { git = "https://github.com/BobAnkh/rocket_cors.git", branch = "master"}
+<<<<<<< HEAD
 pulsar = "4.1.1"
 futures = "0.3"
 tokio = { version = "1.0", features = ["macros", "rt-multi-thread"] }
 reqwest = { version = "0.11", features = ["json"] }
+=======
+rust-s3 = "0.27.0"
+log4rs = "1.0.0"
+rand = "0.8.4"
+time = "0.3.4"
+regex = "1.5.4"
+lazy_static = "1.4.0"
+>>>>>>> backend

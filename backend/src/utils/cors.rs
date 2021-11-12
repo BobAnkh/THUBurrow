@@ -1,18 +1,16 @@
 use rocket_cors::{AllowedOrigins, Cors};
 
 pub fn init() -> Cors {
-    let allowed_origins = AllowedOrigins::some_exact(&[
-        "https://api.thuburrow.com",
-        "https://thuburrow.com",
-        "https://search.thurrow.com",
-        "https://static.thuburrow.com",
-    ]);
+    let allowed_origins = AllowedOrigins::some(
+        &["https://thuburrow.com"],
+        &["^https://(.+).thuburrow.com$"],
+    );
 
     // You can also deserialize this
     let cors = rocket_cors::CorsOptions {
         allowed_origins,
         allow_credentials: true,
-        max_age: Some(1728000),
+        max_age: Some(3600),
         ..Default::default()
     }
     .to_cors();
