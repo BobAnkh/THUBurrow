@@ -17,7 +17,6 @@ async fn initialize_typesense() -> Result<reqwest::Client, reqwest::Error> {
         {"name": "id", "type": "int64"},
         {"name": "title", "type": "string" },
         {"name": "introduction", "type": "string"},
-        {"name": "owner_id", "type": "int32"},
         {"name": "created_time", "type": "int64"},
         {"name": "last_modified_time", "type": "int64"}
       ]
@@ -26,10 +25,11 @@ async fn initialize_typesense() -> Result<reqwest::Client, reqwest::Error> {
       "name": "posts",
       "fields": [
         {"name": "id", "type": "int64" },
+        {"name": "title", "type": "string" },
         {"name": "burrow_id", "type": "int64" },
-        {"name": "owner_id", "type": "int32"},
         {"name": "created_time", "type": "int64"},
         {"name": "last_modified_time", "type": "int64"},
+        {"name": "post_type", "type": "int32"},
         {"name": "tag", "type": "string[]"}
       ]
     });
@@ -38,25 +38,15 @@ async fn initialize_typesense() -> Result<reqwest::Client, reqwest::Error> {
       "fields": [
         {"name": "id", "type": "int32" },
         {"name": "post_id", "type": "int64"},
-        {"name": "owner_id", "type": "int32"},
-        {"name": "to_whom", "type": "int32"},
         {"name": "created_time", "type": "int64"},
         {"name": "content", "type": "string"}
-      ]
-    });
-    let collection_tags = json!({
-      "name": "tags",
-      "fields": [
-        {"name": "tag_name", "type": "string" },
-        {"name": "posts", "type": "int64[]" },
       ]
     });
     let client = reqwest::Client::new();
     for each in [
         collection_burrows,
         collection_posts,
-        collection_replies,
-        collection_tags,
+        collection_replies
     ]
     .iter()
     {

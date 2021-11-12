@@ -22,33 +22,29 @@ pub struct TestData {
     pub operation_level: OperationLevel, //("burrow","post", "reply")
     pub operation_time: i64,
     pub data: serde_json::Value,
-    /*
-    Json format for Testdata.data:
+    // Json format for Testdata.data:
 
-        new burrow:
-                {
-                    "id": i64,
-                    "title": string,
-                    "introduction": string,
-                    "owner_id": i32
-                }
-        new post:
-                {
-                    "id": i64,
-                    "burrow_id": i64,
-                    "owner_id": i32,
-                    "tags": string[]
-                }
-        new reply:
-                {
-                    "id": i64
-                    "post_id": i64,
-                    "owner_id": i32,
-                    "to_whom": i32,
-                    "content": string
-                }
+    //     new burrow:
+    //             {
+    //                 "id": i64,
+    //                 "title": string,
+    //                 "introduction": string,
+    //             }
+    //     new post:
+    //             {
+    //                 "id": i64,
+    //                 "title": string,
+    //                 "burrow_id": i64,
+    //                 "tags": string[],
+    //                 "post_type": int32
+    //             }
+    //     new reply:
+    //             {
+    //                 "id": i64
+    //                 "post_id": i64,
+    //                 "content": string
+    //             }
 
-    */
 }
 
 impl SerializeMessage for TestData {
