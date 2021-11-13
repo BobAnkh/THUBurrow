@@ -40,7 +40,7 @@ pub async fn create_user_table(db: &DbConn) -> Result<ExecResult, DbErr> {
         )
         .col(ColumnDef::new(pgdb::user::Column::Email).text().not_null())
         .col(
-            ColumnDef::new(pgdb::user::Column::CreatedAt)
+            ColumnDef::new(pgdb::user::Column::CreateTime)
                 .timestamp_with_time_zone()
                 .not_null(),
         )
@@ -89,12 +89,12 @@ pub async fn create_image_table(db: &DbConn) -> Result<ExecResult, DbErr> {
                 .not_null(),
         )
         .col(
-            ColumnDef::new(pgdb::image::Column::CreatedAt)
+            ColumnDef::new(pgdb::image::Column::CreateTime)
                 .timestamp_with_time_zone()
                 .not_null(),
         )
         .col(
-            ColumnDef::new(pgdb::image::Column::LastDownloadedAt)
+            ColumnDef::new(pgdb::image::Column::LastDownloadTime)
                 .timestamp_with_time_zone()
                 .not_null(),
         )

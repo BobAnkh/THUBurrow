@@ -117,7 +117,7 @@ pub async fn user_sign_up(
             username: Set(user.username.to_string()),
             password: Set(password),
             email: Set(user.email.to_string()),
-            created_at: Set(Utc::now().with_timezone(&FixedOffset::east(8 * 3600))),
+            create_time: Set(Utc::now().with_timezone(&FixedOffset::east(8 * 3600))),
             salt: Set(salt),
         };
         // insert the row in database

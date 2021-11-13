@@ -9,8 +9,8 @@ pub struct Model {
     pub filename: String,
     pub user_id: i64,
     pub size: i32,
-    pub created_at: DateTimeWithTimeZone,
-    pub last_downloaded_at: DateTimeWithTimeZone,
+    pub create_time: DateTimeWithTimeZone,
+    pub last_download_time: DateTimeWithTimeZone,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter)]

@@ -13,7 +13,7 @@ pub struct Model {
     pub password: String,
     #[sea_orm(column_type = "Text")]
     pub email: String,
-    pub created_at: DateTimeWithTimeZone,
+    pub create_time: DateTimeWithTimeZone,
     #[sea_orm(column_type = "Text")]
     pub salt: String,
 }

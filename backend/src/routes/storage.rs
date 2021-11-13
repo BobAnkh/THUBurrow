@@ -53,8 +53,8 @@ async fn upload_image(
                 filename: Set(filename.to_owned()),
                 user_id: Set(auth.id),
                 size: Set(image_size),
-                created_at: Set(now.to_owned()),
-                last_downloaded_at: Set(now),
+                create_time: Set(now.to_owned()),
+                last_download_time: Set(now),
             };
             match record.insert(&db.into_inner()).await {
                 Ok(_) => {
@@ -88,7 +88,7 @@ async fn download_image(
             match Image::find_by_id(filename.to_string()).one(&pg_con).await {
                 Ok(Some(r)) => {
                     let mut record: image::ActiveModel = r.into();
-                    record.last_downloaded_at =
+                    record.last_download_time =
                         Set(Utc::now().with_timezone(&FixedOffset::east(8 * 3600)));
                     let _ = record.update(&pg_con).await;
                 }
