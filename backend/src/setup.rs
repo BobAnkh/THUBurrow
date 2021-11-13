@@ -4,14 +4,18 @@ use rocket::{fairing, Build, Rocket};
 use rocket_db_pools::Database;
 use sea_orm::query::ConnectionTrait;
 use sea_orm::sea_query::{ColumnDef, Index, PostgresQueryBuilder, SchemaStatementBuilder};
-use sea_orm::{error::*, sea_query, DbConn, ExecResult, query::Statement};
+use sea_orm::{error::*, query::Statement, sea_query, DbConn, ExecResult};
 
 async fn build_statement<T>(db: &DbConn, stmt: &T) -> Result<ExecResult, DbErr>
 where
     T: SchemaStatementBuilder,
 {
     let builder = db.get_database_backend();
-    db.execute(Statement::from_string(builder, stmt.build(PostgresQueryBuilder))).await
+    db.execute(Statement::from_string(
+        builder,
+        stmt.build(PostgresQueryBuilder),
+    ))
+    .await
 }
 
 pub async fn create_user_table(db: &DbConn) -> Result<ExecResult, DbErr> {

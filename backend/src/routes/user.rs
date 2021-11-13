@@ -55,8 +55,7 @@ pub async fn user_sign_up(
     // get user info from request
     let user = user_info.into_inner();
     // check if email address is valid, add corresponding error if so
-    let split_email: Vec<&str> = user.email.split('@').collect();
-    if !MAILS.is_match(user.email) || split_email.len() != 2 {
+    if !MAILS.is_match(user.email) || user.email.split('@').count() != 2 {
         return (
             Status::BadRequest,
             Json(UserResponse {
