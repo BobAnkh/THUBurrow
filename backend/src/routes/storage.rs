@@ -8,7 +8,7 @@ use crypto::digest::Digest;
 use crypto::md5::Md5;
 use sea_orm::{entity::*, ActiveModelTrait};
 
-use crate::pgdb::image::{self, Entity as Image};
+use crate::pgdb::image;
 use crate::pool::{MinioImageStorage, PgDb};
 use crate::req::storage::{ReferrerCheck, SaveImage};
 
@@ -84,21 +84,14 @@ async fn download_image(
     let (data, code) = bucket.get_object(filename).await.unwrap();
     match code {
         200 => {
+            // update last download time
             let pg_con = db.into_inner();
-            match Image::find_by_id(filename.to_string()).one(&pg_con).await {
-                Ok(Some(r)) => {
-                    let mut record: image::ActiveModel = r.into();
-                    record.last_download_time =
-                        Set(Utc::now().with_timezone(&FixedOffset::east(8 * 3600)));
-                    let _ = record.update(&pg_con).await;
-                }
-                Ok(_) => {
-                    log::warn!("[Image-Storage] Database error");
-                }
-                Err(e) => {
-                    log::warn!("[Image-Storage] Database error {}", e);
-                }
-            }
+            let record = image::ActiveModel {
+                filename: Set(filename.to_owned()),
+                last_download_time: Set(Utc::now().with_timezone(&FixedOffset::east(8 * 3600))),
+                ..Default::default()
+            };
+            let _ = record.update(&pg_con).await;
             Ok(data)
         }
         _ => Err(status::NotFound(format!("Error code: {}", code))),
