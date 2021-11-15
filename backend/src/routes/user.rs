@@ -48,7 +48,7 @@ pub async fn user_sign_up(
     // get user info from request
     let user = user_info.into_inner();
     // check if email address is valid, add corresponding error if so
-    if email::check_email_syntax(user.email) == false {
+    if !email::check_email_syntax(user.email) {
         return (
             Status::BadRequest,
             Json(UserResponse {

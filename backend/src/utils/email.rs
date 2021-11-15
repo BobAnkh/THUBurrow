@@ -52,7 +52,7 @@ pub async fn check_email_exist(email_address: &str) -> (bool, String) {
     }
     match result.misc {
         Ok(ref misc) => {
-            if misc.is_disposable == true || misc.is_role_account == true {
+            if misc.is_disposable || misc.is_role_account {
                 return (false, "Misc Invalid".to_string());
             }
         }
@@ -62,10 +62,10 @@ pub async fn check_email_exist(email_address: &str) -> (bool, String) {
     }
     match result.smtp {
         Ok(ref smtp) => {
-            if smtp.can_connect_smtp == false
-                || smtp.has_full_inbox == true
-                || smtp.is_deliverable == false
-                || smtp.is_disabled == true
+            if !smtp.can_connect_smtp
+                || smtp.has_full_inbox
+                || !smtp.is_deliverable
+                || smtp.is_disabled
             {
                 return (false, "Smtp Unreachable".to_string());
             }
@@ -79,12 +79,8 @@ pub async fn check_email_exist(email_address: &str) -> (bool, String) {
 
 pub fn check_email_syntax(email_address: &str) -> bool {
     let syntax_result = check_syntax(email_address);
-    if syntax_result.is_valid_syntax == true {
-        if MAIL_DOMAINS.contains(&syntax_result.domain) {
-            true
-        } else {
-            false
-        }
+    if syntax_result.is_valid_syntax {
+        MAIL_DOMAINS.contains(&syntax_result.domain)
     } else {
         false
     }
