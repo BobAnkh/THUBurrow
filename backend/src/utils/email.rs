@@ -26,7 +26,7 @@ pub async fn check_email_exist(email_address: &str) -> (bool, String) {
     };
     if result.is_reachable == Reachable::Invalid
         || result.is_reachable == Reachable::Unknown
-        || result.syntax.is_valid_syntax == false
+        || !result.syntax.is_valid_syntax
     {
         return (false, "Email Address not Exists".to_string());
     }
