@@ -11,6 +11,7 @@ use crate::pgdb;
 use crate::pgdb::user::Entity as User;
 use crate::pool::{PgDb, RedisDb};
 use crate::req::user::*;
+use crate::utils::email;
 
 use crypto::digest::Digest;
 use crypto::sha3::Sha3;
@@ -22,14 +23,6 @@ use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 
 use chrono::{FixedOffset, Utc};
-
-use lazy_static::lazy_static;
-use regex::RegexSet;
-
-lazy_static! {
-    static ref MAILS: RegexSet =
-        RegexSet::new(&[r"mail\.tsinghua\.edu\.cn$", r"mails\.tsinghua\.edu\.cn$"]).unwrap();
-}
 
 pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
     rocket.mount("/users", routes![user_log_in, user_sign_up])
@@ -55,7 +48,7 @@ pub async fn user_sign_up(
     // get user info from request
     let user = user_info.into_inner();
     // check if email address is valid, add corresponding error if so
-    if !MAILS.is_match(user.email) || user.email.split('@').count() != 2 {
+    if !email::check_email_syntax(user.email) {
         return (
             Status::BadRequest,
             Json(UserResponse {
