@@ -218,10 +218,12 @@ dependencies = [
  "deadpool",
  "deadpool-redis",
  "idgenerator",
+ "lazy_static",
  "log",
  "log4rs",
  "rand 0.8.4",
  "redis",
+ "regex",
  "rocket",
  "rocket_cors",
  "rocket_db_pools",
@@ -230,6 +232,7 @@ dependencies = [
  "sea-orm",
  "serde",
  "serde_json",
+ "time 0.3.4",
  "uuid",
 ]
 
@@ -353,7 +356,7 @@ dependencies = [
  "rand 0.8.4",
  "sha2",
  "subtle",
- "time 0.3.3",
+ "time 0.3.4",
  "version_check",
 ]
 
@@ -1863,7 +1866,7 @@ dependencies = [
  "serde_json",
  "state",
  "tempfile",
- "time 0.3.3",
+ "time 0.3.4",
  "tokio",
  "tokio-stream",
  "tokio-util",
@@ -1943,7 +1946,7 @@ dependencies = [
  "smallvec",
  "stable-pattern",
  "state",
- "time 0.3.3",
+ "time 0.3.4",
  "tokio",
  "uncased",
  "uuid",
@@ -2582,9 +2585,9 @@ dependencies = [
 
 [[package]]
 name = "time"
-version = "0.3.3"
+version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cde1cf55178e0293453ba2cca0d5f8392a922e52aa958aee9c28ed02becc6d03"
+checksum = "99beeb0daeac2bd1e86ac2c21caddecb244b39a093594da1a661ec2060c7aedd"
 dependencies = [
  "itoa",
  "libc",
