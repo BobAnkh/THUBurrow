@@ -1,3 +1,4 @@
+use chrono::{FixedOffset, Utc};
 use rocket::http::{Cookie, CookieJar, SameSite};
 use rocket::serde::json::Json;
 use rocket::{Build, Rocket};
@@ -11,6 +12,7 @@ use crate::pgdb;
 use crate::pgdb::user::Entity as User;
 use crate::pool::{PgDb, RedisDb};
 use crate::req::user::*;
+use crate::utils::sso;
 
 use crypto::digest::Digest;
 use crypto::sha3::Sha3;
@@ -21,8 +23,6 @@ use idgenerator::IdHelper;
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 
-use chrono::{FixedOffset, Utc};
-
 use lazy_static::lazy_static;
 use regex::RegexSet;
 
@@ -32,7 +32,11 @@ lazy_static! {
 }
 
 pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
-    rocket.mount("/users", routes![user_log_in, user_sign_up])
+    rocket.mount("/users", routes![
+        user_log_in,
+        user_sign_up,
+        get_burrow,
+    ])
 }
 
 pub async fn gen_salt() -> String {
@@ -111,25 +115,43 @@ pub async fn user_sign_up(
         let password = hash_sha3.result_str();
         // generate uid
         let uid: i64 = IdHelper::next_id();
-        // fill the row
+        // fill the row of table 'user' and 'user_status'
+        let create_time = Utc::now().with_timezone(&FixedOffset::east(8 * 3600));
         let users = pgdb::user::ActiveModel {
             uid: Set(uid.to_owned()),
             username: Set(user.username.to_string()),
             password: Set(password),
             email: Set(user.email.to_string()),
-            create_time: Set(Utc::now().with_timezone(&FixedOffset::east(8 * 3600))),
+            create_time: Set(create_time),
             salt: Set(salt),
         };
-        // insert the row in database
-        let ins_result = users.insert(&pg_con).await;
-        match ins_result {
-            Ok(res) => {
-                info!(
-                    "[SIGN-UP] User signup Succ, save user: {}",
-                    res.uid.unwrap()
-                );
-                (Status::Ok, Json(UserResponse { errors }))
-            }
+        let users_status = pgdb::user_status::ActiveModel {
+            uid: Set(uid.to_owned()),
+            modified_time: Set(create_time),
+            ..Default::default()
+        };
+        // insert rows in database
+        let ins_user_result = users.insert(&pg_con).await;
+        match ins_user_result {
+            Ok(_) => {
+                let ins_user_status_result = users_status.insert(&pg_con).await;
+                match ins_user_status_result {
+                    Ok(res) => {
+                        info!(
+                            "[SIGN-UP] User signup Succ, save user: {}",
+                            res.uid.unwrap()
+                        );
+                        (Status::Ok, Json(UserResponse { errors }))
+                    },
+                    Err(e) => {
+                        error!("[SIGN-UP] Database error: {:?}", e.to_string());
+                        (
+                            Status::InternalServerError,
+                            Json(UserResponse { errors: Vec::new() }),
+                        )
+                    },
+                }
+            },
             _ => (
                 Status::InternalServerError,
                 Json(UserResponse { errors: Vec::new() }),
@@ -292,4 +314,12 @@ pub async fn user_log_in(
         },
         _ => (Status::InternalServerError, "".to_string()),
     }
+}
+
+#[get("/burrow")]
+pub async fn get_burrow(
+    db: Connection<PgDb>,
+    sso: sso::SsoAuth,
+) -> (Status, Option<Json<UserGetBurrowResponse>>) {
+    (Status::Ok, None)
 }
