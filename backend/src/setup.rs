@@ -18,6 +18,22 @@ where
     .await
 }
 
+pub async fn postgres_table_setup(rocket: Rocket<Build>) -> fairing::Result {
+    let conn = &PgDb::fetch(&rocket).unwrap().connection;
+    let _ = create_user_table(conn).await;
+    let _ = create_image_table(conn).await;
+    let _ = create_user_index_username(conn).await;
+    let _ = create_user_index_email(conn).await;
+    let _ = create_content_post_table(conn).await;
+    let t = create_content_reply_table(conn).await;
+    match t {
+        Ok(_) => {},
+        Err(e) => {println!("{}", e);}
+    }
+    // let _ = alter_image_table(conn).await;
+    Ok(rocket)
+}
+
 pub async fn create_user_table(db: &DbConn) -> Result<ExecResult, DbErr> {
     let stmt = sea_query::Table::create()
         .table(pgdb::user::Entity)
@@ -116,12 +132,117 @@ pub async fn create_image_table(db: &DbConn) -> Result<ExecResult, DbErr> {
 //     build_statement(db, &stmt).await
 // }
 
-pub async fn user_table_setup(rocket: Rocket<Build>) -> fairing::Result {
-    let conn = &PgDb::fetch(&rocket).unwrap().connection;
-    let _ = create_user_table(conn).await;
-    let _ = create_image_table(conn).await;
-    let _ = create_user_index_username(conn).await;
-    let _ = create_user_index_email(conn).await;
-    // let _ = alter_image_table(conn).await;
-    Ok(rocket)
+pub async fn create_content_post_table(db: &DbConn) -> Result<ExecResult, DbErr> {
+    let stmt = sea_query::Table::create()
+        .table(pgdb::content_post::Entity)
+        .if_not_exists()
+        .col(
+            ColumnDef::new(pgdb::content_post::Column::PostId)
+                .extra("bigserial".to_string())
+                .not_null()
+                .primary_key(),
+        )
+        .col(
+            ColumnDef::new(pgdb::content_post::Column::Title)
+                .text()
+                .not_null(),
+        )
+        .col(
+            ColumnDef::new(pgdb::content_post::Column::BurrowId)
+                .big_integer()
+                .not_null(),
+        )
+        .col(
+            ColumnDef::new(pgdb::content_post::Column::CreateTime)
+                .timestamp_with_time_zone()
+                .not_null(),
+        )
+        .col(
+            ColumnDef::new(pgdb::content_post::Column::LastModifyTime)
+                .timestamp_with_time_zone()
+                .not_null(),
+        )
+        .col(
+            ColumnDef::new(pgdb::content_post::Column::Section)
+                .text()
+                .not_null(),
+        )
+        .col(
+            ColumnDef::new(pgdb::content_post::Column::Tag)
+                .text()
+                .not_null(),
+        )
+        .col(
+            ColumnDef::new(pgdb::content_post::Column::PostLen)
+                .integer()
+                .not_null()
+                .default(1),
+        )
+        .col(
+            ColumnDef::new(pgdb::content_post::Column::PostState)
+                .small_integer()
+                .not_null()
+                .default(0),
+        )
+        .col(
+            ColumnDef::new(pgdb::content_post::Column::FavoriteNum)
+                .integer()
+                .not_null()
+                .default(0),
+        )
+        .col(
+            ColumnDef::new(pgdb::content_post::Column::CollectionNum)
+                .integer()
+                .not_null()
+                .default(0),
+        )
+        .to_owned();
+    // println!("user table: {}", stmt.to_string(PostgresQueryBuilder));
+    build_statement(db, &stmt).await
+}
+
+pub async fn create_content_reply_table(db: &DbConn) -> Result<ExecResult, DbErr> {
+    let stmt = sea_query::Table::create()
+        .table(pgdb::content_reply::Entity)
+        .if_not_exists()
+        .col(
+            ColumnDef::new(pgdb::content_reply::Column::PostId)
+                .big_integer()
+                .not_null(),
+        )
+        .col(
+            ColumnDef::new(pgdb::content_reply::Column::ReplyId)
+                .integer()
+                .not_null(),
+        )
+        .col(
+            ColumnDef::new(pgdb::content_reply::Column::BurrowId)
+                .big_integer()
+                .not_null(),
+        )
+        .col(
+            ColumnDef::new(pgdb::content_reply::Column::CreateTime)
+                .timestamp_with_time_zone()
+                .not_null(),
+        )
+        .col(
+            ColumnDef::new(pgdb::content_reply::Column::LastModifyTime)
+                .timestamp_with_time_zone()
+                .not_null(),
+        )
+        .col(
+            ColumnDef::new(pgdb::content_reply::Column::Content)
+                .text()
+                .not_null(),
+        )
+        .col(
+            ColumnDef::new(pgdb::content_reply::Column::ReplyState)
+                .small_integer()
+                .not_null()
+                .default(0),
+        )
+        .primary_key(Index::create().col(pgdb::content_reply::Column::PostId).col(pgdb::content_reply::Column::ReplyId))
+        .to_owned();
+    println!("user table: {}", stmt.to_string(PostgresQueryBuilder));
+    build_statement(db, &stmt).await
 }

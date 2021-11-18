@@ -2,7 +2,7 @@
 
 pub mod prelude;
 
+pub mod content_post;
 pub mod content_reply;
-pub mod content_subject;
 pub mod image;
 pub mod user;
