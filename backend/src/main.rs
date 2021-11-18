@@ -32,5 +32,7 @@ fn rocket() -> _ {
         .attach(MinioImageStorage::init())
         .attach(AdHoc::on_ignite("mount_user", sample::init))
         .attach(AdHoc::on_ignite("mount_routes", routes::routes_init))
-        .attach(AdHoc::try_on_ignite("Migrations", setup::user_table_setup))
+        .attach(AdHoc::try_on_ignite("setup_users", setup::user_table_setup))
+        .attach(AdHoc::try_on_ignite("setup_burrows", setup::burrow_table_setup))
+        .attach(AdHoc::try_on_ignite("setup_junctions", setup::junction_table_setup))
 }

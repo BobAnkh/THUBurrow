@@ -1,4 +1,4 @@
-use rocket::http::{Cookie, CookieJar, SameSite};
+use rocket::http::{Cookie, CookieJar, SameSite, Status};
 use rocket::response::status;
 use rocket::serde::json::Json;
 use rocket::Request;
@@ -12,6 +12,7 @@ use crate::db;
 use crate::pool::{PgDb, RedisDb};
 use crate::req::user::*;
 use crate::utils::sso::{self, AuthTokenError, SsoAuth, ValidToken};
+use crate::routes::burrow;
 
 use chrono::Local;
 use crypto::digest::Digest;
@@ -33,7 +34,8 @@ pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
                 redis_read,
                 auth_name,
                 auth_new,
-                sso_test
+                sso_test,
+                get_valid_burrow_test,
             ],
         )
         .register(
@@ -223,4 +225,16 @@ async fn user_sign_up(
     println!("{}", res.token.unwrap().unwrap());
     // return the response
     Json(res.uuid.unwrap())
+}
+
+#[get("/test/valid_burrow/<id>")]
+pub async fn get_valid_burrow_test(
+    id: i64,
+    db: Connection<PgDb>,
+) -> (Status, Json<Vec<i64>>) {
+    let conn = db.into_inner();
+    match burrow::get_valid_burrow(conn, id).await {
+        Ok(res) => (Status::Ok, Json(res)),
+        _ => (Status::InternalServerError, Json(Vec::new())),
+    }
 }

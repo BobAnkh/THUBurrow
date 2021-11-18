@@ -25,3 +25,11 @@ pub struct UserLoginInfo<'r> {
 pub struct UserResponse {
     pub errors: Vec<String>,
 }
+
+#[derive(Serialize, Deserialize)]
+pub struct UserGetBurrowResponse {
+    pub id: i64,
+    pub name: Option<String>,
+    pub description: Option<String>,
+    pub post_num: i64,
+}

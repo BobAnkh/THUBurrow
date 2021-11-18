@@ -4,3 +4,6 @@ pub mod prelude;
 
 pub mod image;
 pub mod user;
+pub mod burrow;
+pub mod user_status;
+pub mod favorite;
