@@ -112,9 +112,12 @@ async fn is_valid<'r>(
                                 Ok(_) => {
                                     // set cookie to the new token
                                     let cookie = Cookie::build("token", new_token)
-                                        .domain("thuburrow.com")
+                                        .domain(".thuburrow.com")
                                         .path("/")
-                                        .same_site(SameSite::None)
+                                        .same_site(SameSite::Strict)
+                                        .secure(true)
+                                        .http_only(true)
+                                        .max_age(time::Duration::weeks(1))
                                         .finish();
                                     request.cookies().add_private(cookie);
                                     info!("[SSO] set new_token -> id");

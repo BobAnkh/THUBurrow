@@ -1,7 +1,10 @@
 conf
+!conf/log4rs.yml
 data
 target
+log
 .git
 .env
 .env.sample
+.editorconfig
 docker-compose*

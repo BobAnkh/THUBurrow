@@ -10,6 +10,8 @@ services:
     depends_on:
       - pgdb
       - keydb
+      - minio
+      - typesense
     expose:
       - "8000"
     networks:
@@ -17,6 +19,8 @@ services:
       proxy:
       messagequeue:
       miniostorage:
+    volumes:
+      - ./conf/log4rs.yml:/etc/backend/conf/log4rs.yml:ro
     environment:
       ROCKET_DATABASES: '{pgdb={url=postgres://postgres:${PG_PASSWORD:-postgres}@pgdb:5432/${PG_DB:-pgdb}},keydb={url=redis://:${KEYDB_PASSWORD}@keydb:6379},minio={url=minio://${MINIO_USER:-minio}:${MINIO_PASSWORD:-miniopassword}@minio:9000}}'
       ROCKET_SECRET_KEY: ${ROCKET_SECRET_KEY}
@@ -71,23 +75,6 @@ services:
         aliases:
           - pulsar
 
-  # pulsar-manager:
-  #   image: apachepulsar/pulsar-manager:v0.2.0
-  #   container_name: pulsar_manager_container
-  #   expose:
-  #     - "7750"
-  #     - "9527"
-  #   restart: unless-stopped
-  #   depends_on:
-  #     - pulsar
-  #   environment:
-  #     SPRING_CONFIGURATION_FILE: /pulsar-manager/pulsar-manager/application.properties
-  #     VIRTUAL_HOST: ${PULSAR_MANAGE_HOST}
-  #     VIRTUAL_PORT: 9527
-  #   networks:
-  #     messagequeue:
-  #     proxy:
-
   minio:
     image: quay.io/minio/minio
     restart: unless-stopped
@@ -110,6 +97,22 @@ services:
       interval: 30s
       timeout: 20s
       retries: 3
+
+  typesense:
+    image: typesense/typesense:0.21.0
+    container_name: typesense_container
+    restart: unless-stopped
+    environment:
+      TYPESENSE_API_KEY: ${TYPESENSE_API_KEY:-8Dz4jRrsBjYgdCD/VGP1bleph7oBThJr5IcF43l0U24=}
+      TYPESENSE_DATA_DIR: "/data"
+    depends_on:
+      - pulsar
+    expose:
+      - "8108"
+    volumes:
+      - ./data/typesense-data:/data
+    networks:
+      messagequeue:
 
 networks:
   innerdb:
