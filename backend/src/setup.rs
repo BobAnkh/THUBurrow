@@ -25,11 +25,15 @@ pub async fn postgres_table_setup(rocket: Rocket<Build>) -> fairing::Result {
     let _ = create_user_index_username(conn).await;
     let _ = create_user_index_email(conn).await;
     let _ = create_content_post_table(conn).await;
-    let t = create_content_reply_table(conn).await;
-    match t {
-        Ok(_) => {},
-        Err(e) => {println!("{}", e);}
-    }
+    let _ = create_content_reply_table(conn).await;
+    let _ = create_user_like_table(conn).await;
+    let _ = create_user_collection_table(conn).await;
+    // match t {
+    //     Ok(_) => {}
+    //     Err(e) => {
+    //         println!("{}", e);
+    //     }
+    // }
     // let _ = alter_image_table(conn).await;
     Ok(rocket)
 }
@@ -185,7 +189,7 @@ pub async fn create_content_post_table(db: &DbConn) -> Result<ExecResult, DbErr>
                 .default(0),
         )
         .col(
-            ColumnDef::new(pgdb::content_post::Column::FavoriteNum)
+            ColumnDef::new(pgdb::content_post::Column::LikeNum)
                 .integer()
                 .not_null()
                 .default(0),
@@ -241,8 +245,58 @@ pub async fn create_content_reply_table(db: &DbConn) -> Result<ExecResult, DbErr
                 .not_null()
                 .default(0),
         )
-        .primary_key(Index::create().col(pgdb::content_reply::Column::PostId).col(pgdb::content_reply::Column::ReplyId))
+        .primary_key(
+            Index::create()
+                .col(pgdb::content_reply::Column::PostId)
+                .col(pgdb::content_reply::Column::ReplyId),
+        )
         .to_owned();
-    println!("user table: {}", stmt.to_string(PostgresQueryBuilder));
+    // println!("user table: {}", stmt.to_string(PostgresQueryBuilder));
+    build_statement(db, &stmt).await
+}
+
+pub async fn create_user_like_table(db: &DbConn) -> Result<ExecResult, DbErr> {
+    let stmt = sea_query::Table::create()
+        .table(pgdb::user_like::Entity)
+        .if_not_exists()
+        .col(
+            ColumnDef::new(pgdb::user_like::Column::Uid)
+                .big_integer()
+                .not_null(),
+        )
+        .col(
+            ColumnDef::new(pgdb::user_like::Column::PostId)
+                .integer()
+                .not_null(),
+        )
+        .primary_key(
+            Index::create()
+                .col(pgdb::user_like::Column::Uid)
+                .col(pgdb::user_like::Column::PostId),
+        )
+        .to_owned();
+    build_statement(db, &stmt).await
+}
+
+pub async fn create_user_collection_table(db: &DbConn) -> Result<ExecResult, DbErr> {
+    let stmt = sea_query::Table::create()
+        .table(pgdb::user_collection::Entity)
+        .if_not_exists()
+        .col(
+            ColumnDef::new(pgdb::user_collection::Column::Uid)
+                .big_integer()
+                .not_null(),
+        )
+        .col(
+            ColumnDef::new(pgdb::user_collection::Column::PostId)
+                .integer()
+                .not_null(),
+        )
+        .primary_key(
+            Index::create()
+                .col(pgdb::user_collection::Column::Uid)
+                .col(pgdb::user_collection::Column::PostId),
+        )
+        .to_owned();
     build_statement(db, &stmt).await
 }

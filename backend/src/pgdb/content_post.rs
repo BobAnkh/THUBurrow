@@ -18,7 +18,7 @@ pub struct Model {
     pub tag: String,
     pub post_len: i32,
     pub post_state: i16,
-    pub favorite_num: i32,
+    pub like_num: i32,
     pub collection_num: i32,
 }
 
