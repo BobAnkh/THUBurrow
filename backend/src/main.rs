@@ -37,5 +37,8 @@ fn rocket() -> _ {
         .attach(MinioImageStorage::init())
         .attach(AdHoc::on_ignite("mount_user", sample::init))
         .attach(AdHoc::on_ignite("mount_routes", routes::routes_init))
-        .attach(AdHoc::try_on_ignite("Migrations", setup::postgres_table_setup))
+        .attach(AdHoc::try_on_ignite(
+            "Migrations",
+            setup::postgres_table_setup,
+        ))
 }
