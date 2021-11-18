@@ -21,3 +21,9 @@
 ## Deployment
 
 `openssl rand -base64 32`
+
+## Hot formula
+
+$$
+\frac{\ln{(post\_ len)}+ like\_ num/10+collect\_ num/8}{((now\_ in\_ hours-create\_ time\_ in\_ hours)/2+(now\_ in\_ hours-last\_ update\_ in\_ hours)/2+2)^{1.2}+10}
+$$
