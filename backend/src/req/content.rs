@@ -1,69 +1,116 @@
+use crate::pgdb::{content_post, content_reply};
 use rocket::serde::{Deserialize, Serialize};
+use sea_orm::prelude::DateTimeWithTimeZone;
+use std::convert::From;
 
 #[derive(Serialize)]
-pub struct PostResponse {
-    pub success: bool,
-    pub error: Vec<String>,
-    pub post_id: i32,
+pub struct PostCreateResponse {
+    pub errors: Vec<String>,
+    pub post_id: i64,
 }
 
 #[derive(Serialize)]
-pub struct ReplyResponse {
-    pub success: bool,
-    pub error: Vec<String>,
-    pub post_id: i32,
+pub struct PostDeleteResponse {
+    pub errors: Vec<String>,
+    pub post_id: i64,
+}
+
+#[derive(Serialize)]
+pub struct ReplyCreateResponse {
+    pub errors: Vec<String>,
+    pub post_id: i64,
     pub reply_id: i32,
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct ReadResponse {
-    pub success: bool,
-    pub error: Vec<String>,
-    pub subject_info: Subject,
-    pub reply_info: Vec<Reply>,
-}
-
-#[derive(Deserialize)]
-pub struct ContentInfo<'r> {
-    pub title: &'r str,
-    pub author: &'r str,
-    pub anonymous: bool,
-    pub section: &'r str,
-    pub tag1: &'r str,
-    pub tag2: &'r str,
-    pub tag3: &'r str,
-    pub content: &'r str,
-}
-
-#[derive(Deserialize)]
-pub struct ReplyInfo<'r> {
-    pub author: &'r str,
-    pub anonymous: bool,
-    pub content: &'r str,
+pub struct PostReadResponse {
+    pub errors: String,
+    pub post_page: Option<PostPage>,
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct Subject {
-    pub post_id: i32,
+pub struct PostPage {
+    pub post_desc: Post,
+    pub reply_page: Vec<Reply>,
+    pub page: usize,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct PostInfo {
     pub title: String,
-    pub author: String,
-    pub anonymous: bool,
-    pub created_time: String,
-    pub modified_time: String,
-    pub section: String,
-    pub tag1: String,
-    pub tag2: String,
-    pub tag3: String,
-    pub post_len: i32,
+    pub burrow_id: i64,
+    pub section: Vec<String>,
+    pub tag: Vec<String>,
+    pub content: String,
+}
+
+#[derive(Deserialize)]
+pub struct ReplyInfo {
+    pub post_id: i64,
+    pub burrow_id: i64,
+    pub content: String,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct Post {
+    pub title: String,
+    pub burrow_id: i64,
+    pub section: Vec<String>,
+    pub tag: Vec<String>,
+    pub create_time: DateTimeWithTimeZone,
+    pub last_modify_time: DateTimeWithTimeZone,
+    pub post_state: i16,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct Reply {
-    pub post_id: i32,
+    pub post_id: i64,
     pub reply_id: i32,
-    pub author: String,
-    pub anonymous: bool,
-    pub created_time: String,
-    pub modified_time: String,
+    pub burrow_id: i64,
+    pub create_time: DateTimeWithTimeZone,
+    pub last_modify_time: DateTimeWithTimeZone,
     pub content: String,
+    pub reply_state: i16,
+}
+
+impl From<content_post::Model> for Post {
+    fn from(post_info: content_post::Model) -> Post {
+        Post {
+            title: post_info.title,
+            burrow_id: post_info.burrow_id,
+            section: post_info.section.split(',').map(str::to_string).collect(),
+            tag: post_info.tag.split(',').map(str::to_string).collect(),
+            create_time: post_info.create_time,
+            last_modify_time: post_info.last_modify_time,
+            post_state: post_info.post_state,
+        }
+    }
+}
+
+impl From<content_reply::Model> for Reply {
+    fn from(reply_info: content_reply::Model) -> Reply {
+        Reply {
+            post_id: reply_info.post_id,
+            reply_id: reply_info.reply_id,
+            burrow_id: reply_info.burrow_id,
+            create_time: reply_info.create_time,
+            last_modify_time: reply_info.last_modify_time,
+            content: reply_info.content,
+            reply_state: reply_info.reply_state,
+        }
+    }
+}
+
+impl From<&content_reply::Model> for Reply {
+    fn from(reply_info: &content_reply::Model) -> Reply {
+        Reply {
+            post_id: reply_info.post_id,
+            reply_id: reply_info.reply_id,
+            burrow_id: reply_info.burrow_id,
+            create_time: reply_info.create_time.to_owned(),
+            last_modify_time: reply_info.last_modify_time.to_owned(),
+            content: reply_info.content.to_owned(),
+            reply_state: reply_info.reply_state,
+        }
+    }
 }
