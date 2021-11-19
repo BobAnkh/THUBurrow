@@ -215,6 +215,41 @@ pub async fn burrow_table_setup(rocket: Rocket<Build>) -> fairing::Result {
     Ok(rocket)
 }
 
+// pub async fn create_content_table(db: &DbConn) -> Result<ExecResult, DbErr> {
+//     let stmt = sea_query::Table::create()
+//     .table(pgdb::burrow::Entity)
+//     .if_not_exists()
+//     .col(
+//         ColumnDef::new(pgdb::burrow::Column::PostId)
+//             .big_integer()
+//             .not_null()
+//             .primary_key()
+//             .auto_increment(),
+//     )
+//     .col(
+//         ColumnDef::new(pgdb::burrow::Column::Title)
+//             .string()
+//             .not_null(),
+//     )
+//     .col(
+//         ColumnDef::new(pgdb::burrow::Column::Description)
+//             .string(),
+//     )
+//     .col(
+//         ColumnDef::new(pgdb::burrow::Column::Author)
+//             .big_integer()
+//             .not_null(),
+//     )
+//     .col(
+//         ColumnDef::new(pgdb::burrow::Column::Status)
+//             .small_integer()
+//             .not_null()
+//             .default(0),
+//     )
+//     .to_owned();
+//     build_statement(db, &stmt).await
+// }
+
 pub async fn create_junction_table(db: &DbConn) -> Result<ExecResult, DbErr> {
     let stmt = sea_query::Table::create()
     .table(pgdb::favorite::Entity)
@@ -222,14 +257,16 @@ pub async fn create_junction_table(db: &DbConn) -> Result<ExecResult, DbErr> {
     .col(
         ColumnDef::new(pgdb::favorite::Column::Userid)
             .big_integer()
-            .not_null()
-            .primary_key(),
+            .not_null(),
     )
     .col(
         ColumnDef::new(pgdb::favorite::Column::Burrowid)
             .big_integer()
-            .not_null()
-            .primary_key(),
+            .not_null(),
+    )
+    .primary_key(Index::create()
+        .col(pgdb::favorite::Column::Userid)
+        .col(pgdb::favorite::Column::Burrowid)
     )
     .to_owned();
     build_statement(db, &stmt).await

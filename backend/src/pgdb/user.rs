@@ -29,4 +29,14 @@ impl RelationTrait for Relation {
     }
 }
 
+impl Related<super::burrow::Entity> for Entity {
+    fn to() -> RelationDef {
+        super::favorite::Relation::Burrow.def()
+    }
+
+    fn via() -> Option<RelationDef> {
+        Some(super::favorite::Relation::User.def().rev())
+    }
+}
+
 impl ActiveModelBehavior for ActiveModel {}

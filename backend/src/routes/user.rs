@@ -7,8 +7,9 @@ use rocket::http::Status;
 use rocket_db_pools::Connection;
 use sea_orm::entity::*;
 use sea_orm::QueryFilter;
+use sea_orm::sea_query::{*, tests_cfg::*};
 
-use crate::pgdb;
+use crate::pgdb::{self, favorite};
 use crate::pgdb::user::Entity as User;
 use crate::pool::{PgDb, RedisDb};
 use crate::req::user::*;
@@ -35,7 +36,8 @@ pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
     rocket.mount("/users", routes![
         user_log_in,
         user_sign_up,
-        get_burrow,
+        add_favorite_burrow,
+        get_favorite,
     ])
 }
 
@@ -322,4 +324,46 @@ pub async fn get_burrow(
     sso: sso::SsoAuth,
 ) -> (Status, Option<Json<UserGetBurrowResponse>>) {
     (Status::Ok, None)
+}
+
+#[get("/favorite")]
+pub async fn get_favorite(
+    db: Connection<PgDb>,
+    sso: sso::SsoAuth,
+) -> (Status, Option<Json<Vec<i64>>>) {
+    let pg_con = db.into_inner();
+    let uid = sso.id;
+    let user = pgdb::user::Entity::find_by_id(uid).one(&pg_con).await.expect("select user error");
+    let user = user.unwrap();
+    let burrows = user.find_related(pgdb::burrow::Entity).all(&pg_con).await.unwrap();
+    (Status::Ok, Some(Json(burrows.iter().map(|x| x.id).collect())))
+}
+
+#[get("/follow")]
+pub async fn get_follow(
+    db: Connection<PgDb>,
+    sso: sso::SsoAuth,
+) -> (Status, Option<Json<Vec<UserFollowResponse>>>) {
+    let pg_con = db.into_inner();
+    let uid = sso.id;
+    let user = pgdb::user::Entity::find_by_id(uid).one(&pg_con).await.expect("select user error");
+    let user = user.unwrap();
+    let burrows = user.find_related(pgdb::burrow::Entity).all(&pg_con).await.unwrap();
+    (Status::Ok, Some(Json(burrows.iter().map(|x| x.id).collect())))(Status::Ok, None)
+}
+
+#[post("/favorite/<bid>")]
+pub async fn add_favorite_burrow(
+    bid: i64,
+    db: Connection<PgDb>,
+    sso: sso::SsoAuth,
+) -> (Status, Option<Json<String>>) {
+    let pg_con = db.into_inner();
+    let uid = sso.id;
+    let favorite = pgdb::favorite::ActiveModel {
+        userid: Set(uid),
+        burrowid: Set(bid),
+    };
+    favorite.insert(&pg_con).await.expect("insert error");
+    (Status::Ok, Some(Json("".to_string())))
 }

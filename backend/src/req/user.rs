@@ -33,3 +33,11 @@ pub struct UserGetBurrowResponse {
     pub description: Option<String>,
     pub post_num: i64,
 }
+
+#[derive(Serialize, Deserialize)]
+pub struct UserFollowResponse {
+    pub id: i64,
+    pub title: String,
+    pub description: Option<String>,
+    pub update: bool,
+}
