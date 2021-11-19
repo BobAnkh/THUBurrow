@@ -1,6 +1,7 @@
 extern crate serde;
 use backend::req::pulsar_msg::*;
 use futures::TryStreamExt;
+use lazy_static::lazy_static;
 use log::*;
 use pulsar::{Consumer, Pulsar, SubType, TokioExecutor};
 use reqwest;
@@ -9,6 +10,19 @@ use std::env;
 use tokio::time::sleep;
 use tokio::time::Duration;
 
+lazy_static! {
+    static ref TYPESENSE_API_KEY: String = {
+        env::var("TYPESENSE_API_KEY")
+            .ok()
+            .unwrap_or_else(|| "8Dz4jRrsBjYgdCD/VGP1bleph7oBThJr5IcF43l0U24=".to_string())
+    };
+    static ref TYPESENSE_ADDR: String = {
+        env::var("TYPESENSE_ADDR")
+            .ok()
+            .unwrap_or_else(|| "http://localhost:8108".to_string())
+    };
+}
+
 // fn log_init() {
 //     match log4rs::init_file("conf/log4rs.yml", Default::default()) {
 //         Ok(_) => (),
@@ -16,8 +30,8 @@ use tokio::time::Duration;
 //     }
 // }
 
-async fn initialize_typesense() -> Result<reqwest::Client, reqwest::Error> {
-    //initialize typesense tables
+async fn create_typesense_collections() -> Result<(), reqwest::Error> {
+    //create typesense collections
     let collection_burrows = json!({
       "name": "burrows",
       "fields": [
@@ -50,71 +64,79 @@ async fn initialize_typesense() -> Result<reqwest::Client, reqwest::Error> {
       ]
     });
     let client = reqwest::Client::new();
-    for each in [
-        collection_burrows,
-        collection_posts,
-        collection_replies
-    ]
-    .iter()
-    {
-        match client
-            .post("http://localhost:8108/collections")
-            // .header("Content-Type", "application/json")
-            .header("X-TYPESENSE-API-KEY", "xyz")
+    for each in [collection_burrows, collection_posts, collection_replies].iter() {
+        let res = client
+            .build_post("/collections")
             .json(&each)
             .send()
-            .await
-        {
-            Ok(a) => println!("Initialized collection_{}, {:?}", each["names"], a),
-            Err(e) => println!("Err when initialzing collection_{},{:?}", each["names"], e),
-        };
+            .await?;
+        // TODO: match the status code of Response here, to see whether it is successfully created or is already created, or failed
     }
-
-    Ok(client)
+    Ok(())
 }
+
+pub trait Typesense {
+    fn build_post(&self, uri: &str) -> reqwest::RequestBuilder;
+    fn build_delete(&self, uri: &str) -> reqwest::RequestBuilder;
+    fn build_patch(&self, uri: &str) -> reqwest::RequestBuilder;
+}
+
+impl Typesense for reqwest::Client {
+    fn build_post(&self, uri: &str) -> reqwest::RequestBuilder {
+        let typesense_api_key: &str = &TYPESENSE_API_KEY;
+        let typesense_addr: String = TYPESENSE_ADDR.to_owned();
+        self.post(typesense_addr+uri)
+            .header("Content-Type", "application/json")
+            .header("X-TYPESENSE-API-KEY", typesense_api_key)
+    }
+    fn build_delete(&self, uri: &str) -> reqwest::RequestBuilder {
+        let typesense_api_key: &str = &TYPESENSE_API_KEY;
+        let typesense_addr: String = TYPESENSE_ADDR.to_owned();
+        self.delete(typesense_addr+uri).header("X-TYPESENSE-API-KEY", typesense_api_key)
+    }
+    fn build_patch(&self, uri: &str) -> reqwest::RequestBuilder {
+        let typesense_api_key: &str = &TYPESENSE_API_KEY;
+        let typesense_addr: String = TYPESENSE_ADDR.to_owned();
+        self.patch(typesense_addr+uri)
+            .header("Content-Type", "application/json")
+            .header("X-TYPESENSE-API-KEY", typesense_api_key)
+    }
+}
+
 #[tokio::main]
-async fn main() -> Result<(), pulsar::Error> {
+async fn main() {
     // log_init();
+    let handles = vec![tokio::spawn(pulsar_typesense())];
+    futures::future::join_all(handles).await;
+    std::thread::sleep(Duration::from_millis(1000));
+}
+
+async fn pulsar_typesense() -> Result<(), pulsar::Error> {
+    // setup pulsar consumer
     let addr = env::var("PULSAR_ADDRESS")
         .ok()
-        .unwrap_or("pulsar://127.0.0.1:6650".to_string());
+        .unwrap_or_else(|| "pulsar://127.0.0.1:6650".to_string());
     let topic = env::var("PULSAR_TOPIC")
         .ok()
-        .unwrap_or("persistent://public/default/search".to_string());
-
+        .unwrap_or_else(|| "persistent://public/default/search".to_string());
     let builder = Pulsar::builder(addr, TokioExecutor);
-
-    // if let Ok(token) = env::var("PULSAR_TOKEN") {
-    //     let authentication = Authentication {
-    //         name: "token".to_string(),
-    //         data: token.into_bytes(),
-    //     };
-
-    //     builder = builder.with_auth(authentication);
-    // }
-
     let pulsar: Pulsar<_> = builder.build().await?;
-
     let mut consumer: Consumer<PulsarData, _> = pulsar
         .consumer()
         .with_topic(topic)
-        .with_consumer_name("test_consumer")
         .with_subscription_type(SubType::Exclusive)
-        .with_subscription("test_subscription")
         .build()
         .await?;
 
-    let client = match initialize_typesense().await {
-        Ok(client) => {
-            println!("typesense succesfully initialize");
-            client
+    match create_typesense_collections().await {
+        Ok(_) => {
+            println!("Typesense successfully initialized");
         }
         Err(e) => {
-            println!("initialze_typesense failed to initialize: {:?}", e);
-            return Ok(());
+            panic!("Failed to initialize typesense: {}", e);
         }
     };
-
+    let client = reqwest::Client::new();
     while let Some(msg) = consumer.try_next().await? {
         consumer.ack(&msg).await?;
         println!("metadata: {:?},id: {:?}", msg.metadata(), msg.message_id());
@@ -135,6 +157,7 @@ async fn main() -> Result<(), pulsar::Error> {
         // }
         match (data.operation_type, data.operation_level) {
             (OperationType::New, OperationLevel::Burrow) => {
+                // TODO: define a struct here, not using direct json
                 let operation = json!({
                     "id":data.data["id"],
                     "title":data.data["title"],
@@ -144,9 +167,7 @@ async fn main() -> Result<(), pulsar::Error> {
                 });
 
                 match client
-                    .post("http://localhost:8108/collections/burrows/documents")
-                    .header("Content-Type", "application/json")
-                    .header("X-TYPESENSE-API-KEY", "xyz")
+                    .build_post("/collections/burrows/documents")
                     .body(serde_json::to_string(&operation).unwrap())
                     .send()
                     .await
@@ -165,9 +186,7 @@ async fn main() -> Result<(), pulsar::Error> {
                 });
 
                 match client
-                    .post("http://localhost:8108/collections/burrows/documents")
-                    .header("Content-Type", "application/json")
-                    .header("X-TYPESENSE-API-KEY", "xyz")
+                    .build_post("/collections/burrows/documents")
                     .body(serde_json::to_string(&operation).unwrap())
                     .send()
                     .await
@@ -185,9 +204,7 @@ async fn main() -> Result<(), pulsar::Error> {
                 });
 
                 match client
-                    .post("http://localhost:8108/collections/burrows/documents")
-                    .header("Content-Type", "application/json")
-                    .header("X-TYPESENSE-API-KEY", "xyz")
+                    .post("/collections/burrows/documents")
                     .body(serde_json::to_string(&operation).unwrap())
                     .send()
                     .await
@@ -203,13 +220,12 @@ async fn main() -> Result<(), pulsar::Error> {
                     "introduction":data.data["introduction"],
                     "last_modified_time":data.operation_time
                 });
+                let uri: String = format!(
+                    "/collections/burrows/documents/{}",
+                    data.data["id"]
+                );
                 match client
-                    .patch(format!(
-                        "http://localhost:8108/collections/burrows/documents/{}",
-                        data.data["id"]
-                    ))
-                    .header("Content-Type", "application/json")
-                    .header("X-TYPESENSE-API-KEY", "xyz")
+                    .build_patch(&uri)
                     .body(serde_json::to_string(&operation).unwrap())
                     .send()
                     .await
@@ -226,9 +242,7 @@ async fn main() -> Result<(), pulsar::Error> {
                 });
 
                 match client
-                    .patch("http://localhost:8108/collections/posts/documents")
-                    .header("Content-Type", "application/json")
-                    .header("X-TYPESENSE-API-KEY", "xyz")
+                    .build_patch("/collections/posts/documents")
                     .body(serde_json::to_string(&operation).unwrap())
                     .send()
                     .await
@@ -241,15 +255,12 @@ async fn main() -> Result<(), pulsar::Error> {
             //     json!({});
             // }
             (OperationType::Remove, OperationLevel::Burrow) => {
-                let operation = json!({
-                    "id":data.data["id"],
-                });
+                let uri: String = format!(
+                    "/collections/burrows/documents/{}",
+                    data.data["id"]
+                );
                 match client
-                    .delete(format!(
-                        "http://localhost:8108/collections/burrows/documents/{}",
-                        data.data["id"]
-                    ))
-                    .header("X-TYPESENSE-API-KEY", "xyz")
+                    .delete(&uri)
                     .send()
                     .await
                 {
@@ -257,17 +268,14 @@ async fn main() -> Result<(), pulsar::Error> {
                     Err(e) => println!("delete burrow failed{:?}", e),
                 }
             }
-            
+
             (OperationType::Remove, OperationLevel::Post) => {
-                let operation = json!({
-                    "id":data.data["id"],
-                });
+                let uri: String = format!(
+                    "/collections/posts/documents/{}",
+                    data.data["id"]
+                );
                 match client
-                    .delete(format!(
-                        "http://localhost:8108/collections/posts/documents/{}",
-                        data.data["id"]
-                    ))
-                    .header("X-TYPESENSE-API-KEY", "xyz")
+                    .delete(&uri)
                     .send()
                     .await
                 {
@@ -276,15 +284,12 @@ async fn main() -> Result<(), pulsar::Error> {
                 }
             }
             (OperationType::Remove, OperationLevel::Reply) => {
-                let operation = json!({
-                    "id":data.data["id"],
-                });
+                let uri: String = format!(
+                    "/collections/replies/documents/{}",
+                    data.data["id"]
+                );
                 match client
-                    .delete(format!(
-                        "http://localhost:8108/collections/replies/documents/{}",
-                        data.data["id"]
-                    ))
-                    .header("X-TYPESENSE-API-KEY", "xyz")
+                    .delete(&uri)
                     .send()
                     .await
                 {
@@ -292,11 +297,11 @@ async fn main() -> Result<(), pulsar::Error> {
                     Err(e) => println!("delete reply failed{:?}", e),
                 }
             }
-            _ => println!("invalid operation from pulsar")
+            _ => println!("invalid operation from pulsar"),
         }
         // sleep(Duration::from_millis(10000)).await;
         // println!("10000ms have elapsed");
     }
+
     Ok(())
 }
-

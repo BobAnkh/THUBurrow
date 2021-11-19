@@ -35,7 +35,7 @@ services:
     container_name: typesense_container
     restart: unless-stopped
     environment:
-      TYPESENSE_API_KEY: xyz
+      TYPESENSE_API_KEY: ${TYPESENSE_API_KEY:-8Dz4jRrsBjYgdCD/VGP1bleph7oBThJr5IcF43l0U24=}
       TYPESENSE_DATA_DIR: "/data"
     depends_on:
       - pulsar
