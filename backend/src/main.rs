@@ -15,7 +15,12 @@ fn log_init() {}
 
 #[cfg(not(debug_assertions))]
 fn log_init() {
-    match log4rs::init_file("/etc/backend/conf/log4rs.yml", Default::default()) {
+    let filename = if std::path::Path::new("/etc/backend/conf/log4rs.yml").exists() {
+        "/etc/backend/conf/log4rs.yml"
+    } else {
+        "/etc/backend/conf/log4rs-default.yml"
+    };
+    match log4rs::init_file(filename, Default::default()) {
         Ok(_) => (),
         Err(e) => panic!("Error initial logger: {}", e),
     }
