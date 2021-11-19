@@ -9,6 +9,13 @@ use std::env;
 use tokio::time::sleep;
 use tokio::time::Duration;
 
+// fn log_init() {
+//     match log4rs::init_file("conf/log4rs.yml", Default::default()) {
+//         Ok(_) => (),
+//         Err(e) => panic!("Error initial logger: {}", e),
+//     }
+// }
+
 async fn initialize_typesense() -> Result<reqwest::Client, reqwest::Error> {
     //initialize typesense tables
     let collection_burrows = json!({
@@ -17,8 +24,8 @@ async fn initialize_typesense() -> Result<reqwest::Client, reqwest::Error> {
         {"name": "id", "type": "int64"},
         {"name": "title", "type": "string" },
         {"name": "introduction", "type": "string"},
-        {"name": "created_time", "type": "int64"},
-        {"name": "last_modified_time", "type": "int64"}
+        {"name": "created_time", "type": "string"},
+        {"name": "last_modified_time", "type": "string"}
       ]
     });
     let collection_posts = json!({
@@ -27,8 +34,8 @@ async fn initialize_typesense() -> Result<reqwest::Client, reqwest::Error> {
         {"name": "id", "type": "int64" },
         {"name": "title", "type": "string" },
         {"name": "burrow_id", "type": "int64" },
-        {"name": "created_time", "type": "int64"},
-        {"name": "last_modified_time", "type": "int64"},
+        {"name": "created_time", "type": "string"},
+        {"name": "last_modified_time", "type": "string"},
         {"name": "post_type", "type": "int32"},
         {"name": "tag", "type": "string[]"}
       ]
@@ -38,7 +45,7 @@ async fn initialize_typesense() -> Result<reqwest::Client, reqwest::Error> {
       "fields": [
         {"name": "id", "type": "int32" },
         {"name": "post_id", "type": "int64"},
-        {"name": "created_time", "type": "int64"},
+        {"name": "created_time", "type": "string"},
         {"name": "content", "type": "string"}
       ]
     });
@@ -58,8 +65,8 @@ async fn initialize_typesense() -> Result<reqwest::Client, reqwest::Error> {
             .send()
             .await
         {
-            Ok(a) => info!("Initialized collection_{}, {:?}", each["names"], a),
-            Err(e) => info!("Err when initialzing collection_{},{:?}", each["names"], e),
+            Ok(a) => println!("Initialized collection_{}, {:?}", each["names"], a),
+            Err(e) => println!("Err when initialzing collection_{},{:?}", each["names"], e),
         };
     }
 
@@ -67,6 +74,7 @@ async fn initialize_typesense() -> Result<reqwest::Client, reqwest::Error> {
 }
 #[tokio::main]
 async fn main() -> Result<(), pulsar::Error> {
+    // log_init();
     let addr = env::var("PULSAR_ADDRESS")
         .ok()
         .unwrap_or("pulsar://127.0.0.1:6650".to_string());
@@ -87,7 +95,7 @@ async fn main() -> Result<(), pulsar::Error> {
 
     let pulsar: Pulsar<_> = builder.build().await?;
 
-    let mut consumer: Consumer<TestData, _> = pulsar
+    let mut consumer: Consumer<PulsarData, _> = pulsar
         .consumer()
         .with_topic(topic)
         .with_consumer_name("test_consumer")
@@ -98,31 +106,31 @@ async fn main() -> Result<(), pulsar::Error> {
 
     let client = match initialize_typesense().await {
         Ok(client) => {
-            info!("typesense succesfully initialize");
+            println!("typesense succesfully initialize");
             client
         }
         Err(e) => {
-            info!("initialze_typesense failed to initialize: {:?}", e);
+            println!("initialze_typesense failed to initialize: {:?}", e);
             return Ok(());
         }
     };
 
     while let Some(msg) = consumer.try_next().await? {
         consumer.ack(&msg).await?;
-        info!("metadata: {:?},id: {:?}", msg.metadata(), msg.message_id());
+        println!("metadata: {:?},id: {:?}", msg.metadata(), msg.message_id());
         let data = match msg.deserialize() {
             Ok(data) => data,
             Err(e) => {
-                info!("could not deserialize message: {:?}", e);
+                println!("could not deserialize message: {:?}", e);
                 continue;
             }
         };
-        info!(
+        println!(
             "Consumer receive: {:?} {:?} at time{}",
             data.operation_type, data.operation_level, data.operation_time
         );
         // if data.data.as_str() != "data" {
-        //     info!("Unexpected payload: {}", &data.data);
+        //     println!("Unexpected payload: {}", &data.data);
         //     break;
         // }
         match (data.operation_type, data.operation_level) {
@@ -131,7 +139,6 @@ async fn main() -> Result<(), pulsar::Error> {
                     "id":data.data["id"],
                     "title":data.data["title"],
                     "introduction":data.data["introduction"],
-                    "owner_id":data.data["owner_id"],
                     "created_time":data.operation_time,
                     "last_modified_time":data.operation_time
                 });
@@ -144,15 +151,14 @@ async fn main() -> Result<(), pulsar::Error> {
                     .send()
                     .await
                 {
-                    Ok(a) => info!("add new burrow.{:?}", a),
-                    Err(e) => info!("add new burrow failed {:?}", e),
+                    Ok(a) => println!("add new burrow.{:?}", a),
+                    Err(e) => println!("add new burrow failed {:?}", e),
                 }
             }
             (OperationType::New, OperationLevel::Post) => {
                 let operation = json!({
                     "id":data.data["id"],
                     "burrow_id":data.data["burrow_id"],
-                    "owner_id":data.data["owner_id"],
                     "created_time":data.operation_time,
                     "last_modified_time":data.operation_time,
                     "tags":data.data["tags"]
@@ -166,16 +172,14 @@ async fn main() -> Result<(), pulsar::Error> {
                     .send()
                     .await
                 {
-                    Ok(a) => info!("add new post.{:?}", a),
-                    Err(e) => info!("add new post failed {:?}", e),
+                    Ok(a) => println!("add new post.{:?}", a),
+                    Err(e) => println!("add new post failed {:?}", e),
                 }
             }
             (OperationType::New, OperationLevel::Reply) => {
                 let operation = json!({
                     "id":data.data["id"],
                     "post_id":data.data["post_id"],
-                    "owner_id":data.data["owner_id"],
-                    "to_whom":data.data["to_whom"],
                     "created_time":data.operation_time,
                     "content":data.data["content"]
                 });
@@ -188,8 +192,8 @@ async fn main() -> Result<(), pulsar::Error> {
                     .send()
                     .await
                 {
-                    Ok(a) => info!("add new reply.{:?}", a),
-                    Err(e) => info!("add new reply failed {:?}", e),
+                    Ok(a) => println!("add new reply.{:?}", a),
+                    Err(e) => println!("add new reply failed {:?}", e),
                 }
             }
             (OperationType::Update, OperationLevel::Burrow) => {
@@ -210,29 +214,89 @@ async fn main() -> Result<(), pulsar::Error> {
                     .send()
                     .await
                 {
-                    Ok(a) => info!("a burrow updated.{:?}", a),
-                    Err(e) => info!("update burrow failed{:?}", e),
+                    Ok(a) => println!("a burrow updated.{:?}", a),
+                    Err(e) => println!("update burrow failed{:?}", e),
                 }
             }
             (OperationType::Update, OperationLevel::Post) => {
-                json!({});
+                let operation = json!({
+                    "id":data.data["id"],
+                    "last_modified_time":data.operation_time,
+                    "tags":data.data["tags"]
+                });
+
+                match client
+                    .patch("http://localhost:8108/collections/posts/documents")
+                    .header("Content-Type", "application/json")
+                    .header("X-TYPESENSE-API-KEY", "xyz")
+                    .body(serde_json::to_string(&operation).unwrap())
+                    .send()
+                    .await
+                {
+                    Ok(a) => println!("add new post.{:?}", a),
+                    Err(e) => println!("add new post failed {:?}", e),
+                }
             }
             // (OperationType::Update, OperationLevel::Reply) => {
             //     json!({});
             // }
             (OperationType::Remove, OperationLevel::Burrow) => {
-                json!({});
+                let operation = json!({
+                    "id":data.data["id"],
+                });
+                match client
+                    .delete(format!(
+                        "http://localhost:8108/collections/burrows/documents/{}",
+                        data.data["id"]
+                    ))
+                    .header("X-TYPESENSE-API-KEY", "xyz")
+                    .send()
+                    .await
+                {
+                    Ok(a) => println!("a burrow deleted.{:?}", a),
+                    Err(e) => println!("delete burrow failed{:?}", e),
+                }
             }
+            
             (OperationType::Remove, OperationLevel::Post) => {
-                json!({});
+                let operation = json!({
+                    "id":data.data["id"],
+                });
+                match client
+                    .delete(format!(
+                        "http://localhost:8108/collections/posts/documents/{}",
+                        data.data["id"]
+                    ))
+                    .header("X-TYPESENSE-API-KEY", "xyz")
+                    .send()
+                    .await
+                {
+                    Ok(a) => println!("a post deleted.{:?}", a),
+                    Err(e) => println!("delete post failed{:?}", e),
+                }
             }
             (OperationType::Remove, OperationLevel::Reply) => {
-                json!({});
+                let operation = json!({
+                    "id":data.data["id"],
+                });
+                match client
+                    .delete(format!(
+                        "http://localhost:8108/collections/replies/documents/{}",
+                        data.data["id"]
+                    ))
+                    .header("X-TYPESENSE-API-KEY", "xyz")
+                    .send()
+                    .await
+                {
+                    Ok(a) => println!("a reply deleted.{:?}", a),
+                    Err(e) => println!("delete reply failed{:?}", e),
+                }
             }
-            _ => info!("invalid operation from pulsar")
+            _ => println!("invalid operation from pulsar")
         }
         // sleep(Duration::from_millis(10000)).await;
-        // info!("10000ms have elapsed");
+        // println!("10000ms have elapsed");
     }
     Ok(())
 }
+

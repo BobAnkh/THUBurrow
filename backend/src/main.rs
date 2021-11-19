@@ -31,7 +31,6 @@ fn rocket() -> _ {
         .attach(PgDb::init())
         .attach(RedisDb::init())
         .attach(PulsarSearchProducerMq::init())
-        .attach(AdHoc::on_ignite("mount_routes", routes::routes_init))
         .attach(MinioImageStorage::init())
         .attach(AdHoc::on_ignite("mount_user", sample::init))
         .attach(AdHoc::on_ignite("mount_routes", routes::routes_init))
