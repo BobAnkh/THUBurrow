@@ -12,7 +12,7 @@ use crate::db;
 use crate::pool::{PgDb, RedisDb};
 use crate::req::user::*;
 use crate::utils::sso::{self, AuthTokenError, SsoAuth, ValidToken};
-use crate::routes::burrow;
+use crate::utils::get_valid_burrow;
 
 use chrono::Local;
 use crypto::digest::Digest;
@@ -233,7 +233,7 @@ pub async fn get_valid_burrow_test(
     db: Connection<PgDb>,
 ) -> (Status, Json<Vec<i64>>) {
     let conn = db.into_inner();
-    match burrow::get_valid_burrow(conn, id).await {
+    match get_valid_burrow::get_valid_burrow(conn, id).await {
         Ok(res) => (Status::Ok, Json(res)),
         _ => (Status::InternalServerError, Json(Vec::new())),
     }

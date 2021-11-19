@@ -35,7 +35,7 @@ pub struct UserGetBurrowResponse {
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct UserFollowResponse {
+pub struct UserGetFollowResponse {
     pub id: i64,
     pub title: String,
     pub description: Option<String>,

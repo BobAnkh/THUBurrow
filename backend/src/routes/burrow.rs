@@ -1,45 +1,19 @@
-// use rocket::http::{Cookie, CookieJar, SameSite};
 use rocket::serde::json::Json;
 use rocket::{Build, Rocket};
 use rocket::http::Status;
 use rocket_db_pools::Connection;
-use sea_orm::{DatabaseConnection, entity::*};
+
+use sea_orm::entity::*;
+
 use chrono::{FixedOffset, Utc};
-// use sea_orm::QueryFilter;
 
 use crate::pgdb;
-// use crate::pgdb::burrow::Entity as Burrow;
 use crate::req::burrow::*;
 use crate::pool::PgDb;
 use crate::utils::sso;
 
 pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
     rocket.mount("/burrows", routes![burrow_create])
-}
-
-pub async fn get_valid_burrow(
-    conn: DatabaseConnection,
-    id: i64,
-) -> Result<Vec<i64>, String> {
-    match pgdb::user_status::Entity::find_by_id(id)
-        .one(&conn)
-        .await
-    {
-        Ok(res) => match res {
-            Some(user) => {
-                let vec_str: Vec<&str> = user.valid_burrow.split(',').collect();
-                println!("{:?}", vec_str);
-                let vec_i64: Vec<i64> = vec_str.iter().map(|x| x.parse::<i64>().unwrap()).collect();
-                Ok(vec_i64)
-            },
-            None => {
-                Err("User not found.".to_string())
-            },
-        },
-        _ => {
-            Err("Postgres database error.".to_string())
-        },
-    }
 }
 
 #[post("/create", data = "<burrow_info>", format = "json")]
