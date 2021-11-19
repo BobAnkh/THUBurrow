@@ -4,8 +4,7 @@ extern crate rocket;
 use rocket::fairing::AdHoc;
 use rocket_db_pools::Database;
 
-
-use backend::pool::{PgDb, PulsarSearchProducerMq, RedisDb, MinioImageStorage};
+use backend::pool::{MinioImageStorage, PgDb, PulsarSearchProducerMq, RedisDb};
 use backend::routes::{self, sample};
 use backend::setup;
 use backend::utils::{cors, id_gen};

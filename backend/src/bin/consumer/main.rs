@@ -65,11 +65,7 @@ async fn create_typesense_collections() -> Result<(), reqwest::Error> {
     });
     let client = reqwest::Client::new();
     for each in [collection_burrows, collection_posts, collection_replies].iter() {
-        let res = client
-            .build_post("/collections")
-            .json(&each)
-            .send()
-            .await?;
+        let res = client.build_post("/collections").json(&each).send().await?;
         // TODO: match the status code of Response here, to see whether it is successfully created or is already created, or failed
     }
     Ok(())
@@ -85,19 +81,20 @@ impl Typesense for reqwest::Client {
     fn build_post(&self, uri: &str) -> reqwest::RequestBuilder {
         let typesense_api_key: &str = &TYPESENSE_API_KEY;
         let typesense_addr: String = TYPESENSE_ADDR.to_owned();
-        self.post(typesense_addr+uri)
+        self.post(typesense_addr + uri)
             .header("Content-Type", "application/json")
             .header("X-TYPESENSE-API-KEY", typesense_api_key)
     }
     fn build_delete(&self, uri: &str) -> reqwest::RequestBuilder {
         let typesense_api_key: &str = &TYPESENSE_API_KEY;
         let typesense_addr: String = TYPESENSE_ADDR.to_owned();
-        self.delete(typesense_addr+uri).header("X-TYPESENSE-API-KEY", typesense_api_key)
+        self.delete(typesense_addr + uri)
+            .header("X-TYPESENSE-API-KEY", typesense_api_key)
     }
     fn build_patch(&self, uri: &str) -> reqwest::RequestBuilder {
         let typesense_api_key: &str = &TYPESENSE_API_KEY;
         let typesense_addr: String = TYPESENSE_ADDR.to_owned();
-        self.patch(typesense_addr+uri)
+        self.patch(typesense_addr + uri)
             .header("Content-Type", "application/json")
             .header("X-TYPESENSE-API-KEY", typesense_api_key)
     }
@@ -220,10 +217,7 @@ async fn pulsar_typesense() -> Result<(), pulsar::Error> {
                     "introduction":data.data["introduction"],
                     "last_modified_time":data.operation_time
                 });
-                let uri: String = format!(
-                    "/collections/burrows/documents/{}",
-                    data.data["id"]
-                );
+                let uri: String = format!("/collections/burrows/documents/{}", data.data["id"]);
                 match client
                     .build_patch(&uri)
                     .body(serde_json::to_string(&operation).unwrap())
@@ -255,44 +249,23 @@ async fn pulsar_typesense() -> Result<(), pulsar::Error> {
             //     json!({});
             // }
             (OperationType::Remove, OperationLevel::Burrow) => {
-                let uri: String = format!(
-                    "/collections/burrows/documents/{}",
-                    data.data["id"]
-                );
-                match client
-                    .delete(&uri)
-                    .send()
-                    .await
-                {
+                let uri: String = format!("/collections/burrows/documents/{}", data.data["id"]);
+                match client.delete(&uri).send().await {
                     Ok(a) => println!("a burrow deleted.{:?}", a),
                     Err(e) => println!("delete burrow failed{:?}", e),
                 }
             }
 
             (OperationType::Remove, OperationLevel::Post) => {
-                let uri: String = format!(
-                    "/collections/posts/documents/{}",
-                    data.data["id"]
-                );
-                match client
-                    .delete(&uri)
-                    .send()
-                    .await
-                {
+                let uri: String = format!("/collections/posts/documents/{}", data.data["id"]);
+                match client.delete(&uri).send().await {
                     Ok(a) => println!("a post deleted.{:?}", a),
                     Err(e) => println!("delete post failed{:?}", e),
                 }
             }
             (OperationType::Remove, OperationLevel::Reply) => {
-                let uri: String = format!(
-                    "/collections/replies/documents/{}",
-                    data.data["id"]
-                );
-                match client
-                    .delete(&uri)
-                    .send()
-                    .await
-                {
+                let uri: String = format!("/collections/replies/documents/{}", data.data["id"]);
+                match client.delete(&uri).send().await {
                     Ok(a) => println!("a reply deleted.{:?}", a),
                     Err(e) => println!("delete reply failed{:?}", e),
                 }

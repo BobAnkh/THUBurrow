@@ -68,7 +68,6 @@ pub struct PulsarData {
     //             {
     //                 "id": i64,
     //             }
-
 }
 
 impl SerializeMessage for PulsarData {
