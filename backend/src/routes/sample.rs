@@ -11,8 +11,8 @@ use uuid::Uuid;
 use crate::db;
 use crate::pool::{PgDb, RedisDb};
 use crate::req::user::*;
-use crate::utils::sso::{self, AuthTokenError, SsoAuth, ValidToken};
 use crate::utils::get_valid_burrow;
+use crate::utils::sso::{self, AuthTokenError, SsoAuth, ValidToken};
 
 use chrono::Local;
 use crypto::digest::Digest;
@@ -228,10 +228,7 @@ async fn user_sign_up(
 }
 
 #[get("/test/valid_burrow/<id>")]
-pub async fn get_valid_burrow_test(
-    id: i64,
-    db: Connection<PgDb>,
-) -> (Status, Json<Vec<i64>>) {
+pub async fn get_valid_burrow_test(id: i64, db: Connection<PgDb>) -> (Status, Json<Vec<i64>>) {
     let conn = db.into_inner();
     match get_valid_burrow::get_valid_burrow(conn, id).await {
         Ok(res) => (Status::Ok, Json(res)),

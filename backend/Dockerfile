@@ -26,7 +26,7 @@ RUN apt update -qq && \
     rm -rf /var/lib/apt/lists/*
 COPY --from=builder /app/target/release/backend /usr/local/bin/backend
 COPY --from=builder /app/Rocket.toml /etc/backend/Rocket.toml
-COPY --from=builder /app/conf/log4rs.yml /etc/backend/conf/log4rs.yml
+COPY --from=builder /app/conf/log4rs.yml /etc/backend/conf/log4rs-default.yml
 
 ENV ROCKET_CONFIG /etc/backend/Rocket.toml
 

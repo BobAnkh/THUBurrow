@@ -1,8 +1,8 @@
 use chrono::{FixedOffset, Utc};
+use rocket::http::Status;
 use rocket::http::{Cookie, CookieJar, SameSite};
 use rocket::serde::json::Json;
 use rocket::{Build, Rocket};
-use rocket::http::Status;
 use rocket_db_pools::Connection;
 use sea_orm::entity::*;
 use sea_orm::QueryFilter;
@@ -11,6 +11,7 @@ use crate::pgdb;
 use crate::pgdb::user::Entity as User;
 use crate::pool::{PgDb, RedisDb};
 use crate::req::user::*;
+use crate::utils::email;
 use crate::utils::sso;
 
 use crypto::digest::Digest;
@@ -22,21 +23,11 @@ use idgenerator::IdHelper;
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 
-use lazy_static::lazy_static;
-use regex::RegexSet;
-
-lazy_static! {
-    static ref MAILS: RegexSet =
-        RegexSet::new(&[r"mail\.tsinghua\.edu\.cn$", r"mails\.tsinghua\.edu\.cn$"]).unwrap();
-}
-
 pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
-    rocket.mount("/users", routes![
-        user_log_in,
-        user_sign_up,
-        get_follow,
-        follow_burrow,
-    ])
+    rocket.mount(
+        "/users",
+        routes![user_log_in, user_sign_up, get_follow, follow_burrow,],
+    )
 }
 
 pub async fn gen_salt() -> String {
@@ -59,7 +50,7 @@ pub async fn user_sign_up(
     // get user info from request
     let user = user_info.into_inner();
     // check if email address is valid, add corresponding error if so
-    if !MAILS.is_match(user.email) || user.email.split('@').count() != 2 {
+    if !email::check_email_syntax(user.email) {
         return (
             Status::BadRequest,
             Json(UserResponse {
@@ -142,16 +133,16 @@ pub async fn user_sign_up(
                             res.uid.unwrap()
                         );
                         (Status::Ok, Json(UserResponse { errors }))
-                    },
+                    }
                     Err(e) => {
                         error!("[SIGN-UP] Database error: {:?}", e.to_string());
                         (
                             Status::InternalServerError,
                             Json(UserResponse { errors: Vec::new() }),
                         )
-                    },
+                    }
                 }
-            },
+            }
             _ => (
                 Status::InternalServerError,
                 Json(UserResponse { errors: Vec::new() }),
@@ -331,10 +322,20 @@ pub async fn get_favorite(
 ) -> (Status, Option<Json<Vec<i64>>>) {
     let pg_con = db.into_inner();
     let uid = sso.id;
-    let user = pgdb::user::Entity::find_by_id(uid).one(&pg_con).await.expect("select user error");
+    let user = pgdb::user::Entity::find_by_id(uid)
+        .one(&pg_con)
+        .await
+        .expect("select user error");
     let user = user.unwrap();
-    let burrows = user.find_related(pgdb::burrow::Entity).all(&pg_con).await.unwrap();
-    (Status::Ok, Some(Json(burrows.iter().map(|x| x.id).collect())))
+    let burrows = user
+        .find_related(pgdb::burrow::Entity)
+        .all(&pg_con)
+        .await
+        .unwrap();
+    (
+        Status::Ok,
+        Some(Json(burrows.iter().map(|x| x.id).collect())),
+    )
 }
 
 #[get("/follow")]
@@ -344,39 +345,38 @@ pub async fn get_follow(
 ) -> (Status, Json<Vec<UserGetFollowResponse>>) {
     let pg_con = db.into_inner();
     let uid = sso.id;
-    match pgdb::user::Entity::find_by_id(uid)
-        .one(&pg_con)
-        .await
-    {
+    match pgdb::user::Entity::find_by_id(uid).one(&pg_con).await {
         Ok(user) => {
             let user = user.unwrap();
-            match user.find_related(pgdb::burrow::Entity)
-                .all(&pg_con)
-                .await
-            {
+            match user.find_related(pgdb::burrow::Entity).all(&pg_con).await {
                 Ok(burrows) => {
-                    (Status::Ok, Json(burrows.iter().map(|x|
-                        UserGetFollowResponse {
-                            id: x.id,
-                            title: x.title.clone(),
-                            description: x.description.clone(),
-                            // TODO
-                            update: false,
-                        }
-                    ).collect()))
-                },
+                    (
+                        Status::Ok,
+                        Json(
+                            burrows
+                                .iter()
+                                .map(|x| UserGetFollowResponse {
+                                    id: x.id,
+                                    title: x.title.clone(),
+                                    description: x.description.clone(),
+                                    // TODO
+                                    update: false,
+                                })
+                                .collect(),
+                        ),
+                    )
+                }
                 Err(e) => {
                     error!("[FOLLOW] Database Error: {:?}", e.to_string());
                     (Status::InternalServerError, Json(Vec::new()))
-                },
+                }
             }
-        },
+        }
         Err(e) => {
             error!("[FOLLOW] Database Error: {:?}", e.to_string());
             (Status::InternalServerError, Json(Vec::new()))
-        },
+        }
     }
-
 }
 
 #[post("/follow/<bid>")]
@@ -393,9 +393,13 @@ pub async fn follow_burrow(
     };
     match user_follow.insert(&pg_con).await {
         Ok(res) => {
-            info!("[FOLLOW] User {} follows Burrow {}", res.userid.unwrap(), res.burrowid.unwrap());
+            info!(
+                "[FOLLOW] User {} follows Burrow {}",
+                res.userid.unwrap(),
+                res.burrowid.unwrap()
+            );
             (Status::Ok, Json("".to_string()))
-        },
+        }
         Err(e) => {
             error!("[FOLLOW] Database Error: {:?}", e.to_string());
             (Status::InternalServerError, Json("".to_string()))

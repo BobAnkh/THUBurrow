@@ -1,6 +1,6 @@
+use rocket::http::Status;
 use rocket::serde::json::Json;
 use rocket::{Build, Rocket};
-use rocket::http::Status;
 use rocket_db_pools::Connection;
 
 use sea_orm::entity::*;
@@ -8,8 +8,8 @@ use sea_orm::entity::*;
 use chrono::{FixedOffset, Utc};
 
 use crate::pgdb;
-use crate::req::burrow::*;
 use crate::pool::PgDb;
+use crate::req::burrow::*;
 use crate::utils::sso;
 
 pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
@@ -21,7 +21,7 @@ pub async fn burrow_create(
     db: Connection<PgDb>,
     burrow_info: Json<BurrowInfo>,
     sso: sso::SsoAuth,
-) -> (Status, Result<Json<BurrowCreateResponse>, String>){
+) -> (Status, Result<Json<BurrowCreateResponse>, String>) {
     let pg_con = db.into_inner();
     // get burrow info from request
     let burrow = burrow_info.into_inner();
@@ -29,15 +29,17 @@ pub async fn burrow_create(
     let title = match burrow.title {
         Some(s) => {
             if s == "".to_string() {
-                return (Status::BadRequest, Err("Burrow title cannot be empty.".to_string()));
-            }
-            else {
+                return (
+                    Status::BadRequest,
+                    Err("Burrow title cannot be empty.".to_string()),
+                );
+            } else {
                 s
             }
-        },
+        }
         None => {
             return (Status::InternalServerError, Err("".to_string()));
-        },
+        }
     };
     // fill the row of table 'burrow'
     let burrows = pgdb::burrow::ActiveModel {
@@ -64,7 +66,10 @@ pub async fn burrow_create(
                     match ust.update(&pg_con).await {
                         Ok(s) => {
                             info!("[Create-Burrow] Burrow create Succ, save burrow: {:?}", bid);
-                            info!("[Create-Burrow] User Status Updated, uid: {}", s.uid.unwrap());
+                            info!(
+                                "[Create-Burrow] User Status Updated, uid: {}",
+                                s.uid.unwrap()
+                            );
                             (
                                 Status::Ok,
                                 Ok(Json(BurrowCreateResponse {
@@ -74,22 +79,22 @@ pub async fn burrow_create(
                                     description: res.description.unwrap(),
                                 })),
                             )
-                        },
+                        }
                         Err(e) => {
                             error!("Database error: {:?}", e.to_string());
                             return (Status::InternalServerError, Err("".to_string()));
-                        },
+                        }
                     }
-                },
+                }
                 Err(e) => {
                     error!("Database error: {:?}", e.to_string());
                     return (Status::InternalServerError, Err("".to_string()));
-                },
+                }
             }
-        },
+        }
         _ => {
             error!("[Create-Burrow] Cannot insert burrow to postgres.");
             (Status::InternalServerError, Err("".to_string()))
-        },
+        }
     }
 }

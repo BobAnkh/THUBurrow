@@ -160,36 +160,33 @@ pub async fn user_table_setup(rocket: Rocket<Build>) -> fairing::Result {
 
 pub async fn create_burrow_table(db: &DbConn) -> Result<ExecResult, DbErr> {
     let stmt = sea_query::Table::create()
-    .table(pgdb::burrow::Entity)
-    .if_not_exists()
-    .col(
-        ColumnDef::new(pgdb::burrow::Column::Id)
-            .big_integer()
-            .not_null()
-            .primary_key()
-            .auto_increment(),
-    )
-    .col(
-        ColumnDef::new(pgdb::burrow::Column::Title)
-            .string()
-            .not_null(),
-    )
-    .col(
-        ColumnDef::new(pgdb::burrow::Column::Description)
-            .string(),
-    )
-    .col(
-        ColumnDef::new(pgdb::burrow::Column::Author)
-            .big_integer()
-            .not_null(),
-    )
-    .col(
-        ColumnDef::new(pgdb::burrow::Column::Status)
-            .small_integer()
-            .not_null()
-            .default(0),
-    )
-    .to_owned();
+        .table(pgdb::burrow::Entity)
+        .if_not_exists()
+        .col(
+            ColumnDef::new(pgdb::burrow::Column::Id)
+                .big_integer()
+                .not_null()
+                .primary_key()
+                .auto_increment(),
+        )
+        .col(
+            ColumnDef::new(pgdb::burrow::Column::Title)
+                .string()
+                .not_null(),
+        )
+        .col(ColumnDef::new(pgdb::burrow::Column::Description).string())
+        .col(
+            ColumnDef::new(pgdb::burrow::Column::Author)
+                .big_integer()
+                .not_null(),
+        )
+        .col(
+            ColumnDef::new(pgdb::burrow::Column::Status)
+                .small_integer()
+                .not_null()
+                .default(0),
+        )
+        .to_owned();
     build_statement(db, &stmt).await
 }
 
@@ -217,23 +214,24 @@ pub async fn burrow_table_setup(rocket: Rocket<Build>) -> fairing::Result {
 
 pub async fn create_junction_table(db: &DbConn) -> Result<ExecResult, DbErr> {
     let stmt = sea_query::Table::create()
-    .table(pgdb::user_follow::Entity)
-    .if_not_exists()
-    .col(
-        ColumnDef::new(pgdb::user_follow::Column::Userid)
-            .big_integer()
-            .not_null(),
-    )
-    .col(
-        ColumnDef::new(pgdb::user_follow::Column::Burrowid)
-            .big_integer()
-            .not_null(),
-    )
-    .primary_key(Index::create()
-        .col(pgdb::user_follow::Column::Userid)
-        .col(pgdb::user_follow::Column::Burrowid)
-    )
-    .to_owned();
+        .table(pgdb::user_follow::Entity)
+        .if_not_exists()
+        .col(
+            ColumnDef::new(pgdb::user_follow::Column::Userid)
+                .big_integer()
+                .not_null(),
+        )
+        .col(
+            ColumnDef::new(pgdb::user_follow::Column::Burrowid)
+                .big_integer()
+                .not_null(),
+        )
+        .primary_key(
+            Index::create()
+                .col(pgdb::user_follow::Column::Userid)
+                .col(pgdb::user_follow::Column::Burrowid),
+        )
+        .to_owned();
     build_statement(db, &stmt).await
 }
 
