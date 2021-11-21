@@ -2575,9 +2575,9 @@ dependencies = [
 
 [[package]]
 name = "sea-orm"
-version = "0.3.2"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "008887f4c2d0228891facd84a2c0bfdf175671a7a727798c63c14dfe04e343b2"
+checksum = "81fe39be57658b6c90f71cf4dcf050511fa832fee8bad97f4dba7704fa08f2c8"
 dependencies = [
  "async-stream",
  "async-trait",
@@ -2598,9 +2598,9 @@ dependencies = [
 
 [[package]]
 name = "sea-orm-macros"
-version = "0.3.2"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f8d4da296bdf6ab25a89e09af3a0d80e94e18580575fae3f7fbe7314604e8c8c"
+checksum = "8dc818c1e49026ad0b5bf0ffb51002b27f66ebfecf5c035b44364894be7451a7"
 dependencies = [
  "bae",
  "heck",
@@ -2611,9 +2611,9 @@ dependencies = [
 
 [[package]]
 name = "sea-query"
-version = "0.18.2"
+version = "0.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0ae0ce1a7c495076a9d6401c917b564fb75e77e05432e6c86084ca453b8256d7"
+checksum = "a02a5aa1610e9109bac5f01c0652ff327a681719deaab1acb620fe281429c201"
 dependencies = [
  "chrono",
  "rust_decimal",
