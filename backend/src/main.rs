@@ -4,7 +4,7 @@ extern crate rocket;
 use rocket::fairing::AdHoc;
 use rocket_db_pools::Database;
 
-use backend::pool::{MinioImageStorage, PgDb, RedisDb};
+use backend::pool::{MinioImageStorage, PgDb, PulsarSearchProducerMq, RedisDb};
 use backend::routes::{self, sample};
 use backend::setup;
 use backend::utils::{cors, id_gen};
@@ -34,6 +34,7 @@ fn rocket() -> _ {
         .attach(cors_handler)
         .attach(PgDb::init())
         .attach(RedisDb::init())
+        .attach(PulsarSearchProducerMq::init())
         .attach(MinioImageStorage::init())
         .attach(AdHoc::on_ignite("mount_user", sample::init))
         .attach(AdHoc::on_ignite("mount_routes", routes::routes_init))

@@ -11,8 +11,14 @@ url = "postgres://postgres:postgres@127.0.0.1:5432/pgdb"
 [debug.databases.keydb]
 url = "redis://:keypassword@127.0.0.1:6300"
 
+[debug.databases.pulsar-mq]
+url = "pulsar://127.0.0.1:6650"
+
 [debug.databases.minio]
 url = "minio://minio:miniopassword@127.0.0.1:9000"
+
+[debug.databases.search]
+url = "http://localhost:8108@8Dz4jRrsBjYgdCD/VGP1bleph7oBThJr5IcF43l0U24="
 
 [release]
 cli_colors = false

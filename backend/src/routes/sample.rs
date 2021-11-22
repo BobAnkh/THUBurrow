@@ -9,7 +9,8 @@ use sea_orm::{entity::*, ActiveModelTrait};
 use uuid::Uuid;
 
 use crate::db;
-use crate::pool::{PgDb, RedisDb};
+use crate::pool::{PgDb, PulsarSearchProducerMq, RedisDb};
+use crate::req::pulsar_msg::*;
 use crate::req::user::*;
 use crate::utils::sso::{self, AuthTokenError, SsoAuth, ValidToken};
 
@@ -18,6 +19,7 @@ use crypto::digest::Digest;
 use crypto::sha3::Sha3;
 
 use idgenerator::IdHelper;
+use serde_json::json;
 
 pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
     rocket
@@ -96,6 +98,27 @@ async fn auth_new_unauthorized(request: &Request<'_>) -> String {
         },
         None => "Valid token".to_string(),
     }
+}
+
+#[get("/pulsar/<name>")]
+async fn pulsar_produce(mut producer: Connection<PulsarSearchProducerMq>, name: &str) -> String {
+    let operation = json!({
+        "operation_level": "burrow",
+        "operation_type": "new",
+        "operation_time": 2394823i64,
+        "data": "Hello motherfucker!"
+    });
+    let msg: PulsarData = serde_json::from_value(operation).unwrap();
+    match producer.send(msg).await {
+        // Ok(r) => match r.await {
+        //     Ok(cs) => format!("send data successfully!, {}", cs.producer_id),
+        //     Err(e) => format!("Err: {}", e),
+        // },
+        // Err(e) => format!("Err: {}", e),
+        Ok(_) => format!("send data to pulsar successfully!,{}", name),
+        Err(e) => format!("Err: {}", e),
+    }
+    // let f1 = r.await?;
 }
 
 #[get("/hello/<name>", rank = 2)]

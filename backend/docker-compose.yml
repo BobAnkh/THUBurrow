@@ -22,7 +22,7 @@ services:
     volumes:
       - ./conf/log4rs.yml:/etc/backend/conf/log4rs.yml:ro
     environment:
-      ROCKET_DATABASES: '{pgdb={url=postgres://postgres:${PG_PASSWORD:-postgres}@pgdb:5432/${PG_DB:-pgdb}},keydb={url=redis://:${KEYDB_PASSWORD}@keydb:6379},minio={url=minio://${MINIO_USER:-minio}:${MINIO_PASSWORD:-miniopassword}@minio:9000}}'
+      ROCKET_DATABASES: '{pgdb={url=postgres://postgres:${PG_PASSWORD:-postgres}@pgdb:5432/${PG_DB:-pgdb}},keydb={url=redis://:${KEYDB_PASSWORD}@keydb:6379},minio={url=minio://${MINIO_USER:-minio}:${MINIO_PASSWORD:-miniopassword}@minio:9000},search{url=http://typesense@${TYPESENSE_API_KEY:-8Dz4jRrsBjYgdCD/VGP1bleph7oBThJr5IcF43l0U24=}}}'
       ROCKET_SECRET_KEY: ${ROCKET_SECRET_KEY}
       ROCKET_ADDRESS: "0.0.0.0"
       VIRTUAL_HOST: ${BACKEND_HOST}
