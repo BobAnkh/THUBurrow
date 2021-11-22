@@ -31,9 +31,15 @@ pub enum RelationType {
 }
 
 #[derive(Serialize, Deserialize)]
+pub struct PulsarRelationData {
+    pub relation_operation: RelationOperation,
+    pub relation_type: RelationType,
+}
+
+#[derive(Serialize, Deserialize)]
 pub struct PulsarSearchData {
-    pub operation_type: SearchOperationType,   //("new","remove", "update“)
-    pub operation_level: SearchContentType, //("burrow","post", "reply")
+    pub operation_type: SearchOperationType, //("new","remove", "update“)
+    pub content_type: SearchContentType,     //("burrow","post", "reply")
     pub operation_time: DateTimeWithTimeZone,
     pub data: serde_json::Value,
     // Json format for PulsarData.data:
@@ -95,6 +101,24 @@ impl SerializeMessage for PulsarSearchData {
 
 impl DeserializeMessage for PulsarSearchData {
     type Output = Result<PulsarSearchData, serde_json::Error>;
+
+    fn deserialize_message(payload: &Payload) -> Self::Output {
+        serde_json::from_slice(&payload.data)
+    }
+}
+
+impl SerializeMessage for PulsarRelationData {
+    fn serialize_message(input: Self) -> Result<producer::Message, PulsarError> {
+        let payload = serde_json::to_vec(&input).map_err(|e| PulsarError::Custom(e.to_string()))?;
+        Ok(producer::Message {
+            payload,
+            ..Default::default()
+        })
+    }
+}
+
+impl DeserializeMessage for PulsarRelationData {
+    type Output = Result<PulsarRelationData, serde_json::Error>;
 
     fn deserialize_message(payload: &Payload) -> Self::Output {
         serde_json::from_slice(&payload.data)
