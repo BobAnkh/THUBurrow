@@ -144,13 +144,13 @@ async fn pulsar_typesense() -> Result<(), pulsar::Error> {
         };
         println!(
             "Consumer receive: {:?} {:?} at time{}",
-            data.operation_type, data.operation_level, data.operation_time
+            data.operation_type, data.content_type, data.operation_time
         );
         // if data.data.as_str() != "data" {
         //     println!("Unexpected payload: {}", &data.data);
         //     break;
         // }
-        match (data.operation_type, data.operation_level) {
+        match (data.operation_type, data.content_type) {
             (SearchOperationType::New, SearchContentType::Burrow) => {
                 // TODO: define a struct here, not using direct json
                 let operation = json!({
