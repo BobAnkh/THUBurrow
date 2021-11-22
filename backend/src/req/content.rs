@@ -87,6 +87,20 @@ impl From<content_post::Model> for Post {
     }
 }
 
+impl From<&content_post::Model> for Post {
+    fn from(post_info: &content_post::Model) -> Post {
+        Post {
+            title: post_info.title.to_owned(),
+            burrow_id: post_info.burrow_id,
+            section: post_info.section.split(',').map(str::to_string).collect(),
+            tag: post_info.tag.split(',').map(str::to_string).collect(),
+            create_time: post_info.create_time,
+            last_modify_time: post_info.last_modify_time,
+            post_state: post_info.post_state,
+        }
+    }
+}
+
 impl From<content_reply::Model> for Reply {
     fn from(reply_info: content_reply::Model) -> Reply {
         Reply {
@@ -107,8 +121,8 @@ impl From<&content_reply::Model> for Reply {
             post_id: reply_info.post_id,
             reply_id: reply_info.reply_id,
             burrow_id: reply_info.burrow_id,
-            create_time: reply_info.create_time.to_owned(),
-            last_modify_time: reply_info.last_modify_time.to_owned(),
+            create_time: reply_info.create_time,
+            last_modify_time: reply_info.last_modify_time,
             content: reply_info.content.to_owned(),
             reply_state: reply_info.reply_state,
         }
