@@ -108,7 +108,7 @@ async fn pulsar_produce(mut producer: Connection<PulsarSearchProducerMq>, name: 
         "operation_time": 2394823i64,
         "data": "Hello motherfucker!"
     });
-    let msg: PulsarData = serde_json::from_value(operation).unwrap();
+    let msg: PulsarSearchData = serde_json::from_value(operation).unwrap();
     match producer.send(msg).await {
         // Ok(r) => match r.await {
         //     Ok(cs) => format!("send data successfully!, {}", cs.producer_id),

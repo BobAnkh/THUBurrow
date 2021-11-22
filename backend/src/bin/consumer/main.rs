@@ -116,7 +116,7 @@ async fn pulsar_typesense() -> Result<(), pulsar::Error> {
         .unwrap_or_else(|| "persistent://public/default/search".to_string());
     let builder = Pulsar::builder(addr, TokioExecutor);
     let pulsar: Pulsar<_> = builder.build().await?;
-    let mut consumer: Consumer<PulsarData, _> = pulsar
+    let mut consumer: Consumer<PulsarSearchData, _> = pulsar
         .consumer()
         .with_topic(topic)
         .with_subscription_type(SubType::Exclusive)
