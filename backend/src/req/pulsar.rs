@@ -19,8 +19,8 @@ pub enum SearchContentType {
 
 #[derive(Serialize, Deserialize)]
 pub struct PulsarSearchData {
-    pub operation_type: SearchOperationType,   //("new","remove", "update“)
-    pub operation_level: SearchContentType, //("burrow","post", "reply")
+    pub operation_type: SearchOperationType, //("new","remove", "update“)
+    pub content_type: SearchContentType,     //("burrow","post", "reply")
     pub operation_time: DateTimeWithTimeZone,
     pub data: serde_json::Value,
     // Json format for PulsarData.data:
