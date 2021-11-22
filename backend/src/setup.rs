@@ -292,6 +292,12 @@ pub async fn create_user_collection_table(db: &DbConn) -> Result<ExecResult, DbE
                 .integer()
                 .not_null(),
         )
+        .col(
+            ColumnDef::new(pgdb::user_collection::Column::IsUpdate)
+                .boolean()
+                .not_null()
+                .default(false),
+        )
         .primary_key(
             Index::create()
                 .col(pgdb::user_collection::Column::Uid)

@@ -135,7 +135,7 @@ pub async fn read_post(
                 }
             };
 
-            // get subject data
+            // get post metadata
             let post_desc: Post = post_info.into();
             let reply_page: Vec<Reply> = reply_info.iter().map(|r| r.into()).collect();
             let post_page = PostPage {
@@ -143,6 +143,7 @@ pub async fn read_post(
                 reply_page,
                 page,
             };
+            // TODO: check if the user collect or like the post
             // return the response
             (
                 Status::Ok,
