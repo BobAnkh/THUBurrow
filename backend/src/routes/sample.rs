@@ -10,7 +10,7 @@ use uuid::Uuid;
 
 use crate::db;
 use crate::pool::{PgDb, PulsarSearchProducerMq, RedisDb};
-use crate::req::pulsar_msg::*;
+use crate::req::pulsar::*;
 use crate::req::user::*;
 use crate::utils::sso::{self, AuthTokenError, SsoAuth, ValidToken};
 
