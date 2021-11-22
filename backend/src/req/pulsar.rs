@@ -4,14 +4,14 @@ use sea_orm::prelude::DateTimeWithTimeZone;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
-pub enum OperationType {
+pub enum SearchOperationType {
     New,
     Remove,
     Update,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub enum OperationLevel {
+pub enum SearchContentType {
     Burrow,
     Post,
     Reply,
@@ -19,8 +19,8 @@ pub enum OperationLevel {
 
 #[derive(Serialize, Deserialize)]
 pub struct PulsarSearchData {
-    pub operation_type: OperationType,   //("new","remove", "update“)
-    pub operation_level: OperationLevel, //("burrow","post", "reply")
+    pub operation_type: SearchOperationType,   //("new","remove", "update“)
+    pub operation_level: SearchContentType, //("burrow","post", "reply")
     pub operation_time: DateTimeWithTimeZone,
     pub data: serde_json::Value,
     // Json format for PulsarData.data:

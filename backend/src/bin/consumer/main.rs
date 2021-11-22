@@ -1,5 +1,5 @@
 extern crate serde;
-use backend::req::pulsar_msg::*;
+use backend::req::pulsar::*;
 use futures::TryStreamExt;
 use lazy_static::lazy_static;
 use pulsar::{Consumer, Pulsar, SubType, TokioExecutor};
@@ -151,7 +151,7 @@ async fn pulsar_typesense() -> Result<(), pulsar::Error> {
         //     break;
         // }
         match (data.operation_type, data.operation_level) {
-            (OperationType::New, OperationLevel::Burrow) => {
+            (SearchOperationType::New, SearchContentType::Burrow) => {
                 // TODO: define a struct here, not using direct json
                 let operation = json!({
                     "id":data.data["id"],
@@ -171,7 +171,7 @@ async fn pulsar_typesense() -> Result<(), pulsar::Error> {
                     Err(e) => println!("add new burrow failed {:?}", e),
                 }
             }
-            (OperationType::New, OperationLevel::Post) => {
+            (SearchOperationType::New, SearchContentType::Post) => {
                 let operation = json!({
                     "id":data.data["id"],
                     "burrow_id":data.data["burrow_id"],
@@ -190,7 +190,7 @@ async fn pulsar_typesense() -> Result<(), pulsar::Error> {
                     Err(e) => println!("add new post failed {:?}", e),
                 }
             }
-            (OperationType::New, OperationLevel::Reply) => {
+            (SearchOperationType::New, SearchContentType::Reply) => {
                 let operation = json!({
                     "id":data.data["id"],
                     "post_id":data.data["post_id"],
@@ -208,7 +208,7 @@ async fn pulsar_typesense() -> Result<(), pulsar::Error> {
                     Err(e) => println!("add new reply failed {:?}", e),
                 }
             }
-            (OperationType::Update, OperationLevel::Burrow) => {
+            (SearchOperationType::Update, SearchContentType::Burrow) => {
                 let operation = json!({
                     "id":data.data["id"],
                     "title":data.data["title"],
@@ -226,7 +226,7 @@ async fn pulsar_typesense() -> Result<(), pulsar::Error> {
                     Err(e) => println!("update burrow failed{:?}", e),
                 }
             }
-            (OperationType::Update, OperationLevel::Post) => {
+            (SearchOperationType::Update, SearchContentType::Post) => {
                 let operation = json!({
                     "id":data.data["id"],
                     "last_modified_time":data.operation_time,
@@ -246,7 +246,7 @@ async fn pulsar_typesense() -> Result<(), pulsar::Error> {
             // (OperationType::Update, OperationLevel::Reply) => {
             //     json!({});
             // }
-            (OperationType::Remove, OperationLevel::Burrow) => {
+            (SearchOperationType::Remove, SearchContentType::Burrow) => {
                 let uri: String = format!("/collections/burrows/documents/{}", data.data["id"]);
                 match client.delete(&uri).send().await {
                     Ok(a) => println!("a burrow deleted.{:?}", a),
@@ -254,14 +254,14 @@ async fn pulsar_typesense() -> Result<(), pulsar::Error> {
                 }
             }
 
-            (OperationType::Remove, OperationLevel::Post) => {
+            (SearchOperationType::Remove, SearchContentType::Post) => {
                 let uri: String = format!("/collections/posts/documents/{}", data.data["id"]);
                 match client.delete(&uri).send().await {
                     Ok(a) => println!("a post deleted.{:?}", a),
                     Err(e) => println!("delete post failed{:?}", e),
                 }
             }
-            (OperationType::Remove, OperationLevel::Reply) => {
+            (SearchOperationType::Remove, SearchContentType::Reply) => {
                 let uri: String = format!("/collections/replies/documents/{}", data.data["id"]);
                 match client.delete(&uri).send().await {
                     Ok(a) => println!("a reply deleted.{:?}", a),
