@@ -88,3 +88,26 @@ impl DeserializeMessage for PulsarSearchData {
         serde_json::from_slice(&payload.data)
     }
 }
+
+#[derive(Serialize, Deserialize)]
+pub struct SearchResult {
+    pub found:i64,
+    pub hits: Vec<serde_json::Value>
+}
+impl SerializeMessage for SearchResult {
+    fn serialize_message(input: Self) -> Result<producer::Message, PulsarError> {
+        let payload = serde_json::to_vec(&input).map_err(|e| PulsarError::Custom(e.to_string()))?;
+        Ok(producer::Message {
+            payload,
+            ..Default::default()
+        })
+    }
+}
+
+impl DeserializeMessage for SearchResult {
+    type Output = Result<PulsarSearchData, serde_json::Error>;
+
+    fn deserialize_message(payload: &Payload) -> Self::Output {
+        serde_json::from_slice(&payload.data)
+    }
+}

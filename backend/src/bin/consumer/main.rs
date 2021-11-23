@@ -217,7 +217,8 @@ async fn pulsar_typesense() -> Result<(), pulsar::Error> {
                     "introduction":data.data["introduction"],
                     "last_modified_time":data.operation_time
                 });
-                let uri: String = format!("/collections/burrows/documents/{}", data.data["burrow_id"]);
+                let uri: String =
+                    format!("/collections/burrows/documents/{}", data.data["burrow_id"]);
                 match client
                     .build_patch(&uri)
                     .body(serde_json::to_string(&operation).unwrap())
@@ -250,7 +251,8 @@ async fn pulsar_typesense() -> Result<(), pulsar::Error> {
             //     json!({});
             // }
             (SearchOperationType::Remove, SearchContentType::Burrow) => {
-                let uri: String = format!("/collections/burrows/documents/{}", data.data["burrow_id"]);
+                let uri: String =
+                    format!("/collections/burrows/documents/{}", data.data["burrow_id"]);
                 match client.delete(&uri).send().await {
                     Ok(a) => println!("a burrow deleted.{:?}", a),
                     Err(e) => println!("delete burrow failed{:?}", e),
@@ -265,7 +267,8 @@ async fn pulsar_typesense() -> Result<(), pulsar::Error> {
                 }
             }
             (SearchOperationType::Remove, SearchContentType::Reply) => {
-                let uri: String = format!("/collections/replies/documents/{}", data.data["replt_id"]);
+                let uri: String =
+                    format!("/collections/replies/documents/{}", data.data["replt_id"]);
                 match client.delete(&uri).send().await {
                     Ok(a) => println!("a reply deleted.{:?}", a),
                     Err(e) => println!("delete reply failed{:?}", e),
