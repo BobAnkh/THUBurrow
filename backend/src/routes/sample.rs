@@ -35,7 +35,8 @@ pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
                 redis_read,
                 auth_name,
                 auth_new,
-                sso_test
+                sso_test,
+                pulsar_produce
             ],
         )
         .register(
@@ -103,10 +104,14 @@ async fn auth_new_unauthorized(request: &Request<'_>) -> String {
 #[get("/pulsar/<name>")]
 async fn pulsar_produce(mut producer: Connection<PulsarSearchProducerMq>, name: &str) -> String {
     let operation = json!({
-        "operation_level": "burrow",
-        "operation_type": "new",
-        "operation_time": 2394823i64,
-        "data": "Hello motherfucker!"
+        "operation_type": SearchOperationType::New,
+        "content_type": SearchContentType::Burrow,
+        "operation_time": Local::now(),
+        "data": json!({
+            "burrow_id":23424i64,
+            "title":"first burrow!",
+            "introduction":"This is test new burrow, motherfucker!"
+        })
     });
     let msg: PulsarSearchData = serde_json::from_value(operation).unwrap();
     match producer.send(msg).await {

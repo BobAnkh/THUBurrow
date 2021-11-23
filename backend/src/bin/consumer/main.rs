@@ -33,7 +33,7 @@ async fn create_typesense_collections() -> Result<(), reqwest::Error> {
     let collection_burrows = json!({
       "name": "burrows",
       "fields": [
-        {"name": "id", "type": "int64"},
+        {"name": "burrow_id", "type": "int64"},
         {"name": "title", "type": "string" },
         {"name": "introduction", "type": "string"},
         {"name": "created_time", "type": "string"},
@@ -43,19 +43,20 @@ async fn create_typesense_collections() -> Result<(), reqwest::Error> {
     let collection_posts = json!({
       "name": "posts",
       "fields": [
-        {"name": "id", "type": "int64" },
+        {"name": "post_id", "type": "int64" },
         {"name": "title", "type": "string" },
         {"name": "burrow_id", "type": "int64" },
         {"name": "created_time", "type": "string"},
         {"name": "last_modified_time", "type": "string"},
         {"name": "post_type", "type": "int32"},
+        {"name": "section", "type": "string[]"},
         {"name": "tag", "type": "string[]"}
       ]
     });
     let collection_replies = json!({
       "name": "replies",
       "fields": [
-        {"name": "id", "type": "int32" },
+        {"name": "reply_id", "type": "int32" },
         {"name": "post_id", "type": "int64"},
         {"name": "created_time", "type": "string"},
         {"name": "content", "type": "string"}
@@ -154,7 +155,7 @@ async fn pulsar_typesense() -> Result<(), pulsar::Error> {
             (SearchOperationType::New, SearchContentType::Burrow) => {
                 // TODO: define a struct here, not using direct json
                 let operation = json!({
-                    "id":data.data["id"],
+                    "burrow_id":data.data["burrow_id"],
                     "title":data.data["title"],
                     "introduction":data.data["introduction"],
                     "created_time":data.operation_time,
@@ -173,10 +174,11 @@ async fn pulsar_typesense() -> Result<(), pulsar::Error> {
             }
             (SearchOperationType::New, SearchContentType::Post) => {
                 let operation = json!({
-                    "id":data.data["id"],
+                    "post_id":data.data["post_id"],
                     "burrow_id":data.data["burrow_id"],
                     "created_time":data.operation_time,
                     "last_modified_time":data.operation_time,
+                    "section":data.data["section"],
                     "tags":data.data["tags"]
                 });
 
@@ -192,7 +194,7 @@ async fn pulsar_typesense() -> Result<(), pulsar::Error> {
             }
             (SearchOperationType::New, SearchContentType::Reply) => {
                 let operation = json!({
-                    "id":data.data["id"],
+                    "reply_id":data.data["reply_id"],
                     "post_id":data.data["post_id"],
                     "created_time":data.operation_time,
                     "content":data.data["content"]
@@ -210,12 +212,12 @@ async fn pulsar_typesense() -> Result<(), pulsar::Error> {
             }
             (SearchOperationType::Update, SearchContentType::Burrow) => {
                 let operation = json!({
-                    "id":data.data["id"],
+                    "burrow_id":data.data["burrow_id"],
                     "title":data.data["title"],
                     "introduction":data.data["introduction"],
                     "last_modified_time":data.operation_time
                 });
-                let uri: String = format!("/collections/burrows/documents/{}", data.data["id"]);
+                let uri: String = format!("/collections/burrows/documents/{}", data.data["burrow_id"]);
                 match client
                     .build_patch(&uri)
                     .body(serde_json::to_string(&operation).unwrap())
@@ -228,8 +230,9 @@ async fn pulsar_typesense() -> Result<(), pulsar::Error> {
             }
             (SearchOperationType::Update, SearchContentType::Post) => {
                 let operation = json!({
-                    "id":data.data["id"],
+                    "post_id":data.data["post_id"],
                     "last_modified_time":data.operation_time,
+                    "section":data.data["section"],
                     "tags":data.data["tags"]
                 });
 
@@ -247,7 +250,7 @@ async fn pulsar_typesense() -> Result<(), pulsar::Error> {
             //     json!({});
             // }
             (SearchOperationType::Remove, SearchContentType::Burrow) => {
-                let uri: String = format!("/collections/burrows/documents/{}", data.data["id"]);
+                let uri: String = format!("/collections/burrows/documents/{}", data.data["burrow_id"]);
                 match client.delete(&uri).send().await {
                     Ok(a) => println!("a burrow deleted.{:?}", a),
                     Err(e) => println!("delete burrow failed{:?}", e),
@@ -255,14 +258,14 @@ async fn pulsar_typesense() -> Result<(), pulsar::Error> {
             }
 
             (SearchOperationType::Remove, SearchContentType::Post) => {
-                let uri: String = format!("/collections/posts/documents/{}", data.data["id"]);
+                let uri: String = format!("/collections/posts/documents/{}", data.data["post_id"]);
                 match client.delete(&uri).send().await {
                     Ok(a) => println!("a post deleted.{:?}", a),
                     Err(e) => println!("delete post failed{:?}", e),
                 }
             }
             (SearchOperationType::Remove, SearchContentType::Reply) => {
-                let uri: String = format!("/collections/replies/documents/{}", data.data["id"]);
+                let uri: String = format!("/collections/replies/documents/{}", data.data["replt_id"]);
                 match client.delete(&uri).send().await {
                     Ok(a) => println!("a reply deleted.{:?}", a),
                     Err(e) => println!("delete reply failed{:?}", e),

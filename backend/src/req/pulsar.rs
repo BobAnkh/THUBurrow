@@ -27,46 +27,47 @@ pub struct PulsarSearchData {
 
     //     new burrow:
     //             {
-    //                 "id": i64,
+    //                 "burrow_id": i64,
     //                 "title": string,
     //                 "introduction": string,
     //             }
     //     new post:
     //             {
-    //                 "id": i64,
+    //                 "post_id": i64,
     //                 "title": string,
     //                 "burrow_id": i64,
+    //                 "section": string[],
     //                 "tags": string[],
     //                 "post_type": int32
     //             }
     //     new reply:
     //             {
-    //                 "id": i64
+    //                 "reply_id": i64
     //                 "post_id": i64,
     //                 "content": string
     //             }
     //     update burrow:
     //             {
-    //                 "id": i64,
+    //                 "burrow_id": i64,
     //                 "title": string,
     //                 "introduction": string,
     //             }
     //     update post:
     //             {
-    //                 "id": i64,
+    //                 "post_id": i64,
     //                 "tags": string[],
     //             }
     //     remove burrow:
     //             {
-    //                 "id": i64
+    //                 "burrow_id": i64
     //             }
     //     remove post:
     //             {
-    //                 "id": i64,
+    //                 "post_id": i64,
     //             }
     //     remove reply:
     //             {
-    //                 "id": i64,
+    //                 "reply_id": i64,
     //             }
 }
 
