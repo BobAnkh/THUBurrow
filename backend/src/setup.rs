@@ -193,7 +193,7 @@ pub async fn create_content_post_table(db: &DbConn) -> Result<ExecResult, DbErr>
                 .not_null(),
         )
         .col(
-            ColumnDef::new(pgdb::content_post::Column::LastModifyTime)
+            ColumnDef::new(pgdb::content_post::Column::UpdateTime)
                 .timestamp_with_time_zone()
                 .not_null(),
         )
@@ -267,7 +267,7 @@ pub async fn create_content_reply_table(db: &DbConn) -> Result<ExecResult, DbErr
                 .not_null(),
         )
         .col(
-            ColumnDef::new(pgdb::content_reply::Column::LastModifyTime)
+            ColumnDef::new(pgdb::content_reply::Column::UpdateTime)
                 .timestamp_with_time_zone()
                 .not_null(),
         )

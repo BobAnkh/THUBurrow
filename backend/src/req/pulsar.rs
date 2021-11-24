@@ -51,7 +51,7 @@ pub struct PulsarRelationData {
 ///                 "title": string,
 ///                 "burrow_id": i64,
 ///                 "section": string[],
-///                 "tags": string[],
+///                 "tag": string[],
 ///                 "post_type": int32,
 ///                 "post_state": int32,
 ///             }
@@ -78,11 +78,8 @@ pub struct PulsarRelationData {
 ///                 "title": string,
 ///                 "burrow_id": i64,
 ///                 "section": string[],
-///                 "tags": string[],
-///                 "post_type": int32,
-///                 "post_state": int32,
+///                 "tag": string[],
 ///             }
-///
 ///     update reply:
 ///             {
 ///                 "reply_id": i64
@@ -169,7 +166,7 @@ pub struct PulsarSearchPostData {
     pub title: String,
     pub burrow_id: i64,
     pub section: Vec<String>,
-    pub tags: Vec<String>,
+    pub tag: Vec<String>,
     pub post_type: i32,
     pub post_state: i32,
     pub update_time: DateTimeWithTimeZone,
@@ -202,7 +199,7 @@ pub struct TypesensePostData {
     pub post_type: i32,
     pub post_state: i32,
     pub section: Vec<String>,
-    pub tags: Vec<String>,
+    pub tag: Vec<String>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -247,7 +244,7 @@ impl From<PulsarSearchPostData> for TypesensePostData {
             post_type: post.post_type,
             post_state: post.post_state,
             section: post.section,
-            tags: post.tags,
+            tag: post.tag,
         }
     }
 }
@@ -262,7 +259,7 @@ impl From<&PulsarSearchPostData> for TypesensePostData {
             post_type: post.post_type,
             post_state: post.post_state,
             section: post.section.to_owned(),
-            tags: post.tags.to_owned(),
+            tag: post.tag.to_owned(),
         }
     }
 }

@@ -49,7 +49,7 @@ async fn create_typesense_collections() -> Result<(), reqwest::Error> {
         {"name": "post_type", "type": "int32"},
         {"name": "post_state", "type": "int32"},
         {"name": "section", "type": "string[]"},
-        {"name": "tags", "type": "string[]"}
+        {"name": "tag", "type": "string[]"}
       ]
     });
     let collection_replies = json!({

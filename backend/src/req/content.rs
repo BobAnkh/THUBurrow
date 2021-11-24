@@ -58,8 +58,9 @@ pub struct Post {
     pub section: Vec<String>,
     pub tag: Vec<String>,
     pub create_time: DateTimeWithTimeZone,
-    pub last_modify_time: DateTimeWithTimeZone,
+    pub update_time: DateTimeWithTimeZone,
     pub post_state: i32,
+    pub post_type: i32,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -68,7 +69,7 @@ pub struct Reply {
     pub reply_id: i32,
     pub burrow_id: i64,
     pub create_time: DateTimeWithTimeZone,
-    pub last_modify_time: DateTimeWithTimeZone,
+    pub update_time: DateTimeWithTimeZone,
     pub content: String,
     pub reply_state: i32,
 }
@@ -81,8 +82,9 @@ impl From<content_post::Model> for Post {
             section: post_info.section.split(',').map(str::to_string).collect(),
             tag: post_info.tag.split(',').map(str::to_string).collect(),
             create_time: post_info.create_time,
-            last_modify_time: post_info.last_modify_time,
+            update_time: post_info.update_time,
             post_state: post_info.post_state,
+            post_type: post_info.post_type,
         }
     }
 }
@@ -95,8 +97,9 @@ impl From<&content_post::Model> for Post {
             section: post_info.section.split(',').map(str::to_string).collect(),
             tag: post_info.tag.split(',').map(str::to_string).collect(),
             create_time: post_info.create_time,
-            last_modify_time: post_info.last_modify_time,
+            update_time: post_info.update_time,
             post_state: post_info.post_state,
+            post_type: post_info.post_type,
         }
     }
 }
@@ -108,7 +111,7 @@ impl From<content_reply::Model> for Reply {
             reply_id: reply_info.reply_id,
             burrow_id: reply_info.burrow_id,
             create_time: reply_info.create_time,
-            last_modify_time: reply_info.last_modify_time,
+            update_time: reply_info.update_time,
             content: reply_info.content,
             reply_state: reply_info.reply_state,
         }
@@ -122,7 +125,7 @@ impl From<&content_reply::Model> for Reply {
             reply_id: reply_info.reply_id,
             burrow_id: reply_info.burrow_id,
             create_time: reply_info.create_time,
-            last_modify_time: reply_info.last_modify_time,
+            update_time: reply_info.update_time,
             content: reply_info.content.to_owned(),
             reply_state: reply_info.reply_state,
         }
