@@ -36,76 +36,76 @@ pub struct PulsarRelationData {
     pub relation_type: RelationType,
 }
 
-    /// Json format for PulsarSearchData.data:
+/// Json format for PulsarSearchData.data:
 
-    ///     create burrow:
-    ///             {
-    ///                 "burrow_id": i64,
-    ///                 "title": string,
-    ///                 "introduction": string,
-    ///             }
-    ///
-    ///     create post:
-    ///             {
-    ///                 "post_id": i64,
-    ///                 "title": string,
-    ///                 "burrow_id": i64,
-    ///                 "section": string[],
-    ///                 "tags": string[],
-    ///                 "post_type": int32,
-    ///                 "post_state": int32,
-    ///             }
-    ///
-    ///     create reply:
-    ///             {
-    ///                 "reply_id": i64
-    ///                 "post_id": i64,
-    ///                 "burrow_id": i64,
-    ///                 "content": string,
-    ///                 "reply_state": int32,
-    ///             }
-    ///
-    ///     update burrow:
-    ///             {
-    ///                 "burrow_id": i64,
-    ///                 "title": string,
-    ///                 "introduction": string,
-    ///             }
-    ///
-    ///     update post:
-    ///             {
-    ///                 "post_id": i64,
-    ///                 "title": string,
-    ///                 "burrow_id": i64,
-    ///                 "section": string[],
-    ///                 "tags": string[],
-    ///                 "post_type": int32,
-    ///                 "post_state": int32,
-    ///             }
-    ///
-    ///     update reply:
-    ///             {
-    ///                 "reply_id": i64
-    ///                 "post_id": i64,
-    ///                 "burrow_id": i64,
-    ///                 "content": string,
-    ///                 "reply_state": int32,
-    ///             }
-    ///
-    ///     delete burrow:
-    ///             {
-    ///                 "burrow_id": i64
-    ///             }
-    ///
-    ///     delete post:
-    ///             {
-    ///                 "post_id": i64,
-    ///             }
-    ///
-    ///     delete reply:
-    ///             {
-    ///                 "reply_id": i64,
-    ///             }
+///     create burrow:
+///             {
+///                 "burrow_id": i64,
+///                 "title": string,
+///                 "introduction": string,
+///             }
+///
+///     create post:
+///             {
+///                 "post_id": i64,
+///                 "title": string,
+///                 "burrow_id": i64,
+///                 "section": string[],
+///                 "tags": string[],
+///                 "post_type": int32,
+///                 "post_state": int32,
+///             }
+///
+///     create reply:
+///             {
+///                 "reply_id": i64
+///                 "post_id": i64,
+///                 "burrow_id": i64,
+///                 "content": string,
+///                 "reply_state": int32,
+///             }
+///
+///     update burrow:
+///             {
+///                 "burrow_id": i64,
+///                 "title": string,
+///                 "introduction": string,
+///             }
+///
+///     update post:
+///             {
+///                 "post_id": i64,
+///                 "title": string,
+///                 "burrow_id": i64,
+///                 "section": string[],
+///                 "tags": string[],
+///                 "post_type": int32,
+///                 "post_state": int32,
+///             }
+///
+///     update reply:
+///             {
+///                 "reply_id": i64
+///                 "post_id": i64,
+///                 "burrow_id": i64,
+///                 "content": string,
+///                 "reply_state": int32,
+///             }
+///
+///     delete burrow:
+///             {
+///                 "burrow_id": i64
+///             }
+///
+///     delete post:
+///             {
+///                 "post_id": i64,
+///             }
+///
+///     delete reply:
+///             {
+///                 "reply_id": i64,
+///             }
 #[derive(Serialize, Deserialize)]
 pub enum PulsarSearchData {
     CreateBurrow(PulsarSearchBurrowData),

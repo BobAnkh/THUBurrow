@@ -15,8 +15,8 @@ use crate::req::user::*;
 use crate::utils::get_valid_burrow;
 use crate::utils::sso::{self, AuthTokenError, SsoAuth, ValidToken};
 
-use chrono::Local;
 use chrono::prelude::*;
+use chrono::Local;
 use crypto::digest::Digest;
 use crypto::sha3::Sha3;
 
@@ -105,7 +105,10 @@ async fn auth_new_unauthorized(request: &Request<'_>) -> String {
 
 #[get("/pulsar/<name>")]
 async fn pulsar_produce(pulsar: Connection<PulsarSearchProducerMq>, name: &str) -> String {
-    let mut producer = match pulsar.get_producer("persistent://public/default/search").await {
+    let mut producer = match pulsar
+        .get_producer("persistent://public/default/search")
+        .await
+    {
         Ok(producer) => producer,
         Err(e) => {
             println!("{:?}", e);
