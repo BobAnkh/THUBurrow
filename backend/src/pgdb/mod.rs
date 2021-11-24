@@ -2,5 +2,9 @@
 
 pub mod prelude;
 
+pub mod content_post;
+pub mod content_reply;
 pub mod image;
 pub mod user;
+pub mod user_collection;
+pub mod user_like;
