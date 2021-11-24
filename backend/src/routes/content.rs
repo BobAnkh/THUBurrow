@@ -63,7 +63,7 @@ pub async fn create_post(
             title: Set(content.title.to_string()),
             burrow_id: Set(content.burrow_id),
             create_time: Set(now.to_owned()),
-            last_modify_time: Set(now.to_owned()),
+            update_time: Set(now.to_owned()),
             section: Set(section),
             tag: Set(tag),
             ..Default::default()
@@ -81,7 +81,7 @@ pub async fn create_post(
             reply_id: Set(0),
             burrow_id: Set(content.burrow_id),
             create_time: Set(now.to_owned()),
-            last_modify_time: Set(now),
+            update_time: Set(now),
             content: Set(content.content.to_string()),
             ..Default::default()
         };
@@ -205,7 +205,7 @@ pub async fn create_reply(
                     reply_id: Set(post_info.post_len),
                     burrow_id: Set(content.burrow_id),
                     create_time: Set(now.to_owned()),
-                    last_modify_time: Set(now.to_owned()),
+                    update_time: Set(now.to_owned()),
                     content: Set(content.content.to_string()),
                     ..Default::default()
                 };
@@ -218,7 +218,7 @@ pub async fn create_reply(
                 // modify the time and the post_len in content_subject
                 let post_update = pgdb::content_post::ActiveModel {
                     post_id: Set(post_info.post_id),
-                    last_modify_time: Set(now),
+                    update_time: Set(now),
                     post_len: Set(post_info.post_len + 1),
                     ..Default::default()
                 };

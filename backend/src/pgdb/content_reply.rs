@@ -11,7 +11,7 @@ pub struct Model {
     pub reply_id: i32,
     pub burrow_id: i64,
     pub create_time: DateTimeWithTimeZone,
-    pub last_modify_time: DateTimeWithTimeZone,
+    pub update_time: DateTimeWithTimeZone,
     #[sea_orm(column_type = "Text")]
     pub content: String,
     pub reply_state: i32,
