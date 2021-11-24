@@ -17,7 +17,8 @@ pub struct Model {
     #[sea_orm(column_type = "Text")]
     pub tag: String,
     pub post_len: i32,
-    pub post_state: i16,
+    pub post_type: i32,
+    pub post_state: i32,
     pub like_num: i32,
     pub collection_num: i32,
 }

@@ -59,7 +59,7 @@ pub struct Post {
     pub tag: Vec<String>,
     pub create_time: DateTimeWithTimeZone,
     pub last_modify_time: DateTimeWithTimeZone,
-    pub post_state: i16,
+    pub post_state: i32,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -70,7 +70,7 @@ pub struct Reply {
     pub create_time: DateTimeWithTimeZone,
     pub last_modify_time: DateTimeWithTimeZone,
     pub content: String,
-    pub reply_state: i16,
+    pub reply_state: i32,
 }
 
 impl From<content_post::Model> for Post {

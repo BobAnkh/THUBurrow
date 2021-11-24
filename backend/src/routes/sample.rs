@@ -9,17 +9,17 @@ use sea_orm::{entity::*, ActiveModelTrait};
 use uuid::Uuid;
 
 use crate::db;
-use crate::pool::{PgDb, PulsarSearchProducerMq, RedisDb};
+use crate::pool::{PgDb, PulsarSearchProducerMq, RedisDb, RocketPulsarProducer};
 use crate::req::pulsar::*;
 use crate::req::user::*;
 use crate::utils::sso::{self, AuthTokenError, SsoAuth, ValidToken};
 
 use chrono::Local;
+use chrono::prelude::*;
 use crypto::digest::Digest;
 use crypto::sha3::Sha3;
 
 use idgenerator::IdHelper;
-use serde_json::json;
 
 pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
     rocket
@@ -35,7 +35,8 @@ pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
                 redis_read,
                 auth_name,
                 auth_new,
-                sso_test
+                sso_test,
+                pulsar_produce
             ],
         )
         .register(
@@ -101,14 +102,22 @@ async fn auth_new_unauthorized(request: &Request<'_>) -> String {
 }
 
 #[get("/pulsar/<name>")]
-async fn pulsar_produce(mut producer: Connection<PulsarSearchProducerMq>, name: &str) -> String {
-    let operation = json!({
-        "operation_level": "burrow",
-        "operation_type": "new",
-        "operation_time": 2394823i64,
-        "data": "Hello motherfucker!"
-    });
-    let msg: PulsarSearchData = serde_json::from_value(operation).unwrap();
+async fn pulsar_produce(pulsar: Connection<PulsarSearchProducerMq>, name: &str) -> String {
+    let mut producer = match pulsar.get_producer("persistent://public/default/search").await {
+        Ok(producer) => producer,
+        Err(e) => {
+            println!("{:?}", e);
+            return "Error".to_string();
+        }
+    };
+    let now = Utc::now().with_timezone(&FixedOffset::east(8 * 3600));
+    let data = PulsarSearchBurrowData {
+        burrow_id: 1i64,
+        title: name.to_string(),
+        introduction: name.to_string(),
+        update_time: now,
+    };
+    let msg = PulsarSearchData::CreateBurrow(data);
     match producer.send(msg).await {
         // Ok(r) => match r.await {
         //     Ok(cs) => format!("send data successfully!, {}", cs.producer_id),

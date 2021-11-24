@@ -14,7 +14,7 @@ pub struct Model {
     pub last_modify_time: DateTimeWithTimeZone,
     #[sea_orm(column_type = "Text")]
     pub content: String,
-    pub reply_state: i16,
+    pub reply_state: i32,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter)]

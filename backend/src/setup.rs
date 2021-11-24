@@ -183,8 +183,14 @@ pub async fn create_content_post_table(db: &DbConn) -> Result<ExecResult, DbErr>
                 .default(1),
         )
         .col(
+            ColumnDef::new(pgdb::content_post::Column::PostType)
+                .integer()
+                .not_null()
+                .default(0),
+        )
+        .col(
             ColumnDef::new(pgdb::content_post::Column::PostState)
-                .small_integer()
+                .integer()
                 .not_null()
                 .default(0),
         )
@@ -241,7 +247,7 @@ pub async fn create_content_reply_table(db: &DbConn) -> Result<ExecResult, DbErr
         )
         .col(
             ColumnDef::new(pgdb::content_reply::Column::ReplyState)
-                .small_integer()
+                .integer()
                 .not_null()
                 .default(0),
         )

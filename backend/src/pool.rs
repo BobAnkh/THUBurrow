@@ -109,7 +109,7 @@ pub struct PulsarSearchProducerPool {
 
 #[rocket::async_trait]
 impl Pool for PulsarSearchProducerPool {
-    type Connection = producer::Producer<TokioExecutor>;
+    type Connection = Pulsar<TokioExecutor>;
     type Error = PulsarError;
 
     async fn init(figment: &Figment) -> Result<Self, Self::Error> {
@@ -119,10 +119,26 @@ impl Pool for PulsarSearchProducerPool {
     }
 
     async fn get(&self) -> Result<Self::Connection, Self::Error> {
-        let connection = self
-            .pulsar
-            .producer()
-            .with_topic("persistent://public/default/search")
+        Ok(self.pulsar.clone())
+    }
+}
+
+#[rocket::async_trait]
+pub trait RocketPulsarProducer {
+    async fn get_producer(
+        &self,
+        topic: &str,
+    ) -> Result<producer::Producer<TokioExecutor>, PulsarError>;
+}
+
+#[rocket::async_trait]
+impl RocketPulsarProducer for Pulsar<TokioExecutor> {
+    async fn get_producer(
+        &self,
+        topic: &str,
+    ) -> Result<producer::Producer<TokioExecutor>, PulsarError> {
+        self.producer()
+            .with_topic(topic)
             .with_options(producer::ProducerOptions {
                 schema: Some(proto::Schema {
                     r#type: proto::schema::Type::String as i32,
@@ -131,10 +147,10 @@ impl Pool for PulsarSearchProducerPool {
                 ..Default::default()
             })
             .build()
-            .await?;
-        Ok(connection)
+            .await
     }
 }
+
 #[derive(Database)]
 #[database("minio")]
 pub struct MinioImageStorage(MinioImagePool);
