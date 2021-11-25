@@ -272,7 +272,7 @@ pub async fn create_user_like_table(db: &DbConn) -> Result<ExecResult, DbErr> {
         )
         .col(
             ColumnDef::new(pgdb::user_like::Column::PostId)
-                .integer()
+                .big_integer()
                 .not_null(),
         )
         .primary_key(
@@ -295,7 +295,7 @@ pub async fn create_user_collection_table(db: &DbConn) -> Result<ExecResult, DbE
         )
         .col(
             ColumnDef::new(pgdb::user_collection::Column::PostId)
-                .integer()
+                .big_integer()
                 .not_null(),
         )
         .col(
