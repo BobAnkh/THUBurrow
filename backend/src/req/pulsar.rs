@@ -58,7 +58,7 @@ pub struct PulsarRelationData {
 ///
 ///     create reply:
 ///             {
-///                 "reply_id": i64
+///                 "reply_id": i32
 ///                 "post_id": i64,
 ///                 "burrow_id": i64,
 ///                 "content": string,
@@ -85,7 +85,7 @@ pub struct PulsarRelationData {
 ///
 ///     update reply:
 ///             {
-///                 "reply_id": i64
+///                 "reply_id": i32
 ///                 "post_id": i64,
 ///                 "burrow_id": i64,
 ///                 "content": string,
@@ -104,7 +104,7 @@ pub struct PulsarRelationData {
 ///
 ///     delete reply:
 ///             {
-///                 "reply_id": i64,
+///                 "reply_id": i32,
 ///             }
 #[derive(Serialize, Deserialize)]
 pub enum PulsarSearchData {
@@ -116,7 +116,7 @@ pub enum PulsarSearchData {
     DeletePost(i64),
     CreateReply(PulsarSearchReplyData),
     UpdateReply(PulsarSearchReplyData),
-    DeleteReply(i64),
+    DeleteReply(i64, i32),
 }
 
 impl SerializeMessage for PulsarSearchData {
@@ -177,7 +177,7 @@ pub struct PulsarSearchPostData {
 
 #[derive(Serialize, Deserialize)]
 pub struct PulsarSearchReplyData {
-    pub reply_id: i64,
+    pub reply_id: i32,
     pub post_id: i64,
     pub burrow_id: i64,
     pub content: String,
@@ -187,7 +187,8 @@ pub struct PulsarSearchReplyData {
 
 #[derive(Serialize, Deserialize)]
 pub struct TypesenseBurrowData {
-    pub id: i64,
+    pub id: String,
+    pub burrow_id: i64,
     pub title: String,
     pub introduction: String,
     pub update_time: String,
@@ -195,7 +196,8 @@ pub struct TypesenseBurrowData {
 
 #[derive(Serialize, Deserialize)]
 pub struct TypesensePostData {
-    pub id: i64,
+    pub id: String,
+    pub post_id: i64,
     pub title: String,
     pub burrow_id: i64,
     pub update_time: String,
@@ -207,7 +209,8 @@ pub struct TypesensePostData {
 
 #[derive(Serialize, Deserialize)]
 pub struct TypesenseReplyData {
-    pub id: i64,
+    pub id: String,
+    pub reply_id: i32,
     pub post_id: i64,
     pub burrow_id: i64,
     pub content: String,
@@ -218,7 +221,8 @@ pub struct TypesenseReplyData {
 impl From<PulsarSearchBurrowData> for TypesenseBurrowData {
     fn from(burrow: PulsarSearchBurrowData) -> TypesenseBurrowData {
         TypesenseBurrowData {
-            id: burrow.burrow_id,
+            id: burrow.burrow_id.to_string(),
+            burrow_id: burrow.burrow_id,
             title: burrow.title,
             introduction: burrow.introduction,
             update_time: burrow.update_time.to_rfc3339(),
@@ -229,7 +233,8 @@ impl From<PulsarSearchBurrowData> for TypesenseBurrowData {
 impl From<&PulsarSearchBurrowData> for TypesenseBurrowData {
     fn from(burrow: &PulsarSearchBurrowData) -> TypesenseBurrowData {
         TypesenseBurrowData {
-            id: burrow.burrow_id,
+            id: burrow.burrow_id.to_string(),
+            burrow_id: burrow.burrow_id,
             title: burrow.title.to_owned(),
             introduction: burrow.introduction.to_owned(),
             update_time: burrow.update_time.to_rfc3339(),
@@ -240,7 +245,8 @@ impl From<&PulsarSearchBurrowData> for TypesenseBurrowData {
 impl From<PulsarSearchPostData> for TypesensePostData {
     fn from(post: PulsarSearchPostData) -> TypesensePostData {
         TypesensePostData {
-            id: post.post_id,
+            id: post.post_id.to_string(),
+            post_id: post.post_id,
             title: post.title,
             burrow_id: post.burrow_id,
             update_time: post.update_time.to_rfc3339(),
@@ -255,7 +261,8 @@ impl From<PulsarSearchPostData> for TypesensePostData {
 impl From<&PulsarSearchPostData> for TypesensePostData {
     fn from(post: &PulsarSearchPostData) -> TypesensePostData {
         TypesensePostData {
-            id: post.post_id,
+            id: post.post_id.to_string(),
+            post_id: post.post_id,
             title: post.title.to_owned(),
             burrow_id: post.burrow_id,
             update_time: post.update_time.to_rfc3339(),
@@ -270,7 +277,8 @@ impl From<&PulsarSearchPostData> for TypesensePostData {
 impl From<PulsarSearchReplyData> for TypesenseReplyData {
     fn from(reply: PulsarSearchReplyData) -> TypesenseReplyData {
         TypesenseReplyData {
-            id: reply.reply_id,
+            id: format!("{}={}", reply.post_id, reply.reply_id),
+            reply_id: reply.reply_id,
             post_id: reply.post_id,
             burrow_id: reply.burrow_id,
             content: reply.content,
@@ -283,7 +291,8 @@ impl From<PulsarSearchReplyData> for TypesenseReplyData {
 impl From<&PulsarSearchReplyData> for TypesenseReplyData {
     fn from(reply: &PulsarSearchReplyData) -> TypesenseReplyData {
         TypesenseReplyData {
-            id: reply.reply_id,
+            id: format!("{}={}", reply.post_id, reply.reply_id),
+            reply_id: reply.reply_id,
             post_id: reply.post_id,
             burrow_id: reply.burrow_id,
             content: reply.content.to_owned(),

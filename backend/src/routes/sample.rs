@@ -101,8 +101,8 @@ async fn auth_new_unauthorized(request: &Request<'_>) -> String {
     }
 }
 
-#[get("/pulsar/<name>")]
-async fn pulsar_produce(pulsar: Connection<PulsarSearchProducerMq>, name: &str) -> String {
+#[get("/pulsar/<burrow_id>")]
+async fn pulsar_produce(pulsar: Connection<PulsarSearchProducerMq>, burrow_id: i64) -> String {
     let mut producer = match pulsar
         .get_producer("persistent://public/default/search")
         .await
@@ -115,9 +115,9 @@ async fn pulsar_produce(pulsar: Connection<PulsarSearchProducerMq>, name: &str) 
     };
     let now = Utc::now().with_timezone(&FixedOffset::east(8 * 3600));
     let data = PulsarSearchBurrowData {
-        burrow_id: 1i64,
-        title: name.to_string(),
-        introduction: name.to_string(),
+        burrow_id: burrow_id,
+        title: format!("This is burrow NO.{}", burrow_id),
+        introduction: format!("Content of burrow.{}", burrow_id),
         update_time: now,
     };
     let msg = PulsarSearchData::CreateBurrow(data);
@@ -127,7 +127,7 @@ async fn pulsar_produce(pulsar: Connection<PulsarSearchProducerMq>, name: &str) 
         //     Err(e) => format!("Err: {}", e),
         // },
         // Err(e) => format!("Err: {}", e),
-        Ok(_) => format!("send data to pulsar successfully!,{}", name),
+        Ok(_) => format!("send data to pulsar successfully!.NO.{}", burrow_id),
         Err(e) => format!("Err: {}", e),
     }
     // let f1 = r.await?;

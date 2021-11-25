@@ -6,7 +6,6 @@ use pulsar::{Consumer, Pulsar, SubType, TokioExecutor};
 use sea_orm::prelude::DateTimeWithTimeZone;
 use serde_json::json;
 use std::env;
-use tokio::time::sleep;
 use tokio::time::Duration;
 
 lazy_static! {
@@ -34,6 +33,7 @@ async fn create_typesense_collections() -> Result<(), reqwest::Error> {
     let collection_burrows = json!({
       "name": "burrows",
       "fields": [
+        {"name": "id", "type": "string"},
         {"name": "burrow_id", "type": "int64"},
         {"name": "title", "type": "string" },
         {"name": "introduction", "type": "string"},
@@ -43,7 +43,8 @@ async fn create_typesense_collections() -> Result<(), reqwest::Error> {
     let collection_posts = json!({
       "name": "posts",
       "fields": [
-        {"name": "post_id", "type": "int64" },
+        {"name": "id", "type": "string" },
+        {"name": "post_id", "type": "int64"},
         {"name": "title", "type": "string" },
         {"name": "burrow_id", "type": "int64" },
         {"name": "update_time", "type": "string"},
@@ -56,6 +57,7 @@ async fn create_typesense_collections() -> Result<(), reqwest::Error> {
     let collection_replies = json!({
       "name": "replies",
       "fields": [
+        {"name": "id", "type": "string" },
         {"name": "reply_id", "type": "int32" },
         {"name": "post_id", "type": "int64", "facet":true},
         {"name": "burrow_id", "type": "int64"},
@@ -75,7 +77,7 @@ async fn create_typesense_collections() -> Result<(), reqwest::Error> {
                 ),
                 401 => panic!("Unauthorized - Your API key is wrong."),
                 404 => panic!("Not Found - The requested resource is not found."),
-                409 => panic!("Conflict - When a resource already exists."),
+                409 => println!("Conflict - When a resource already exists."),
                 422 => panic!(
                     "Unprocessable Entity - Request is well-formed, but cannot be processed."
                 ),
@@ -83,7 +85,7 @@ async fn create_typesense_collections() -> Result<(), reqwest::Error> {
                     "Service Unavailable - We’re temporarily offline. Please try again later."
                 ),
                 _ => panic!(
-                    "Unknown err when creating collections. Status code:{}",
+                    "Unknown error when creating collections. Status code:{}",
                     a.status().as_u16()
                 ),
             },
@@ -168,7 +170,7 @@ async fn pulsar_typesense() -> Result<(), pulsar::Error> {
     let client = reqwest::Client::new();
     while let Some(msg) = consumer.try_next().await? {
         consumer.ack(&msg).await?;
-        println!("metadata: {:?},id: {:?}", msg.metadata(), msg.message_id());
+        // println!("metadata: {:?},id: {:?}", msg.metadata(), msg.message_id());
         let data = match msg.deserialize() {
             Ok(data) => data,
             Err(e) => {
@@ -183,14 +185,20 @@ async fn pulsar_typesense() -> Result<(), pulsar::Error> {
         match data {
             PulsarSearchData::CreateBurrow(burrow) => {
                 let data: TypesenseBurrowData = burrow.into();
-
                 match client
                     .build_post("/collections/burrows/documents")
                     .body(serde_json::to_string(&data).unwrap())
                     .send()
                     .await
                 {
-                    Ok(r) => println!("add new burrow.{:?}", r),
+                    Ok(r) => match r.status().as_u16() {
+                        201 => println!("Add new burrow."),
+                        _ => panic!(
+                            "Status:{} Failed to add new burrow. {}",
+                            r.status().as_u16(),
+                            r.text().await.unwrap()
+                        ),
+                    },
                     Err(e) => println!("add new burrow failed {:?}", e),
                 }
             }
@@ -340,8 +348,9 @@ async fn pulsar_typesense() -> Result<(), pulsar::Error> {
                     Err(e) => println!("delete post failed{:?}", e),
                 }
             }
-            PulsarSearchData::DeleteReply(reply_id) => {
-                let uri: String = format!("/collections/replies/documents/{}", reply_id);
+            PulsarSearchData::DeleteReply(post_id, reply_id) => {
+                let uri: String =
+                    format!("/collections/replies/documents/{}-{}", post_id, reply_id);
                 match client.delete(&uri).send().await {
                     Ok(r) => println!("a reply deleted.{:?}", r),
                     Err(e) => println!("delete reply failed{:?}", e),
