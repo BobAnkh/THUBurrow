@@ -7,13 +7,21 @@ use crate::req::pulsar::*;
 use serde_json::json;
 
 pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
-    rocket.mount("/search", routes![search_burrow,])
+    rocket.mount(
+        "/search",
+        routes![
+            search_burrow_keyword,
+            search_burrow_id,
+            search_post_keyword,
+            search_post_id
+        ],
+    )
 }
-
+///Search keyword in burrow title/introduction.
 #[get("/burrow/<keyword>")]
-async fn search_burrow(searchpool: Connection<TypesenseSearch>, keyword: &str) -> String {
+async fn search_burrow_keyword(searchpool: Connection<TypesenseSearch>, keyword: &str) -> String {
     let client = searchpool.into_inner();
-    let uri = format!("/collections/burrows/documents/search?q={}&query_by=title,introduction&filter_by=&sort_by=", keyword);
+    let uri = format!("/collections/burrows/documents/search?q={}&query_by=title,introduction&filter_by=&sort_by=update_time", keyword);
     let response = match client.build_get(&uri).send().await {
         Ok(a) => a.json::<serde_json::Value>().await.unwrap().to_string(),
         Err(e) => return format!("build_get send Error: {:?}", e),
@@ -28,18 +36,63 @@ async fn search_burrow(searchpool: Connection<TypesenseSearch>, keyword: &str) -
         .to_string(),
     }
 }
-
-#[get("/post/<keyword>/<tag>")]
-async fn search_post_tag(mut searchpool: Connection<TypesenseSearch>, keyword: &str, tag:&str) -> String {
+///Search burrow with id.
+#[get("/burrow/<burrow_id>")]
+async fn search_burrow_id(searchpool: Connection<TypesenseSearch>, burrow_id: i64) -> String {
     let client = searchpool.into_inner();
-    let uri = format!("/collections/posts/documents/search?q={}&query_by=title&filter_by=tag:= {}&sort_by=last_modified_time", keyword,tag);
+    let uri = format!("/collections/burrows/documents/search?q={}&query_by=burrow_id&filter_by=&sort_by=update_time", burrow_id);
+    let response = match client.build_get(&uri).send().await {
+        Ok(a) => a.text().await.unwrap(),
+        Err(e) => return format!("build_get send Error: {:?}", e),
+    };
+    let result: SearchResult = serde_json::from_str(&response).unwrap();
+    match result.found {
+        0 => "No results!".to_string(),
+        _ => json!({
+            "found":result.found,
+            "hits":result.hits
+        })
+        .to_string(),
+    }
+}
+///Search keyword in post title/replies. Result filter by tag.
+#[get("/post/<keyword>/<tag>")]
+async fn search_post_keyword(
+    searchpool: Connection<TypesenseSearch>,
+    keyword: &str,
+    tag: &str,
+) -> String {
+    let client = searchpool.into_inner();
+    let uri = format!("/collections/replies/documents/search?q={}&query_by=content&filter_by=tag:= {}&group_by=post_id&sort_by=update_time", keyword,tag);
     let response = match client.build_get(&uri).send().await {
         Ok(a) => a.json::<serde_json::Value>().await.unwrap().to_string(),
         Err(e) => return format!("build_get send Error: {:?}", e),
     };
     let result: SearchResult = serde_json::from_str(&response).unwrap();
     match result.found {
-        0 => format!("No results!"),
+        0 => "No results!".to_string(),
+        _ => json!({
+            "found":result.found,
+            "hits":result.hits
+        })
+        .to_string(),
+    }
+}
+///Search post with id.
+#[get("/post/<post_id>")]
+async fn search_post_id(searchpool: Connection<TypesenseSearch>, post_id: i64) -> String {
+    let client = searchpool.into_inner();
+    let uri = format!(
+        "/collections/posts/documents/search?q={}&query_by=post_id&filter_by=&sort_by=update_time",
+        post_id
+    );
+    let response = match client.build_get(&uri).send().await {
+        Ok(a) => a.json::<serde_json::Value>().await.unwrap().to_string(),
+        Err(e) => return format!("build_get send Error: {:?}", e),
+    };
+    let result: SearchResult = serde_json::from_str(&response).unwrap();
+    match result.found {
+        0 => "No results!".to_string(),
         _ => json!({
             "found":result.found,
             "hits":result.hits

@@ -3,6 +3,7 @@ use backend::req::pulsar::*;
 use futures::TryStreamExt;
 use lazy_static::lazy_static;
 use pulsar::{Consumer, Pulsar, SubType, TokioExecutor};
+use sea_orm::prelude::DateTimeWithTimeZone;
 use serde_json::json;
 use std::env;
 use tokio::time::sleep;
@@ -56,7 +57,7 @@ async fn create_typesense_collections() -> Result<(), reqwest::Error> {
       "name": "replies",
       "fields": [
         {"name": "reply_id", "type": "int32" },
-        {"name": "post_id", "type": "int64"},
+        {"name": "post_id", "type": "int64", "facet":true},
         {"name": "burrow_id", "type": "int64"},
         {"name": "update_time", "type": "string"},
         {"name": "content", "type": "string"},
@@ -65,8 +66,29 @@ async fn create_typesense_collections() -> Result<(), reqwest::Error> {
     });
     let client = reqwest::Client::new();
     for each in [collection_burrows, collection_posts, collection_replies].iter() {
-        let res = client.build_post("/collections").json(&each).send().await?;
         // TODO: match the status code of Response here, to see whether it is successfully created or is already created, or failed
+        match client.build_post("/collections").json(&each).send().await {
+            Ok(a) => match a.status().as_u16() {
+                201 => (),
+                400 => panic!(
+                    "Bad Request - The request could not be understood due to malformed syntax."
+                ),
+                401 => panic!("Unauthorized - Your API key is wrong."),
+                404 => panic!("Not Found - The requested resource is not found."),
+                409 => panic!("Conflict - When a resource already exists."),
+                422 => panic!(
+                    "Unprocessable Entity - Request is well-formed, but cannot be processed."
+                ),
+                503 => panic!(
+                    "Service Unavailable - We’re temporarily offline. Please try again later."
+                ),
+                _ => panic!(
+                    "Unknown err when creating collections. Status code:{}",
+                    a.status().as_u16()
+                ),
+            },
+            Err(e) => panic!("Err when create typesense collections,{:?}", e),
+        }
     }
     Ok(())
 }
@@ -200,44 +222,107 @@ async fn pulsar_typesense() -> Result<(), pulsar::Error> {
             }
             PulsarSearchData::UpdateBurrow(burrow) => {
                 // TODO: read from typesense first, check the time if it is newer than the one in typesense
-                let data: TypesenseBurrowData = burrow.into();
-                let uri: String = format!("/collections/burrows/documents/{}", data.id);
-                match client
-                    .build_patch(&uri)
-                    .body(serde_json::to_string(&data).unwrap())
-                    .send()
-                    .await
-                {
-                    Ok(r) => println!("a burrow updated.{:?}", r),
-                    Err(e) => println!("update burrow failed{:?}", e),
+                let search_result:SearchResult = serde_json::from_str(&client
+                .build_get(&format!("/collections/burrows/documents/search?q={}&query_by=burrow_id&filter_by=&sort_by=",burrow.burrow_id))
+                .send()
+                .await.unwrap().text().await.unwrap()).unwrap();
+                match search_result.found {
+                    0 => println!("Burrow to update does not exist!"),
+                    _ => {
+                        let present_burrow: TypesenseBurrowData =
+                            serde_json::from_value(search_result.hits[0].clone()).unwrap();
+                        match DateTimeWithTimeZone::parse_from_rfc3339(&present_burrow.update_time)
+                            .unwrap()
+                            .timestamp()
+                            < burrow.update_time.timestamp()
+                        {
+                            true => {
+                                let data: TypesenseBurrowData = burrow.into();
+                                let uri: String =
+                                    format!("/collections/burrows/documents/{}", data.id);
+                                match client
+                                    .build_patch(&uri)
+                                    .body(serde_json::to_string(&data).unwrap())
+                                    .send()
+                                    .await
+                                {
+                                    Ok(r) => println!("a burrow updated.{:?}", r),
+                                    Err(e) => println!("update burrow failed{:?}", e),
+                                }
+                            }
+                            false => println!("The burrow is already up to date."),
+                        }
+                    }
                 }
             }
             PulsarSearchData::UpdatePost(post) => {
                 // TODO: read from typesense first, check the time if it is newer than the one in typesense
-                let data: TypesensePostData = post.into();
-                let uri: String = format!("/collections/posts/documents/{}", data.id);
-                match client
-                    .build_patch(&uri)
-                    .body(serde_json::to_string(&data).unwrap())
+                let search_result:SearchResult = serde_json::from_str(&client
+                    .build_get(&format!("/collections/posts/documents/search?q={}&query_by=post_id&filter_by=&sort_by=",post.post_id))
                     .send()
-                    .await
-                {
-                    Ok(r) => println!("update post.{:?}", r),
-                    Err(e) => println!("update post failed {:?}", e),
+                    .await.unwrap().text().await.unwrap()).unwrap();
+                match search_result.found {
+                    0 => println!("Post to update does not exist!"),
+                    _ => {
+                        let present_post: TypesenseBurrowData =
+                            serde_json::from_value(search_result.hits[0].clone()).unwrap();
+                        match DateTimeWithTimeZone::parse_from_rfc3339(&present_post.update_time)
+                            .unwrap()
+                            .timestamp()
+                            < post.update_time.timestamp()
+                        {
+                            true => {
+                                let data: TypesensePostData = post.into();
+                                let uri: String =
+                                    format!("/collections/posts/documents/{}", data.id);
+                                match client
+                                    .build_patch(&uri)
+                                    .body(serde_json::to_string(&data).unwrap())
+                                    .send()
+                                    .await
+                                {
+                                    Ok(r) => println!("update post.{:?}", r),
+                                    Err(e) => println!("update post failed {:?}", e),
+                                }
+                            }
+                            false => println!("The burrow is already up to date."),
+                        }
+                    }
                 }
             }
             PulsarSearchData::UpdateReply(reply) => {
                 // TODO: read from typesense first, check the time if it is newer than the one in typesense
-                let data: TypesenseReplyData = reply.into();
-                let uri: String = format!("/collections/replies/documents/{}", data.id);
-                match client
-                    .build_patch(&uri)
-                    .body(serde_json::to_string(&data).unwrap())
+                let search_result:SearchResult = serde_json::from_str(&client
+                    .build_get(&format!("/collections/replies/documents/search?q={}&query_by=reply_id&filter_by=&sort_by=",reply.reply_id))
                     .send()
-                    .await
-                {
-                    Ok(r) => println!("update reply.{:?}", r),
-                    Err(e) => println!("update reply failed {:?}", e),
+                    .await.unwrap().text().await.unwrap()).unwrap();
+                match search_result.found {
+                    0 => println!("Reply to update does not exist!"),
+                    _ => {
+                        let present_reply: TypesenseBurrowData =
+                            serde_json::from_value(search_result.hits[0].clone()).unwrap();
+                        match DateTimeWithTimeZone::parse_from_rfc3339(&present_reply.update_time)
+                            .unwrap()
+                            .timestamp()
+                            < reply.update_time.timestamp()
+                        {
+                            true => {
+                                let data: TypesenseReplyData = reply.into();
+                                let uri: String =
+                                    format!("/collections/replies/documents/{}", data.id);
+                                match client
+                                    .build_patch(&uri)
+                                    .body(serde_json::to_string(&data).unwrap())
+                                    .send()
+                                    .await
+                                {
+                                    Ok(r) => println!("update reply.{:?}", r),
+                                    Err(e) => println!("update reply failed {:?}", e),
+                                }
+                            }
+                            false => println!("The burrow is already up to date."),
+                        }
+                    }
                 }
             }
             PulsarSearchData::DeleteBurrow(burrow_id) => {
