@@ -22,16 +22,37 @@ pub struct ReplyCreateResponse {
     pub reply_id: i32,
 }
 
+#[derive(Serialize)]
+pub struct ReplyUpdateResponse {
+    pub errors: Vec<String>,
+    pub post_id: i64,
+    pub reply_id: i32,
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct PostReadResponse {
     pub errors: String,
     pub post_page: Option<PostPage>,
+    pub like: bool,
+    pub collection: bool,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct ListReadResponse {
+    pub errors: String,
+    pub list_page: Option<ListPage>,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct PostPage {
     pub post_desc: Post,
     pub reply_page: Vec<Reply>,
+    pub page: usize,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct ListPage {
+    pub post_page: Vec<Post>,
     pub page: usize,
 }
 
@@ -51,6 +72,13 @@ pub struct ReplyInfo {
     pub content: String,
 }
 
+#[derive(Deserialize)]
+pub struct ReplyUpdateInfo {
+    pub post_id: i64,
+    pub reply_id: i32,
+    pub content: String,
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct Post {
     pub title: String,
@@ -61,6 +89,8 @@ pub struct Post {
     pub update_time: DateTimeWithTimeZone,
     pub post_state: i32,
     pub post_type: i32,
+    pub like_num: i32,
+    pub collection_num: i32,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -85,6 +115,8 @@ impl From<content_post::Model> for Post {
             update_time: post_info.update_time,
             post_state: post_info.post_state,
             post_type: post_info.post_type,
+            like_num: post_info.like_num,
+            collection_num: post_info.collection_num,
         }
     }
 }
@@ -100,6 +132,8 @@ impl From<&content_post::Model> for Post {
             update_time: post_info.update_time,
             post_state: post_info.post_state,
             post_type: post_info.post_type,
+            like_num: post_info.like_num,
+            collection_num: post_info.collection_num,
         }
     }
 }
