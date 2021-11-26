@@ -23,28 +23,29 @@ pub async fn burrow_create(
     sso: sso::SsoAuth,
 ) -> (Status, Result<Json<BurrowCreateResponse>, String>) {
     let pg_con = db.into_inner();
+    // check if user has too many burrows, return corresponding error if so
+    match pgdb::user::Entity::find_by_id(sso.id).one(&pg_con) {
+        Ok(user) => {
+
+        },
+        Err(e) => {
+            error!("Database Error: {:?}", e.to_string());
+            return (Stauts::InternalServerError, Json(Vec::new()));
+        },
+    }
     // get burrow info from request
     let burrow = burrow_info.into_inner();
     // check if Burrow Title is empty, return corresponding error if so
-    let title = match burrow.title {
-        Some(s) => {
-            if s == "".to_string() {
-                return (
-                    Status::BadRequest,
-                    Err("Burrow title cannot be empty.".to_string()),
-                );
-            } else {
-                s
-            }
-        }
-        None => {
-            return (Status::InternalServerError, Err("".to_string()));
-        }
-    };
+    if burrow.title == "".to_string() {
+        return (
+                Status::BadRequest,
+                Err("Burrow title cannot be empty.".to_string()),
+        );
+    }
     // fill the row of table 'burrow'
     let burrows = pgdb::burrow::ActiveModel {
-        author: Set(sso.id),
-        title: Set(title),
+        uid: Set(sso.id),
+        title: Set(burrow.title),
         description: Set(burrow.description),
         ..Default::default()
     };
@@ -52,8 +53,8 @@ pub async fn burrow_create(
     let ins_result = burrows.insert(&pg_con).await;
     match ins_result {
         Ok(res) => {
-            let bid = res.id.unwrap();
-            let uid = res.author.unwrap();
+            let burrow_id = res.burrow_id.unwrap();
+            let uid = res.uid.unwrap();
             // update modified time and valid burrows
             let users_status = pgdb::user_status::Entity::find_by_id(uid)
                 .one(&pg_con)
@@ -62,10 +63,10 @@ pub async fn burrow_create(
                 Ok(ust) => {
                     let mut ust: pgdb::user_status::ActiveModel = ust.unwrap().into();
                     ust.modified_time = Set(Utc::now().with_timezone(&FixedOffset::east(8 * 3600)));
-                    ust.valid_burrow = Set(ust.valid_burrow.unwrap() + "," + &bid.to_string());
+                    ust.valid_burrow = Set(ust.valid_burrow.unwrap() + "," + &burrow_id.to_string());
                     match ust.update(&pg_con).await {
                         Ok(s) => {
-                            info!("[Create-Burrow] Burrow create Succ, save burrow: {:?}", bid);
+                            info!("[Create-Burrow] Burrow create Succ, save burrow: {:?}", burrow_id);
                             info!(
                                 "[Create-Burrow] User Status Updated, uid: {}",
                                 s.uid.unwrap()
@@ -73,9 +74,9 @@ pub async fn burrow_create(
                             (
                                 Status::Ok,
                                 Ok(Json(BurrowCreateResponse {
-                                    id: bid,
+                                    burrow_id: burrow_id,
                                     title: res.title.unwrap(),
-                                    author: uid,
+                                    uid: uid,
                                     description: res.description.unwrap(),
                                 })),
                             )
