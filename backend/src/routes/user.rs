@@ -24,7 +24,16 @@ use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 
 pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
-    rocket.mount("/users", routes![user_log_in, user_sign_up, user_relation, get_follow, follow_burrow,])
+    rocket.mount(
+        "/users",
+        routes![
+            user_log_in,
+            user_sign_up,
+            user_relation,
+            get_follow,
+            follow_burrow,
+        ],
+    )
 }
 
 #[post("/relation", data = "<relation_info>", format = "json")]
@@ -341,10 +350,7 @@ pub async fn get_burrow(
 }
 
 #[get("/favorite")]
-pub async fn get_favorite(
-    db: Connection<PgDb>,
-    sso: SsoAuth,
-) -> (Status, Option<Json<Vec<i64>>>) {
+pub async fn get_favorite(db: Connection<PgDb>, sso: SsoAuth) -> (Status, Option<Json<Vec<i64>>>) {
     let pg_con = db.into_inner();
     let uid = sso.id;
     let user = pgdb::user::Entity::find_by_id(uid)
@@ -405,11 +411,7 @@ pub async fn get_follow(
 }
 
 #[post("/follow/<bid>")]
-pub async fn follow_burrow(
-    bid: i64,
-    db: Connection<PgDb>,
-    sso: SsoAuth,
-) -> (Status, Json<String>) {
+pub async fn follow_burrow(bid: i64, db: Connection<PgDb>, sso: SsoAuth) -> (Status, Json<String>) {
     let pg_con = db.into_inner();
     let uid = sso.id;
     let user_follow = pgdb::user_follow::ActiveModel {

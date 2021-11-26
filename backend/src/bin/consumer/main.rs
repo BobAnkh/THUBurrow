@@ -533,9 +533,10 @@ async fn generate_trending() -> redis::RedisResult<()> {
     loop {
         interval.tick().await;
         let query_formula = Expr::cust(
-            r#"(ln("content_post"."post_len")+"content_post"."like_num"+"content_post"."collection_num")/((floor(extract(epoch from (CURRENT_TIMESTAMP - "content_post"."create_time") ) / 60 / 60)/2+floor(extract(epoch from (CURRENT_TIMESTAMP - "content_post"."last_modify_time") ) / 60 / 60)/2+2)^1.2+10)"#,
+            r#"(ln("content_post"."post_len")+"content_post"."like_num"+"content_post"."collection_num")/((floor(extract(epoch from (CURRENT_TIMESTAMP - "content_post"."create_time") ) / 60 / 60)/2+floor(extract(epoch from (CURRENT_TIMESTAMP - "content_post"."update_time") ) / 60 / 60)/2+2)^1.2+10)"#,
         );
         let trend_pages = ContentPost::find()
+            .filter(content_post::Column::PostState.eq(0))
             .order_by_desc(query_formula)
             .paginate(&pg_con, 50);
         match trend_pages.fetch_page(0).await {
