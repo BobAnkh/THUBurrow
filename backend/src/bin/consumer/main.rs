@@ -1,5 +1,5 @@
 extern crate serde;
-use backend::pgdb::{content_post, prelude::*, user_collection, user_like};
+use backend::pgdb::{content_post, prelude::*, user_collection, user_follow, user_like};
 use backend::req::content::Post;
 use backend::req::pulsar::*;
 use futures::TryStreamExt;
@@ -502,11 +502,31 @@ async fn pulsar_relation() -> Result<(), pulsar::Error> {
                     Err(e) => println!("delete collection failed {:?}", e),
                 }
             }
-            PulsarRelationData::ActivateFollow(uid, uid_followed) => {
-                todo!()
+            PulsarRelationData::ActivateFollow(uid, burrow_id) => {
+                let follow = user_follow::ActiveModel {
+                    user_id: Set(uid),
+                    burrow_id: Set(burrow_id),
+                    ..Default::default()
+                };
+                match follow.insert(&db).await {
+                    Ok(_) => {
+                        println!("insert follow success");
+                    }
+                    Err(e) => println!("insert follow failed {:?}", e),
+                }
             }
-            PulsarRelationData::DeactivateFollow(uid, uid_followed) => {
-                todo!()
+            PulsarRelationData::DeactivateFollow(uid, burrow_id) => {
+                let follow = user_follow::ActiveModel {
+                    user_id: Set(uid),
+                    burrow_id: Set(burrow_id),
+                    ..Default::default()
+                };
+                match follow.delete(&db).await {
+                    Ok(res) => {
+                        println!("delete follow success {}", res.rows_affected);
+                    }
+                    Err(e) => println!("delete follow failed {:?}", e),
+                }
             }
         }
     }

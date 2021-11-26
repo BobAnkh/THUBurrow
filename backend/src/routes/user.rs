@@ -30,8 +30,6 @@ pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
             user_log_in,
             user_sign_up,
             user_relation,
-            get_follow,
-            follow_burrow,
         ],
     )
 }
@@ -349,87 +347,64 @@ pub async fn get_burrow(
     (Status::Ok, None)
 }
 
-#[get("/favorite")]
-pub async fn get_favorite(db: Connection<PgDb>, sso: SsoAuth) -> (Status, Option<Json<Vec<i64>>>) {
-    let pg_con = db.into_inner();
-    let uid = sso.id;
-    let user = pgdb::user::Entity::find_by_id(uid)
-        .one(&pg_con)
-        .await
-        .expect("select user error");
-    let user = user.unwrap();
-    let burrows = user
-        .find_related(pgdb::burrow::Entity)
-        .all(&pg_con)
-        .await
-        .unwrap();
-    (
-        Status::Ok,
-        Some(Json(burrows.iter().map(|x| x.id).collect())),
-    )
-}
+// #[get("/favorite")]
+// pub async fn get_favorite(db: Connection<PgDb>, sso: SsoAuth) -> (Status, Option<Json<Vec<i64>>>) {
+//     let pg_con = db.into_inner();
+//     let uid = sso.id;
+//     let user = pgdb::user::Entity::find_by_id(uid)
+//         .one(&pg_con)
+//         .await
+//         .expect("select user error");
+//     let user = user.unwrap();
+//     let burrows = user.into()
+//         .find()
+//         .filter(pgdb::burrow::Column::Author.eq(uid))
+//         .all(&pg_con)
+//         .await
+//         .unwrap();
+//     (
+//         Status::Ok,
+//         Some(Json(burrows.iter().map(|x| x.id).collect())),
+//     )
+// }
 
-#[get("/follow")]
-pub async fn get_follow(
-    db: Connection<PgDb>,
-    sso: SsoAuth,
-) -> (Status, Json<Vec<UserGetFollowResponse>>) {
-    let pg_con = db.into_inner();
-    let uid = sso.id;
-    match pgdb::user::Entity::find_by_id(uid).one(&pg_con).await {
-        Ok(user) => {
-            let user = user.unwrap();
-            match user.find_related(pgdb::burrow::Entity).all(&pg_con).await {
-                Ok(burrows) => {
-                    (
-                        Status::Ok,
-                        Json(
-                            burrows
-                                .iter()
-                                .map(|x| UserGetFollowResponse {
-                                    id: x.id,
-                                    title: x.title.clone(),
-                                    description: x.description.clone(),
-                                    // TODO
-                                    update: false,
-                                })
-                                .collect(),
-                        ),
-                    )
-                }
-                Err(e) => {
-                    error!("[FOLLOW] Database Error: {:?}", e.to_string());
-                    (Status::InternalServerError, Json(Vec::new()))
-                }
-            }
-        }
-        Err(e) => {
-            error!("[FOLLOW] Database Error: {:?}", e.to_string());
-            (Status::InternalServerError, Json(Vec::new()))
-        }
-    }
-}
-
-#[post("/follow/<bid>")]
-pub async fn follow_burrow(bid: i64, db: Connection<PgDb>, sso: SsoAuth) -> (Status, Json<String>) {
-    let pg_con = db.into_inner();
-    let uid = sso.id;
-    let user_follow = pgdb::user_follow::ActiveModel {
-        userid: Set(uid),
-        burrowid: Set(bid),
-    };
-    match user_follow.insert(&pg_con).await {
-        Ok(res) => {
-            info!(
-                "[FOLLOW] User {} follows Burrow {}",
-                res.userid.unwrap(),
-                res.burrowid.unwrap()
-            );
-            (Status::Ok, Json("".to_string()))
-        }
-        Err(e) => {
-            error!("[FOLLOW] Database Error: {:?}", e.to_string());
-            (Status::InternalServerError, Json("".to_string()))
-        }
-    }
-}
+// #[get("/follow")]
+// pub async fn get_follow(
+//     db: Connection<PgDb>,
+//     sso: SsoAuth,
+// ) -> (Status, Json<Vec<UserGetFollowResponse>>) {
+//     let pg_con = db.into_inner();
+//     let uid = sso.id;
+//     match pgdb::user::Entity::find_by_id(uid).one(&pg_con).await {
+//         Ok(user) => {
+//             let user: pgdb::user::ActiveModel = user.unwrap().into();
+//             match user.find().filter(pgdb::burrow::Column::Id.eq(uid)).all(&pg_con).await {
+//                 Ok(burrows) => {
+//                     (
+//                         Status::Ok,
+//                         Json(
+//                             burrows
+//                                 .iter()
+//                                 .map(|x| UserGetFollowResponse {
+//                                     id: x.id,
+//                                     title: x.title.clone(),
+//                                     description: x.description.clone(),
+//                                     // TODO
+//                                     update: false,
+//                                 })
+//                                 .collect(),
+//                         ),
+//                     )
+//                 }
+//                 Err(e) => {
+//                     error!("[FOLLOW] Database Error: {:?}", e.to_string());
+//                     (Status::InternalServerError, Json(Vec::new()))
+//                 }
+//             }
+//         }
+//         Err(e) => {
+//             error!("[FOLLOW] Database Error: {:?}", e.to_string());
+//             (Status::InternalServerError, Json(Vec::new()))
+//         }
+//     }
+// }

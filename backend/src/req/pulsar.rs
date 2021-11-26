@@ -239,7 +239,7 @@ impl From<&PulsarSearchReplyData> for TypesenseReplyData {
     }
 }
 
-/// `{"ActivateLike":10}`, where 10 is the post_id or uid_followed
+/// `{"ActivateLike":10}`, where 10 is the post_id or burrow_id
 #[derive(Serialize, Deserialize)]
 pub enum RelationData {
     ActivateLike(i64),
@@ -263,11 +263,11 @@ impl RelationData {
             RelationData::DeactivateCollection(post_id) => {
                 PulsarRelationData::DeactivateCollection(uid, *post_id)
             }
-            RelationData::ActivateFollow(uid_followed) => {
-                PulsarRelationData::ActivateFollow(uid, *uid_followed)
+            RelationData::ActivateFollow(burrow_id) => {
+                PulsarRelationData::ActivateFollow(uid, *burrow_id)
             }
-            RelationData::DeactivateFollow(uid_followed) => {
-                PulsarRelationData::DeactivateFollow(uid, *uid_followed)
+            RelationData::DeactivateFollow(burrow_id) => {
+                PulsarRelationData::DeactivateFollow(uid, *burrow_id)
             }
         }
     }
