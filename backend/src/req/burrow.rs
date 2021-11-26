@@ -2,14 +2,14 @@ use rocket::serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
 pub struct BurrowInfo {
-    pub description: Option<String>,
-    pub title: Option<String>,
+    pub description: String,
+    pub title: String,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct BurrowCreateResponse {
-    pub id: i64,
-    pub author: i64,
+    pub burrow_id: i64,
+    pub uid: i64,
     pub title: String,
-    pub description: Option<String>,
+    pub description: String,
 }
