@@ -401,8 +401,6 @@ pub async fn update_reply(
     let mut errors: Vec<String> = Vec::new();
     // get content info from request
     let content = reply_update_info.into_inner();
-    // TODO: check if this burrow_id belongs to the user
-
     // TODO: check if user has been banned, add corresponding error if so
     // if error exists, refuse to create reply
     if !errors.is_empty() {
@@ -449,6 +447,8 @@ pub async fn update_reply(
                         );
                     }
                     Some(reply) => {
+                        // TODO: check if the burrow_id is still valid
+                        // TODO: check if this burrow_id belongs to the user
                         // get timestamp
                         let now = Utc::now().with_timezone(&FixedOffset::east(8 * 3600));
                         let mut reply: pgdb::content_reply::ActiveModel = reply.into();

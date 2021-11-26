@@ -1,3 +1,4 @@
+pub mod burrow;
 pub mod content;
 pub mod health;
 pub mod sample;
@@ -13,5 +14,6 @@ pub async fn routes_init(rocket: Rocket<Build>) -> Rocket<Build> {
         .attach(AdHoc::on_ignite("mount_content", content::init))
         .attach(AdHoc::on_ignite("mount_user", user::init))
         .attach(AdHoc::on_ignite("mount_storage", storage::init))
+        .attach(AdHoc::on_ignite("mount_burrow", burrow::init))
         .attach(AdHoc::on_ignite("mount_trending", trending::init))
 }

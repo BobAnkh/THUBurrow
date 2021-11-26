@@ -46,10 +46,7 @@ use serde::{Deserialize, Serialize};
 ///                 "burrow_id": i64,
 ///                 "section": string[],
 ///                 "tag": string[],
-///                 "post_type": int32,
-///                 "post_state": int32,
 ///             }
-///
 ///     update reply:
 ///             {
 ///                 "reply_id": i64
