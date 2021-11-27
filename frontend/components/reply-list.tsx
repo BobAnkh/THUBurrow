@@ -30,7 +30,11 @@ export default function ReplyList({ listData, postLen, setPage }: Props) {
       renderItem={(item: any) => (
         <List.Item key={item.reply_id}>
           <List.Item.Meta
-            title={`#${item.burrow_id} 洞主`}
+            title={
+              <a
+                href={`/burrow/${item.burrow_id}`}
+              >{`#${item.burrow_id} 洞主`}</a>
+            }
             description={`#${item.reply_id}`}
           />
           {item.content}
