@@ -5,7 +5,7 @@ use rocket::http::{Cookie, CookieJar, SameSite};
 use rocket::serde::json::Json;
 use rocket::{Build, Rocket};
 use rocket_db_pools::Connection;
-use sea_orm::entity::*;
+use sea_orm::{entity::*, query::*};
 use sea_orm::QueryFilter;
 // , DatabaseConnection};
 
@@ -34,8 +34,7 @@ pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
             user_log_in,
             user_sign_up,
             get_follow,
-            follow_burrow,
-            get_favorite,
+            get_collection,
             get_burrow
         ],
     )
@@ -338,26 +337,8 @@ pub async fn get_burrow(
     {
         Ok(opt_state) => match opt_state {
             Some(state) => {
-                let valid_burrows = match get_burrow_list(state.valid_burrow.clone()).await {
-                    Ok(burrows_id) => burrows_id,
-                    Err(e) => {
-                        error!(
-                            "[GET BURROW] Failed to get valid burrows: {:?}",
-                            e.to_string()
-                        );
-                        return (Status::InternalServerError, Json(Vec::new()));
-                    }
-                };
-                let banned_burrows = match get_burrow_list(state.banned_burrow.clone()).await {
-                    Ok(burrows_id) => burrows_id,
-                    Err(e) => {
-                        error!(
-                            "[GET BURROW] Failed to get valid burrows: {:?}",
-                            e.to_string()
-                        );
-                        return (Status::InternalServerError, Json(Vec::new()));
-                    }
-                };
+                let valid_burrows = get_burrow_list(state.valid_burrow.clone());
+                let banned_burrows = get_burrow_list(state.banned_burrow.clone());
                 let burrows_id = [valid_burrows, banned_burrows].concat();
                 let mut response = Vec::new();
                 for burrow_id in burrows_id {
@@ -399,15 +380,18 @@ pub async fn get_burrow(
     }
 }
 
-#[get("/favorite")]
-pub async fn get_favorite(
+#[get("/collection?<page>")]
+pub async fn get_collection(
     db: Connection<PgDb>,
     sso: sso::SsoAuth,
+    page: usize,
 ) -> (Status, Json<Vec<UserGetFavResponse>>) {
     let pg_con = db.into_inner();
     match pgdb::user_like::Entity::find()
         .filter(pgdb::user_like::Column::Uid.eq(sso.id))
-        .all(&pg_con)
+        .order_by_asc(pgdb::content_post::Column::PostId)
+        .paginate(&pg_con, *POST_PER_PAGE as usize)
+        .fetch_page(page)
         .await
     {
         Ok(results) => {
@@ -515,63 +499,6 @@ pub async fn get_follow(
         Err(e) => {
             error!("[GET-FOLLOW] Database Error: {:?}", e.to_string());
             (Status::InternalServerError, Json(Vec::new()))
-        }
-    }
-}
-
-#[post("/follow/<burrow_id>")]
-pub async fn follow_burrow(
-    burrow_id: i64,
-    db: Connection<PgDb>,
-    sso: sso::SsoAuth,
-) -> (Status, Json<String>) {
-    let pg_con = db.into_inner();
-    let uid = sso.id;
-    let user_follow = pgdb::user_follow::ActiveModel {
-        uid: Set(uid),
-        burrow_id: Set(burrow_id),
-        ..Default::default()
-    };
-    match user_follow.insert(&pg_con).await {
-        Ok(res) => {
-            info!(
-                "[FOLLOW] User {} follows Burrow {}",
-                res.uid.unwrap(),
-                res.burrow_id.unwrap()
-            );
-            (Status::Ok, Json("".to_string()))
-        }
-        Err(e) => {
-            error!("[FOLLOW] Database Error: {:?}", e.to_string());
-            (Status::InternalServerError, Json("".to_string()))
-        }
-    }
-}
-
-#[post("/favorite/<post_id>")]
-pub async fn like_post(
-    post_id: i64,
-    db: Connection<PgDb>,
-    sso: sso::SsoAuth,
-) -> (Status, Json<String>) {
-    let pg_con = db.into_inner();
-    let uid = sso.id;
-    let user_like = pgdb::user_like::ActiveModel {
-        uid: Set(uid),
-        post_id: Set(post_id),
-    };
-    match user_like.insert(&pg_con).await {
-        Ok(res) => {
-            info!(
-                "[LIKE] User {} likes Post {}",
-                res.uid.unwrap(),
-                res.post_id.unwrap()
-            );
-            (Status::Ok, Json("".to_string()))
-        }
-        Err(e) => {
-            error!("[LIKE] Database Error: {:?}", e.to_string());
-            (Status::InternalServerError, Json("".to_string()))
         }
     }
 }

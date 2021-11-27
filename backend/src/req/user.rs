@@ -1,5 +1,10 @@
 use rocket::serde::{Deserialize, Serialize};
 use uuid::Uuid;
+use lazy_static::lazy_static;
+
+lazy_static! {
+    pub static ref POST_PER_PAGE: i32 = 20;
+}
 
 #[derive(Serialize, Deserialize)]
 pub struct UserData {

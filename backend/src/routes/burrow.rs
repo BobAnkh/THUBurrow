@@ -15,12 +15,12 @@ use crate::utils::sso;
 pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
     rocket.mount(
         "/burrows",
-        routes![burrow_create, burrow_discard, burrow_show],
+        routes![create_burrow, discard_burrow, show_burrow],
     )
 }
 
-#[post("/create", data = "<burrow_info>", format = "json")]
-pub async fn burrow_create(
+#[post("/", data = "<burrow_info>", format = "json")]
+pub async fn create_burrow(
     db: Connection<PgDb>,
     burrow_info: Json<BurrowInfo>,
     sso: sso::SsoAuth,
@@ -33,32 +33,14 @@ pub async fn burrow_create(
     {
         Ok(opt_state) => match opt_state {
             Some(state) => {
-                let valid_burrow_num = match get_burrow_list(state.valid_burrow.clone()).await {
-                    Ok(valid_burrows) => valid_burrows.len() as i32,
-                    Err(e) => {
-                        error!(
-                            "[CREATE BURROW] Failed to get valid burrow: {:?}",
-                            e.to_string()
-                        );
-                        return (Status::InternalServerError, Err(String::new()));
-                    }
-                };
-                let banned_burrow_num = match get_burrow_list(state.banned_burrow.clone()).await {
-                    Ok(banned_burrows) => banned_burrows.len() as i32,
-                    Err(e) => {
-                        error!(
-                            "[CREATE BURROW] Failed to get valid burrow: {:?}",
-                            e.to_string()
-                        );
-                        return (Status::InternalServerError, Err(String::new()));
-                    }
-                };
-                let max_burrow_num: i32 = *BURROW_UP_THRE;
+                let valid_burrow_num = get_burrow_list(state.valid_burrow.clone()).len() as i32;
+                let banned_burrow_num = get_burrow_list(state.banned_burrow.clone()).len() as i32;
+                let max_burrow_num: i32 = *BURROW_LIMIT;
                 if banned_burrow_num + valid_burrow_num < max_burrow_num {
                     // get burrow info from request
                     let burrow = burrow_info.into_inner();
                     // check if Burrow Title is empty, return corresponding error if so
-                    if burrow.title == "".to_string() {
+                    if burrow.title.is_empty() {
                         return (
                             Status::BadRequest,
                             Err("Burrow title cannot be empty.".to_string()),
@@ -80,8 +62,12 @@ pub async fn burrow_create(
                             let mut ust: pgdb::user_status::ActiveModel = state.into();
                             ust.update_time =
                                 Set(Utc::now().with_timezone(&FixedOffset::east(8 * 3600)));
-                            ust.valid_burrow =
-                                Set(burrow_id.to_string() + "," + &ust.valid_burrow.unwrap());
+                            ust.valid_burrow = {
+                                let mut valid_burrows: Vec<i64> = get_burrow_list(ust.valid_burrow.unwrap().clone());
+                                valid_burrows.push(burrow_id);
+                                let valid_burrows_str: Vec<String> = valid_burrows.iter().map(|x| x.to_string()).collect();
+                                Set(valid_burrows_str.join(","))
+                            };
                             match ust.update(&pg_con).await {
                                 Ok(s) => {
                                     info!(
@@ -134,7 +120,7 @@ pub async fn burrow_create(
 }
 
 #[delete("/discard/<burrow_id>")]
-pub async fn burrow_discard(
+pub async fn discard_burrow(
     db: Connection<PgDb>,
     burrow_id: i64,
     sso: sso::SsoAuth,
@@ -146,28 +132,9 @@ pub async fn burrow_discard(
     {
         Ok(opt_ust) => match opt_ust {
             Some(state) => {
-                let mut valid_burrows = match get_burrow_list(state.valid_burrow.clone()).await {
-                    Ok(burrows_id) => burrows_id,
-                    Err(e) => {
-                        error!(
-                            "[DEL BURROW] Failed to get valid burrows: {:?}",
-                            e.to_string()
-                        );
-                        return (Status::InternalServerError, Err(String::new()));
-                    }
-                };
-                let mut banned_burrows = match get_burrow_list(state.banned_burrow.clone()).await {
-                    Ok(burrows_id) => burrows_id,
-                    Err(e) => {
-                        error!(
-                            "[DEL BURROW] Failed to get valid burrows: {:?}",
-                            e.to_string()
-                        );
-                        return (Status::InternalServerError, Err(String::new()));
-                    }
-                };
-                let burrows_id = [valid_burrows.clone(), banned_burrows.clone()].concat();
-                if burrows_id.contains(&burrow_id) {
+                let mut valid_burrows: Vec<i64> = get_burrow_list(state.valid_burrow.clone());
+                let mut banned_burrows: Vec<i64> = get_burrow_list(state.banned_burrow.clone());
+                if valid_burrows.contains(&burrow_id)||banned_burrows.contains(&burrow_id) {
                     // update valid_burrow / banned_burrow in user_status table
                     let mut ac_state: pgdb::user_status::ActiveModel = state.into();
                     // do some type-convert things, and fill in the row according to different situations
@@ -175,19 +142,13 @@ pub async fn burrow_discard(
                         valid_burrows.remove(valid_burrows.binary_search(&burrow_id).unwrap());
                         let valid_burrows: Vec<String> =
                             valid_burrows.iter().map(|x| x.to_string()).collect();
-                        let mut valid_burrows_str = valid_burrows.join(",") + ",";
-                        if valid_burrows_str == "," {
-                            valid_burrows_str = "".to_string();
-                        }
+                        let valid_burrows_str = valid_burrows.join(",");
                         ac_state.valid_burrow = Set(valid_burrows_str);
                     } else {
                         banned_burrows.remove(banned_burrows.binary_search(&burrow_id).unwrap());
                         let banned_burrows: Vec<String> =
                             banned_burrows.iter().map(|x| x.to_string()).collect();
-                        let mut banned_burrows_str = banned_burrows.join(",") + ",";
-                        if banned_burrows_str == "," {
-                            banned_burrows_str = "".to_string();
-                        }
+                        let banned_burrows_str = banned_burrows.join(",");
                         ac_state.banned_burrow = Set(banned_burrows_str);
                     }
                     // update table user_status
@@ -264,7 +225,7 @@ pub async fn burrow_discard(
 }
 
 #[get("/<burrow_id>")]
-pub async fn burrow_show(
+pub async fn show_burrow(
     db: Connection<PgDb>,
     burrow_id: i64,
     _sso: sso::SsoAuth,
