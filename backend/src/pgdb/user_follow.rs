@@ -7,6 +7,7 @@ pub struct Model {
     pub uid: i64,
     #[sea_orm(primary_key)]
     pub burrow_id: i64,
+    pub is_update: bool,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

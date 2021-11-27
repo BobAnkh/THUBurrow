@@ -31,37 +31,8 @@ pub struct UserGetBurrowResponse {
     pub id: i64,
     pub title: String,
     pub description: String,
-    pub post_num: i64,
+    pub post_num: i32,
 }
-
-// impl UserGetBurrowResponse {
-//     pub async fn resolve(&mut self, x: Model, pg_con: DatabaseConnection) {
-//         self.id = x.burrow_id;
-//         self.title = x.title.clone();
-//         self.description = x.description.clone();
-//         self.post_num = {
-//             match pgdb::content_post::Entity::find()
-//                 .filter(pgdb::content_post::Column::BurrowId.eq(x.burrow_id))
-//                 .all(&pg_con)
-//                 .await
-//             {
-//                 Ok(posts) => {
-//                     match posts.len().try_into(){
-//                         Ok(n) => n,
-//                         Err(e) => {
-//                             error!("[GET-BURROW] Database Error: {:?}", e.to_string());
-//                             -1
-//                         },
-//                     }
-//                 },
-//                 Err(e) => {
-//                     error!("[GET-BURROW] Database Error: {:?}", e.to_string());
-//                     -1
-//                 },
-//             }
-//         };
-//     }
-// }
 
 #[derive(Serialize, Deserialize)]
 pub struct UserGetFollowResponse {

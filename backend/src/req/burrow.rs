@@ -1,4 +1,9 @@
+use lazy_static::lazy_static;
 use rocket::serde::{Deserialize, Serialize};
+
+lazy_static! {
+    pub static ref BURROW_UP_THRE: i32 = 5;
+}
 
 #[derive(Serialize, Deserialize)]
 pub struct BurrowInfo {

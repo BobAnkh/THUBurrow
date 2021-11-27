@@ -28,6 +28,9 @@ pub async fn postgres_table_setup(rocket: Rocket<Build>) -> fairing::Result {
     let _ = create_content_reply_table(conn).await;
     let _ = create_user_like_table(conn).await;
     let _ = create_user_collection_table(conn).await;
+    let _ = create_user_status_table(conn).await;
+    let _ = create_burrow_table(conn).await;
+    let _ = create_user_follow_table(conn).await;
     // match t {
     //     Ok(_) => {}
     //     Err(e) => {
@@ -66,7 +69,6 @@ pub async fn create_user_table(db: &DbConn) -> Result<ExecResult, DbErr> {
         )
         .col(ColumnDef::new(pgdb::user::Column::Salt).text().not_null())
         .to_owned();
-    // println!("user table: {}", stmt.to_string(PostgresQueryBuilder));
     build_statement(db, &stmt).await
 }
 
@@ -134,13 +136,13 @@ pub async fn create_user_status_table(db: &DbConn) -> Result<ExecResult, DbErr> 
                 .primary_key(),
         )
         .col(
-            ColumnDef::new(pgdb::user_status::Column::ModifiedTime)
+            ColumnDef::new(pgdb::user_status::Column::UpdateTime)
                 .timestamp_with_time_zone()
                 .not_null(),
         )
         .col(
-            ColumnDef::new(pgdb::user_status::Column::Banned)
-                .small_integer()
+            ColumnDef::new(pgdb::user_status::Column::UserState)
+                .integer()
                 .not_null()
                 .default(0),
         )
@@ -148,24 +150,17 @@ pub async fn create_user_status_table(db: &DbConn) -> Result<ExecResult, DbErr> 
             ColumnDef::new(pgdb::user_status::Column::ValidBurrow)
                 .text()
                 .not_null()
-                .default("-1".to_string()),
+                .default("".to_string()),
+        )
+        .col(
+            ColumnDef::new(pgdb::user_status::Column::BannedBurrow)
+                .text()
+                .not_null()
+                .default("".to_string()),
         )
         .to_owned();
     build_statement(db, &stmt).await
 }
-
-// pub async fn alter_image_table(db: &DbConn) -> Result<ExecResult, DbErr> {
-//     let stmt = sea_query::Table::alter()
-//         .table(pgdb::image::Entity)
-//         .add_column(
-//             ColumnDef::new(pgdb::image::Column::Size)
-//                 .integer()
-//                 .not_null(),
-//         )
-//         .to_owned();
-//     println!("image table: {}", stmt.to_string(PostgresQueryBuilder));
-//     build_statement(db, &stmt).await
-// }
 
 pub async fn create_content_post_table(db: &DbConn) -> Result<ExecResult, DbErr> {
     let stmt = sea_query::Table::create()
@@ -350,10 +345,9 @@ pub async fn create_burrow_table(db: &DbConn) -> Result<ExecResult, DbErr> {
         .if_not_exists()
         .col(
             ColumnDef::new(pgdb::burrow::Column::BurrowId)
-                .big_integer()
+                .extra("bigserial".to_string())
                 .not_null()
-                .primary_key()
-                .auto_increment(),
+                .primary_key(),
         )
         .col(
             ColumnDef::new(pgdb::burrow::Column::Title)
@@ -367,8 +361,14 @@ pub async fn create_burrow_table(db: &DbConn) -> Result<ExecResult, DbErr> {
                 .not_null(),
         )
         .col(
-            ColumnDef::new(pgdb::burrow::Column::Status)
-                .small_integer()
+            ColumnDef::new(pgdb::burrow::Column::BurrowState)
+                .integer()
+                .not_null()
+                .default(0),
+        )
+        .col(
+            ColumnDef::new(pgdb::burrow::Column::PostNum)
+                .integer()
                 .not_null()
                 .default(0),
         )
@@ -376,29 +376,7 @@ pub async fn create_burrow_table(db: &DbConn) -> Result<ExecResult, DbErr> {
     build_statement(db, &stmt).await
 }
 
-// pub async fn alter_burrow_table(db: &DbConn) -> Result<ExecResult, DbErr> {
-//     let stmt = sea_query::Table::alter()
-//     .table(pgdb::burrow::Entity)
-//     .add_column(
-//         ColumnDef::new(types::Alias::new("title"))
-//             .text()
-//             .not_null()
-//             .default("this is a title"),
-//     )
-//     .to_owned();
-//     println!("burrow table: {}", stmt.to_string(PostgresQueryBuilder));
-
-//     build_statement(db, &stmt).await
-// }
-
-pub async fn burrow_table_setup(rocket: Rocket<Build>) -> fairing::Result {
-    let conn = &PgDb::fetch(&rocket).unwrap().connection;
-    let _ = create_burrow_table(conn).await;
-    // let _ = alter_burrow_table(conn).await;
-    Ok(rocket)
-}
-
-pub async fn create_junction_table(db: &DbConn) -> Result<ExecResult, DbErr> {
+pub async fn create_user_follow_table(db: &DbConn) -> Result<ExecResult, DbErr> {
     let stmt = sea_query::Table::create()
         .table(pgdb::user_follow::Entity)
         .if_not_exists()
@@ -412,6 +390,12 @@ pub async fn create_junction_table(db: &DbConn) -> Result<ExecResult, DbErr> {
                 .big_integer()
                 .not_null(),
         )
+        .col(
+            ColumnDef::new(pgdb::user_follow::Column::IsUpdate)
+                .boolean()
+                .not_null()
+                .default(false),
+        )
         .primary_key(
             Index::create()
                 .col(pgdb::user_follow::Column::Uid)
@@ -421,8 +405,15 @@ pub async fn create_junction_table(db: &DbConn) -> Result<ExecResult, DbErr> {
     build_statement(db, &stmt).await
 }
 
-pub async fn junction_table_setup(rocket: Rocket<Build>) -> fairing::Result {
-    let conn = &PgDb::fetch(&rocket).unwrap().connection;
-    let _ = create_junction_table(conn).await;
-    Ok(rocket)
-}
+// pub async fn alter_image_table(db: &DbConn) -> Result<ExecResult, DbErr> {
+//     let stmt = sea_query::Table::alter()
+//         .table(pgdb::image::Entity)
+//         .add_column(
+//             ColumnDef::new(pgdb::image::Column::Size)
+//                 .integer()
+//                 .not_null(),
+//         )
+//         .to_owned();
+//     println!("image table: {}", stmt.to_string(PostgresQueryBuilder));
+//     build_statement(db, &stmt).await
+// }
