@@ -8,17 +8,21 @@ import {
 import { Button, Card, Col, Form, List, Row, Select, Tag } from 'antd';
 import { FC, useEffect } from 'react';
 import React from 'react';
-import { Params, PostListItemDataType, BurrowListItemDataType } from './data.d';
-import ArticleListContent from './components/ArticleListContent';
-import StandardFormRow from './components/StandardFormRow';
-import styles from './style.module.css';
-import GlobalHeader from '../../components/header/header';
+import {
+  Params,
+  PostListItemDataType,
+  BurrowListItemDataType,
+} from '../req/search/data.d';
+import PBListContent from '../components/pbListContent/post-or-burrow-list';
+import StandardFormRow from '../components/standardFormRow/standard-form-row';
+import styles from '../styles/search.module.css';
+import GlobalHeader from '../components/header/header';
 import { Input } from 'antd';
 import axios from 'axios';
 import { useState } from 'react';
 
-const fakeDataUrl = `${process.env.NEXT_PUBLIC_BASEURL}/search`;
-
+//const fakeDataUrl = `${process.env.NEXT_PUBLIC_BASEURL}/search`;
+const fakeDataUrl = 'http://127.0.0.1:4523/mock/435762/search/burrow';
 const { Option } = Select;
 const { Search } = Input;
 const FormItem = Form.Item;
@@ -278,7 +282,7 @@ const SearchPage: FC = () => {
                 {item.highlights !== undefined && (
                   <div>{item.highlights[0].snippet}</div>
                 )}
-                <ArticleListContent data={item.document} />
+                <PBListContent data={item.document} />
               </List.Item>
             )}
           />
@@ -331,7 +335,7 @@ const SearchPage: FC = () => {
                     <p>{item.highlights[0].snippet}</p>
                   </div>
                 )}
-                <ArticleListContent data={item.document} />
+                <PBListContent data={item.document} />
               </List.Item>
             )}
           />

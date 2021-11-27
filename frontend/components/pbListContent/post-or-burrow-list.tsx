@@ -1,15 +1,15 @@
 import React from 'react';
 import moment from 'moment';
-import styles from './index.module.css';
+import styles from '../../styles/pb-list.module.css';
 
-type ArticleListContentProps = {
+type PBListContentProps = {
   data: {
     introduction: string;
     updated_time: string;
   };
 };
 
-const ArticleListContent: React.FC<ArticleListContentProps> = ({
+const PBListContent: React.FC<PBListContentProps> = ({
   data: { introduction, updated_time },
 }) => (
   <div className={styles.listContent}>
@@ -20,4 +20,4 @@ const ArticleListContent: React.FC<ArticleListContentProps> = ({
   </div>
 );
 
-export default ArticleListContent;
+export default PBListContent;
