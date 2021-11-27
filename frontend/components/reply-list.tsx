@@ -3,10 +3,11 @@ import { List } from 'antd';
 
 type Props = {
   listData: any;
+  postLen: number;
   setPage: any;
 };
 
-export default function ReplyList({ listData, setPage }: Props) {
+export default function ReplyList({ listData, postLen, setPage }: Props) {
   return (
     <List
       itemLayout='vertical'
