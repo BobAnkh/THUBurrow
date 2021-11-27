@@ -21,7 +21,7 @@ class LoginForm extends Component<Iprops> {
       password: CryptoJS.MD5(values.password).toString(),
     };
     try {
-      const res = await fetch(`${Config.url}/users/login`, {
+      const res = await fetch(`${Config.url_dev}/users/login`, {
         method: 'POST',
         body: JSON.stringify(data),
         headers: new Headers({
@@ -30,8 +30,8 @@ class LoginForm extends Component<Iprops> {
       });
 
       if (res.status === 200) {
-        message.success('登录成功');
-        // window.location.href = '../home';
+        message.success('登录成功,正在跳转到主页...');
+        window.location.href = '../home';
       } else {
         const json = await res.json();
         message.error('登录失败');
