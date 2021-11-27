@@ -66,8 +66,11 @@ pub async fn create_burrow(
                                 let mut valid_burrows: Vec<i64> =
                                     get_burrow_list(&ust.valid_burrow.unwrap());
                                 valid_burrows.push(burrow_id);
-                                let valid_burrows_str =
-                                    valid_burrows.iter().map(|x| x.to_string()).collect::<Vec<String>>().join(",");
+                                let valid_burrows_str = valid_burrows
+                                    .iter()
+                                    .map(|x| x.to_string())
+                                    .collect::<Vec<String>>()
+                                    .join(",");
                                 Set(valid_burrows_str)
                             };
                             match ust.update(&pg_con).await {
@@ -142,13 +145,19 @@ pub async fn discard_burrow(
                     // do some type-convert things, and fill in the row according to different situations
                     if valid_burrows.contains(&burrow_id) {
                         valid_burrows.remove(valid_burrows.binary_search(&burrow_id).unwrap());
-                        let valid_burrows_str =
-                            valid_burrows.iter().map(|x| x.to_string()).collect::<Vec<String>>().join(",");
+                        let valid_burrows_str = valid_burrows
+                            .iter()
+                            .map(|x| x.to_string())
+                            .collect::<Vec<String>>()
+                            .join(",");
                         ac_state.valid_burrow = Set(valid_burrows_str);
                     } else {
                         banned_burrows.remove(banned_burrows.binary_search(&burrow_id).unwrap());
-                        let banned_burrows_str =
-                            banned_burrows.iter().map(|x| x.to_string()).collect::<Vec<String>>().join(",");
+                        let banned_burrows_str = banned_burrows
+                            .iter()
+                            .map(|x| x.to_string())
+                            .collect::<Vec<String>>()
+                            .join(",");
                         ac_state.banned_burrow = Set(banned_burrows_str);
                     }
                     // update table user_status
@@ -172,10 +181,7 @@ pub async fn discard_burrow(
                                                 (Status::Ok, Ok(Json(burrow_id)))
                                             }
                                             Err(e) => {
-                                                error!(
-                                                    "[DEL-BURROW] Database Error: {:?}",
-                                                    e
-                                                );
+                                                error!("[DEL-BURROW] Database Error: {:?}", e);
                                                 (Status::InternalServerError, Err(String::new()))
                                             }
                                         }
