@@ -1,10 +1,10 @@
+use chrono::{FixedOffset, Utc};
 use rocket::http::Status;
 use rocket::serde::json::Json;
 use rocket::{Build, Rocket};
 use rocket_db_pools::Connection;
 use sea_orm::entity::*;
-
-use chrono::{FixedOffset, Utc};
+use sea_orm::query::*;
 
 use crate::pgdb;
 use crate::pool::PgDb;
@@ -13,7 +13,10 @@ use crate::utils::get_valid_burrow::*;
 use crate::utils::sso;
 
 pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
-    rocket.mount("/burrows", routes![burrow_create, burrow_discard])
+    rocket.mount(
+        "/burrows",
+        routes![burrow_create, burrow_discard, burrow_show],
+    )
 }
 
 #[post("/create", data = "<burrow_info>", format = "json")]
@@ -255,6 +258,63 @@ pub async fn burrow_discard(
         },
         Err(e) => {
             error!("[DEL-BURROW] Database Error: {:?}", e.to_string());
+            return (Status::InternalServerError, Err(String::new()));
+        }
+    }
+}
+
+#[get("/<burrow_id>")]
+pub async fn burrow_show(
+    db: Connection<PgDb>,
+    burrow_id: i64,
+    _sso: sso::SsoAuth,
+) -> (Status, Result<Json<BurrowShowResponse>, String>) {
+    let pg_con = db.into_inner();
+    match pgdb::burrow::Entity::find_by_id(burrow_id)
+        .one(&pg_con)
+        .await
+    {
+        Ok(opt_burrow) => match opt_burrow {
+            Some(burrow) => {
+                match pgdb::content_post::Entity::find()
+                    .filter(pgdb::content_post::Column::BurrowId.eq(burrow_id))
+                    .order_by_asc(pgdb::content_post::Column::PostId)
+                    .paginate(&pg_con, 20)
+                    .fetch_page(0)
+                    .await
+                {
+                    Ok(posts) => (
+                        Status::Ok,
+                        Ok(Json(BurrowShowResponse {
+                            title: burrow.title,
+                            description: burrow.description,
+                            posts: posts
+                                .iter()
+                                .map(|post| PostInBurrow {
+                                    post_id: post.post_id,
+                                    title: post.title.clone(),
+                                    like_num: post.like_num,
+                                    collection_num: post.collection_num,
+                                })
+                                .collect(),
+                        })),
+                    ),
+                    Err(e) => {
+                        error!("[SHOW-BURROW] Database Error: {:?}", e.to_string());
+                        return (Status::InternalServerError, Err(String::new()));
+                    }
+                }
+            }
+            None => {
+                error!(
+                    "[SHOW-BURROW] Cannot find burrow {}",
+                    burrow_id
+                );
+                return (Status::BadRequest, Err(String::new()));
+            }
+        },
+        Err(e) => {
+            error!("[SHOW-BURROW] Database Error: {:?}", e.to_string());
             return (Status::InternalServerError, Err(String::new()));
         }
     }

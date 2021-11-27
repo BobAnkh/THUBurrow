@@ -18,3 +18,18 @@ pub struct BurrowCreateResponse {
     pub title: String,
     pub description: String,
 }
+
+#[derive(Serialize, Deserialize)]
+pub struct PostInBurrow {
+    pub post_id: i64,
+    pub title: String,
+    pub collection_num: i32,
+    pub like_num: i32,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct BurrowShowResponse {
+    pub title: String,
+    pub description: String,
+    pub posts: Vec<PostInBurrow>,
+}
