@@ -21,8 +21,8 @@ import { Input } from 'antd';
 import axios from 'axios';
 import { useState } from 'react';
 
-//const fakeDataUrl = `${process.env.NEXT_PUBLIC_BASEURL}/search`;
-const fakeDataUrl = 'http://127.0.0.1:4523/mock/435762/search/burrow';
+const fakeDataUrl = `${process.env.NEXT_PUBLIC_BASEURL}/search`;
+
 const { Option } = Select;
 const { Search } = Input;
 const FormItem = Form.Item;

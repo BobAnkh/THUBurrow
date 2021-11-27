@@ -106,7 +106,7 @@ const PostDetial: NextPage = () => {
         <Link href='/trending'>热榜</Link>
       </Menu.Item>
       <Menu.Item key='search'>
-        <Link href='/search/searchpage'>搜索</Link>
+        <Link href='/searchpage'>搜索</Link>
       </Menu.Item>
     </Menu>
   );

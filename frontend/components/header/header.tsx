@@ -44,7 +44,7 @@ const GlobalHeader: React.FC = () => {
         <Link href='/update'>动态</Link>
       </Menu.Item>
       <Menu.Item key='setting'>
-        <Link href='/setting'>设置</Link>
+        <Link href='./searchpage'>搜索</Link>
       </Menu.Item>
     </Menu>
   );
