@@ -338,7 +338,7 @@ pub async fn get_burrow(
     {
         Ok(opt_state) => match opt_state {
             Some(state) => {
-                let valid_burrows = match get_valid_burrow(&pg_con, state.uid).await {
+                let valid_burrows = match get_burrow_list(state.valid_burrow.clone()).await {
                     Ok(burrows_id) => burrows_id,
                     Err(e) => {
                         error!(
@@ -348,7 +348,7 @@ pub async fn get_burrow(
                         return (Status::InternalServerError, Json(Vec::new()));
                     }
                 };
-                let banned_burrows = match get_banned_burrow(&pg_con, state.uid).await {
+                let banned_burrows = match get_burrow_list(state.banned_burrow.clone()).await {
                     Ok(burrows_id) => burrows_id,
                     Err(e) => {
                         error!(

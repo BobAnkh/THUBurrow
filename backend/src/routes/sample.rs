@@ -262,10 +262,9 @@ async fn user_sign_up(
     Json(res.uuid.unwrap())
 }
 
-#[get("/test/valid_burrow/<id>")]
-pub async fn get_valid_burrow_test(id: i64, db: Connection<PgDb>) -> (Status, Json<Vec<i64>>) {
-    let conn = db.into_inner();
-    match get_valid_burrow::get_valid_burrow(&conn, id).await {
+#[get("/test/valid_burrow/<burrows>")]
+pub async fn get_valid_burrow_test(burrows: String) -> (Status, Json<Vec<i64>>) {
+    match get_valid_burrow::get_burrow_list(burrows).await {
         Ok(res) => (Status::Ok, Json(res)),
         _ => (Status::InternalServerError, Json(Vec::new())),
     }

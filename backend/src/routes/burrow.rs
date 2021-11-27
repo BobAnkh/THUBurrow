@@ -13,7 +13,7 @@ use crate::utils::get_valid_burrow::*;
 use crate::utils::sso;
 
 pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
-    rocket.mount("/burrows", routes![burrow_create])
+    rocket.mount("/burrows", routes![burrow_create, burrow_discard])
 }
 
 #[post("/create", data = "<burrow_info>", format = "json")]
@@ -30,7 +30,7 @@ pub async fn burrow_create(
     {
         Ok(opt_state) => match opt_state {
             Some(state) => {
-                let valid_burrow_num = match get_valid_burrow(&pg_con, state.uid).await {
+                let valid_burrow_num = match get_burrow_list(state.valid_burrow.clone()).await {
                     Ok(valid_burrows) => valid_burrows.len() as i32,
                     Err(e) => {
                         error!(
@@ -40,7 +40,7 @@ pub async fn burrow_create(
                         return (Status::InternalServerError, Err(String::new()));
                     }
                 };
-                let banned_burrow_num = match get_banned_burrow(&pg_con, state.uid).await {
+                let banned_burrow_num = match get_burrow_list(state.banned_burrow.clone()).await {
                     Ok(banned_burrows) => banned_burrows.len() as i32,
                     Err(e) => {
                         error!(
@@ -125,6 +125,136 @@ pub async fn burrow_create(
         },
         Err(e) => {
             error!("[CREATE BURROW] Database Error: {:?}", e.to_string());
+            return (Status::InternalServerError, Err(String::new()));
+        }
+    }
+}
+
+#[delete("/discard/<burrow_id>")]
+pub async fn burrow_discard(
+    db: Connection<PgDb>,
+    burrow_id: i64,
+    sso: sso::SsoAuth,
+) -> (Status, Result<Json<i64>, String>) {
+    let pg_con = db.into_inner();
+    match pgdb::user_status::Entity::find_by_id(sso.id)
+        .one(&pg_con)
+        .await
+    {
+        Ok(opt_ust) => match opt_ust {
+            Some(state) => {
+                let mut valid_burrows = match get_burrow_list(state.valid_burrow.clone()).await {
+                    Ok(burrows_id) => burrows_id,
+                    Err(e) => {
+                        error!(
+                            "[DEL BURROW] Failed to get valid burrows: {:?}",
+                            e.to_string()
+                        );
+                        return (Status::InternalServerError, Err(String::new()));
+                    }
+                };
+                let mut banned_burrows = match get_burrow_list(state.banned_burrow.clone()).await {
+                    Ok(burrows_id) => burrows_id,
+                    Err(e) => {
+                        error!(
+                            "[DEL BURROW] Failed to get valid burrows: {:?}",
+                            e.to_string()
+                        );
+                        return (Status::InternalServerError, Err(String::new()));
+                    }
+                };
+                let burrows_id = [valid_burrows.clone(), banned_burrows.clone()].concat();
+                if burrows_id.contains(&burrow_id) {
+                    // update valid_burrow / banned_burrow in user_status table
+                    let mut ac_state: pgdb::user_status::ActiveModel = state.into();
+                    // do some type-convert things, and fill in the row according to different situations
+                    if valid_burrows.contains(&burrow_id) {
+                        valid_burrows.remove(valid_burrows.binary_search(&burrow_id).unwrap());
+                        let valid_burrows: Vec<String> =
+                            valid_burrows.iter().map(|x| x.to_string()).collect();
+                        let mut valid_burrows_str = valid_burrows.join(",") + ",";
+                        if valid_burrows_str == "," {
+                            valid_burrows_str = "".to_string();
+                        }
+                        ac_state.valid_burrow = Set(valid_burrows_str);
+                    } else {
+                        banned_burrows.remove(banned_burrows.binary_search(&burrow_id).unwrap());
+                        let banned_burrows: Vec<String> =
+                            banned_burrows.iter().map(|x| x.to_string()).collect();
+                        let mut banned_burrows_str = banned_burrows.join(",") + ",";
+                        if banned_burrows_str == "," {
+                            banned_burrows_str = "".to_string();
+                        }
+                        ac_state.banned_burrow = Set(banned_burrows_str);
+                    }
+                    // update table user_status
+                    match ac_state.update(&pg_con).await {
+                        Ok(_) => {
+                            info!("[DEL-BURROW] Table user_status updated.");
+                            // update burrow_state in burrow table
+                            match pgdb::burrow::Entity::find_by_id(burrow_id)
+                                .one(&pg_con)
+                                .await
+                            {
+                                Ok(opt_burrow) => match opt_burrow {
+                                    Some(burrow) => {
+                                        let mut ac_burrow: pgdb::burrow::ActiveModel =
+                                            burrow.into();
+                                        ac_burrow.burrow_state = Set(2);
+                                        // update table burrow
+                                        match ac_burrow.update(&pg_con).await {
+                                            Ok(_) => {
+                                                info!("[DEL-BURROW] Table burrow updated.");
+                                                (Status::Ok, Ok(Json(burrow_id)))
+                                            }
+                                            Err(e) => {
+                                                error!(
+                                                    "[DEL-BURROW] Database Error: {:?}",
+                                                    e.to_string()
+                                                );
+                                                return (
+                                                    Status::InternalServerError,
+                                                    Err(String::new()),
+                                                );
+                                            }
+                                        }
+                                    }
+                                    None => {
+                                        error!("[DEL-BURROW] Cannot find burrow by burrow_id.");
+                                        return (Status::InternalServerError, Err(String::new()));
+                                    }
+                                },
+                                Err(e) => {
+                                    error!("[DEL-BURROW] Database Error: {:?}", e.to_string());
+                                    return (Status::InternalServerError, Err(String::new()));
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            error!("[DEL-BURROW] Database Error: {:?}", e.to_string());
+                            return (Status::InternalServerError, Err(String::new()));
+                        }
+                    }
+                } else {
+                    info!(
+                        "[DEL-BURROW] Cannot delete burrow: Burrow doesn't belong to current user."
+                    );
+                    return (
+                        Status::BadRequest,
+                        Err(
+                            "Burrow doesn't belong to current user or already discarded."
+                                .to_string(),
+                        ),
+                    );
+                }
+            }
+            None => {
+                error!("[DEL-BURROW] Cannot find user_status by uid.");
+                return (Status::InternalServerError, Err(String::new()));
+            }
+        },
+        Err(e) => {
+            error!("[DEL-BURROW] Database Error: {:?}", e.to_string());
             return (Status::InternalServerError, Err(String::new()));
         }
     }
