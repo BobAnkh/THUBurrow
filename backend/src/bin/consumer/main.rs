@@ -35,8 +35,8 @@ async fn create_typesense_collections() -> Result<(), reqwest::Error> {
       "fields": [
         {"name": "id", "type": "string"},
         {"name": "burrow_id", "type": "int64"},
-        {"name": "title", "type": "string" },
-        {"name": "introduction", "type": "string"},
+        {"name": "title", "type": "string" , "locale": "zh"},
+        {"name": "introduction", "type": "string", "locale": "zh"},
         {"name": "update_time", "type": "string"}
       ]
     });
@@ -193,6 +193,7 @@ async fn pulsar_typesense() -> Result<(), pulsar::Error> {
                 {
                     Ok(r) => match r.status().as_u16() {
                         201 => println!("Add new burrow."),
+                        409 => println!("409, burrow already exist."),
                         _ => panic!(
                             "Status:{} Failed to add new burrow. {}",
                             r.status().as_u16(),
