@@ -138,7 +138,7 @@ const Home: NextPage = () => {
         <Row>
           <div className='logo' />
           <Col offset={2}>{menu}</Col>
-          <Col offset={12} span={4}>
+          <Col offset={16} span={1}>
             <Dropdown overlay={UserMenu} placement='bottomCenter'>
               <Button icon={<UserOutlined />} />
             </Dropdown>
