@@ -55,7 +55,7 @@ const PostDetial: NextPage = () => {
       }
     };
     fetchReplyList();
-  }, [router]);
+  }, [pid, router]);
 
   const onFinish = async (values: any) => {
     const data = {
