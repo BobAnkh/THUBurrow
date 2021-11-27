@@ -43,7 +43,7 @@ pub async fn burrow_create(
     };
     // fill the row of table 'burrow'
     let burrows = pgdb::burrow::ActiveModel {
-        author: Set(sso.id),
+        burrow_id: Set(sso.id),
         title: Set(title),
         description: Set(burrow.description),
         ..Default::default()
@@ -52,8 +52,8 @@ pub async fn burrow_create(
     let ins_result = burrows.insert(&pg_con).await;
     match ins_result {
         Ok(res) => {
-            let bid = res.id.unwrap();
-            let uid = res.author.unwrap();
+            let bid = res.burrow_id.unwrap();
+            let uid = res.uid.unwrap();
             // update modified time and valid burrows
             let users_status = pgdb::user_status::Entity::find_by_id(uid)
                 .one(&pg_con)

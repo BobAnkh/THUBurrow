@@ -349,7 +349,7 @@ pub async fn create_burrow_table(db: &DbConn) -> Result<ExecResult, DbErr> {
         .table(pgdb::burrow::Entity)
         .if_not_exists()
         .col(
-            ColumnDef::new(pgdb::burrow::Column::Id)
+            ColumnDef::new(pgdb::burrow::Column::BurrowId)
                 .big_integer()
                 .not_null()
                 .primary_key()
@@ -362,13 +362,19 @@ pub async fn create_burrow_table(db: &DbConn) -> Result<ExecResult, DbErr> {
         )
         .col(ColumnDef::new(pgdb::burrow::Column::Description).string())
         .col(
-            ColumnDef::new(pgdb::burrow::Column::Author)
+            ColumnDef::new(pgdb::burrow::Column::Uid)
                 .big_integer()
                 .not_null(),
         )
         .col(
             ColumnDef::new(pgdb::burrow::Column::Status)
                 .small_integer()
+                .not_null()
+                .default(0),
+        )
+        .col(
+            ColumnDef::new(pgdb::burrow::Column::PostNum)
+                .integer()
                 .not_null()
                 .default(0),
         )

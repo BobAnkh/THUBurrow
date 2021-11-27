@@ -359,7 +359,7 @@ pub async fn get_favorite(
         .unwrap();
     (
         Status::Ok,
-        Some(Json(burrows.iter().map(|x| x.id).collect())),
+        Some(Json(burrows.iter().map(|x| x.burrow_id).collect())),
     )
 }
 
@@ -381,7 +381,7 @@ pub async fn get_follow(
                             burrows
                                 .iter()
                                 .map(|x| UserGetFollowResponse {
-                                    id: x.id,
+                                    id: x.burrow_id,
                                     title: x.title.clone(),
                                     description: x.description.clone(),
                                     // TODO

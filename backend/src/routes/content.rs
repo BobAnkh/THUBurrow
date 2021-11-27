@@ -47,12 +47,47 @@ pub async fn create_post(
     if content.title.is_empty() {
         errors.push("Empty Title".to_string());
     }
-    // TODO: check if this burrow_id belongs to the user
     if content.section.is_empty() {
         errors.push("Empty Section".to_string());
     }
-    // TODO: check if user has been banned, add corresponding error if so
-    // TODO: check if burrow has been banned
+    // check if this burrow_id belongs to the user
+    match Burrow::find_by_id(content.burrow_id)
+        .one(&pg_con)
+        .await
+        .expect("cannot fetch content from pgdb")
+    {
+        None => {
+            errors.push("Burrow not exsits".to_string());
+        }
+        Some(burrow_info) => {
+            if burrow_info.uid != auth.id {
+                errors.push("Wrong user".to_string());
+            }
+            // check if burrow has been banned
+            if burrow_info.status == 1 {
+                errors.push("Burrow banned".to_string());
+            }
+            // check if the burrow_id is still valid
+            if burrow_info.status == 2 {
+                errors.push("Burrow discarded".to_string());
+            }
+        }
+    };
+    // check if user has been banned, add corresponding error if so
+    match UserStatus::find_by_id(auth.id)
+        .one(&pg_con)
+        .await
+        .expect("cannot fetch content from pgdb")
+    {
+        None => {
+            errors.push("User not exsits".to_string());
+        }
+        Some(user_state_info) => {
+            if user_state_info.banned == 1 {
+                errors.push("User banned".to_string());
+            }
+        }
+    };
     if !errors.is_empty() {
         (
             Status::BadRequest,
@@ -165,7 +200,6 @@ pub async fn read_post(
                     );
                 }
             };
-
             // get post metadata
             let post_desc: Post = post_info.into();
             let reply_page: Vec<Reply> = reply_info.iter().map(|r| r.into()).collect();
@@ -230,7 +264,7 @@ pub async fn read_post(
     }
 }
 
-#[get("/post/list/<page>")]
+#[get("/post/list?<page>")]
 pub async fn read_post_list(
     auth: SsoAuth,
     db: Connection<PgDb>,
@@ -252,8 +286,32 @@ pub async fn read_post_list(
             );
         }
     };
+    // TODO: check if the post is banned?
     let post_page: Vec<Post> = post_info.iter().map(|r| r.into()).collect();
-    let list_page = ListPage { post_page, page };
+    // TODO: check if the user collect the posts
+    // TODO: check if the user like the posts
+    // get total number of posts
+    let post_num: i64;
+    match ContentPost::find()
+        .order_by_desc(pgdb::content_post::Column::PostId)
+        .one(&pg_con)
+        .await
+        .expect("cannot fetch content from pgdb")
+    {
+        None => {
+            return (
+                Status::BadRequest,
+                Json(ListReadResponse {
+                    errors: "No post exsits".to_string(),
+                    list_page: None,
+                }),
+            )
+        },
+        Some(post_last) => {
+            post_num = post_last.post_id;
+        }
+    }
+    let list_page = ListPage { post_page, page, post_num };
     (
         Status::Ok,
         Json(ListReadResponse {
@@ -273,9 +331,44 @@ pub async fn create_reply(
     let mut errors: Vec<String> = Vec::new();
     // get content info from request
     let content = reply_info.into_inner();
-    // TODO: check if this burrow_id belongs to the user
-
-    // TODO: check if user has been banned, add corresponding error if so
+    match Burrow::find_by_id(content.burrow_id)
+        .one(&pg_con)
+        .await
+        .expect("cannot fetch content from pgdb")
+    {
+        None => {
+            errors.push("Burrow not exsits".to_string());
+        }
+        Some(burrow_info) => {
+            // check if this burrow_id belongs to the user
+            if burrow_info.uid != auth.id {
+                errors.push("Wrong user".to_string());
+            }
+            // check if burrow has been banned
+            if burrow_info.status == 1 {
+                errors.push("Burrow banned".to_string());
+            }
+            // check if the burrow_id is still valid
+            if burrow_info.status == 2 {
+                errors.push("Burrow discarded".to_string());
+            }
+        }
+    };
+    // check if user has been banned
+    match UserStatus::find_by_id(auth.id)
+        .one(&pg_con)
+        .await
+        .expect("cannot fetch content from pgdb")
+    {
+        None => {
+            errors.push("User not exsits".to_string());
+        }
+        Some(user_state_info) => {
+            if user_state_info.banned == 1 {
+                errors.push("User banned".to_string());
+            }
+        }
+    };
     // if error exists, refuse to create reply
     if !errors.is_empty() {
         (
@@ -401,7 +494,21 @@ pub async fn update_reply(
     let mut errors: Vec<String> = Vec::new();
     // get content info from request
     let content = reply_update_info.into_inner();
-    // TODO: check if user has been banned, add corresponding error if so
+    // check if user has been banned, add corresponding error if so
+    match UserStatus::find_by_id(auth.id)
+        .one(&pg_con)
+        .await
+        .expect("cannot fetch content from pgdb")
+    {
+        None => {
+            errors.push("User not exsits".to_string());
+        }
+        Some(user_state_info) => {
+            if user_state_info.banned == 1 {
+                errors.push("User banned".to_string());
+            }
+        }
+    };
     // if error exists, refuse to create reply
     if !errors.is_empty() {
         (
@@ -447,8 +554,29 @@ pub async fn update_reply(
                         );
                     }
                     Some(reply) => {
-                        // TODO: check if the burrow_id is still valid
-                        // TODO: check if this burrow_id belongs to the user
+                        // check if this burrow_id belongs to the user
+                        match Burrow::find_by_id(reply.burrow_id)
+                            .one(&pg_con)
+                            .await
+                            .expect("cannot fetch content from pgdb")
+                        {
+                            None => {
+                                errors.push("Burrow not exsits".to_string());
+                            }
+                            Some(burrow_info) => {
+                                if burrow_info.uid != auth.id {
+                                    errors.push("Wrong user".to_string());
+                                }
+                                // check if burrow has been banned
+                                if burrow_info.status == 1 {
+                                    errors.push("Burrow banned".to_string());
+                                }
+                                // check if the burrow_id is still valid
+                                if burrow_info.status == 2 {
+                                    errors.push("Burrow discarded".to_string());
+                                }
+                            }
+                        };
                         // get timestamp
                         let now = Utc::now().with_timezone(&FixedOffset::east(8 * 3600));
                         let mut reply: pgdb::content_reply::ActiveModel = reply.into();

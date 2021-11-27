@@ -54,6 +54,7 @@ pub struct PostPage {
 pub struct ListPage {
     pub post_page: Vec<Post>,
     pub page: usize,
+    pub post_num: i64,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -81,6 +82,7 @@ pub struct ReplyUpdateInfo {
 
 #[derive(Serialize, Deserialize)]
 pub struct Post {
+    pub post_id: i64,
     pub title: String,
     pub burrow_id: i64,
     pub section: Vec<String>,
@@ -91,6 +93,7 @@ pub struct Post {
     pub post_type: i32,
     pub like_num: i32,
     pub collection_num: i32,
+    pub post_len: i32,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -107,6 +110,7 @@ pub struct Reply {
 impl From<content_post::Model> for Post {
     fn from(post_info: content_post::Model) -> Post {
         Post {
+            post_id: post_info.post_id,
             title: post_info.title,
             burrow_id: post_info.burrow_id,
             section: post_info.section.split(',').map(str::to_string).collect(),
@@ -117,6 +121,7 @@ impl From<content_post::Model> for Post {
             post_type: post_info.post_type,
             like_num: post_info.like_num,
             collection_num: post_info.collection_num,
+            post_len: post_info.post_len,
         }
     }
 }
@@ -124,6 +129,7 @@ impl From<content_post::Model> for Post {
 impl From<&content_post::Model> for Post {
     fn from(post_info: &content_post::Model) -> Post {
         Post {
+            post_id: post_info.post_id,
             title: post_info.title.to_owned(),
             burrow_id: post_info.burrow_id,
             section: post_info.section.split(',').map(str::to_string).collect(),
@@ -134,6 +140,7 @@ impl From<&content_post::Model> for Post {
             post_type: post_info.post_type,
             like_num: post_info.like_num,
             collection_num: post_info.collection_num,
+            post_len: post_info.post_len,
         }
     }
 }
