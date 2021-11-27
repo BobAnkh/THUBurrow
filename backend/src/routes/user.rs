@@ -386,10 +386,11 @@ pub async fn get_collection(
     sso: sso::SsoAuth,
     page: usize,
 ) -> (Status, Json<Vec<UserGetFavResponse>>) {
+    // TODO
     let pg_con = db.into_inner();
     match pgdb::user_like::Entity::find()
         .filter(pgdb::user_like::Column::Uid.eq(sso.id))
-        .order_by_asc(pgdb::content_post::Column::PostId)
+        .order_by_desc(pgdb::content_post::Column::PostId)
         .paginate(&pg_con, *POST_PER_PAGE as usize)
         .fetch_page(page)
         .await

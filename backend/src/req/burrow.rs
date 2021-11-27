@@ -2,7 +2,7 @@ use lazy_static::lazy_static;
 use rocket::serde::{Deserialize, Serialize};
 
 lazy_static! {
-    pub static ref BURROW_LIMIT: i32 = 5;
+    pub static ref BURROW_LIMIT: usize = 5;
 }
 
 #[derive(Serialize, Deserialize)]

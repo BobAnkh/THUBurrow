@@ -33,10 +33,10 @@ pub async fn create_burrow(
     {
         Ok(opt_state) => match opt_state {
             Some(state) => {
-                let valid_burrow_num = get_burrow_list(&state.valid_burrow).len() as i32;
-                let banned_burrow_num = get_burrow_list(&state.banned_burrow).len() as i32;
-                let max_burrow_num: i32 = *BURROW_LIMIT;
-                if banned_burrow_num + valid_burrow_num < max_burrow_num {
+                let valid_burrows = get_burrow_list(&state.valid_burrow);
+                let banned_burrows = get_burrow_list(&state.banned_burrow);
+                let max_burrow_num: usize = *BURROW_LIMIT;
+                if banned_burrows.len() + valid_burrows.len() < max_burrow_num {
                     // get burrow info from request
                     let burrow = burrow_info.into_inner();
                     // check if Burrow Title is empty, return corresponding error if so
@@ -66,9 +66,9 @@ pub async fn create_burrow(
                                 let mut valid_burrows: Vec<i64> =
                                     get_burrow_list(&ust.valid_burrow.unwrap());
                                 valid_burrows.push(burrow_id);
-                                let valid_burrows_str: Vec<String> =
-                                    valid_burrows.iter().map(|x| x.to_string()).collect();
-                                Set(valid_burrows_str.join(","))
+                                let valid_burrows_str =
+                                    valid_burrows.iter().map(|x| x.to_string()).collect::<Vec<String>>().join(",");
+                                Set(valid_burrows_str)
                             };
                             match ust.update(&pg_con).await {
                                 Ok(s) => {
@@ -121,7 +121,7 @@ pub async fn create_burrow(
     }
 }
 
-#[delete("/discard/<burrow_id>")]
+#[delete("/<burrow_id>")]
 pub async fn discard_burrow(
     db: Connection<PgDb>,
     burrow_id: i64,
@@ -142,15 +142,13 @@ pub async fn discard_burrow(
                     // do some type-convert things, and fill in the row according to different situations
                     if valid_burrows.contains(&burrow_id) {
                         valid_burrows.remove(valid_burrows.binary_search(&burrow_id).unwrap());
-                        let valid_burrows: Vec<String> =
-                            valid_burrows.iter().map(|x| x.to_string()).collect();
-                        let valid_burrows_str = valid_burrows.join(",");
+                        let valid_burrows_str =
+                            valid_burrows.iter().map(|x| x.to_string()).collect::<Vec<String>>().join(",");
                         ac_state.valid_burrow = Set(valid_burrows_str);
                     } else {
                         banned_burrows.remove(banned_burrows.binary_search(&burrow_id).unwrap());
-                        let banned_burrows: Vec<String> =
-                            banned_burrows.iter().map(|x| x.to_string()).collect();
-                        let banned_burrows_str = banned_burrows.join(",");
+                        let banned_burrows_str =
+                            banned_burrows.iter().map(|x| x.to_string()).collect::<Vec<String>>().join(",");
                         ac_state.banned_burrow = Set(banned_burrows_str);
                     }
                     // update table user_status
@@ -176,7 +174,7 @@ pub async fn discard_burrow(
                                             Err(e) => {
                                                 error!(
                                                     "[DEL-BURROW] Database Error: {:?}",
-                                                    e.to_string()
+                                                    e
                                                 );
                                                 (Status::InternalServerError, Err(String::new()))
                                             }
@@ -188,13 +186,13 @@ pub async fn discard_burrow(
                                     }
                                 },
                                 Err(e) => {
-                                    error!("[DEL-BURROW] Database Error: {:?}", e.to_string());
+                                    error!("[DEL-BURROW] Database Error: {:?}", e);
                                     (Status::InternalServerError, Err(String::new()))
                                 }
                             }
                         }
                         Err(e) => {
-                            error!("[DEL-BURROW] Database Error: {:?}", e.to_string());
+                            error!("[DEL-BURROW] Database Error: {:?}", e);
                             (Status::InternalServerError, Err(String::new()))
                         }
                     }
@@ -217,7 +215,7 @@ pub async fn discard_burrow(
             }
         },
         Err(e) => {
-            error!("[DEL-BURROW] Database Error: {:?}", e.to_string());
+            error!("[DEL-BURROW] Database Error: {:?}", e);
             (Status::InternalServerError, Err(String::new()))
         }
     }
@@ -229,6 +227,7 @@ pub async fn show_burrow(
     burrow_id: i64,
     _sso: sso::SsoAuth,
 ) -> (Status, Result<Json<BurrowShowResponse>, String>) {
+    // TODO: add page in query string for different pages
     let pg_con = db.into_inner();
     match pgdb::burrow::Entity::find_by_id(burrow_id)
         .one(&pg_con)
@@ -238,7 +237,7 @@ pub async fn show_burrow(
             Some(burrow) => {
                 match pgdb::content_post::Entity::find()
                     .filter(pgdb::content_post::Column::BurrowId.eq(burrow_id))
-                    .order_by_asc(pgdb::content_post::Column::PostId)
+                    .order_by_desc(pgdb::content_post::Column::PostId)
                     .paginate(&pg_con, 20)
                     .fetch_page(0)
                     .await
@@ -260,7 +259,7 @@ pub async fn show_burrow(
                         })),
                     ),
                     Err(e) => {
-                        error!("[SHOW-BURROW] Database Error: {:?}", e.to_string());
+                        error!("[SHOW-BURROW] Database Error: {:?}", e);
                         (Status::InternalServerError, Err(String::new()))
                     }
                 }
@@ -271,7 +270,7 @@ pub async fn show_burrow(
             }
         },
         Err(e) => {
-            error!("[SHOW-BURROW] Database Error: {:?}", e.to_string());
+            error!("[SHOW-BURROW] Database Error: {:?}", e);
             (Status::InternalServerError, Err(String::new()))
         }
     }
