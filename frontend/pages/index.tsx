@@ -14,7 +14,7 @@ const Hello: NextPage = () => {
         <h1 className={styles.title}>欢迎来到T大地洞</h1>
 
         <p className={styles.description}>
-          <Link href='./login'>即刻登录 </Link>
+          <Link href='/login'>即刻登录 </Link>
         </p>
       </main>
 

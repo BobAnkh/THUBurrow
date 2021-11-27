@@ -130,7 +130,6 @@ class Register extends React.Component<Iprops, any> {
       email: `${values.email}@mails.tsinghua.edu.cn`,
       code: values.code,
     };
-    console.log(data);
     try {
       const res = await fetch(`${Config.url1}/users/sign-up`, {
         method: 'POST',
@@ -145,7 +144,6 @@ class Register extends React.Component<Iprops, any> {
       } else {
         const json = await res.json();
         message.error('注册失败');
-        console.log(json.error);
         alert(json.errors);
       }
     } catch (e) {
