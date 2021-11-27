@@ -32,18 +32,21 @@ const PostDetial: NextPage = () => {
   const [page, setPage] = useState(1);
   const [bid, setBid] = useState(1);
   const [replyList, setReplyList] = useState();
-
+  const [postLen, setPostLen] = useState(0);
+  const [title, setTitle] = useState('test');
   useEffect(() => {
     const fetchReplyList = async () => {
       try {
         const res = await axios.get(
-          `${process.env.NEXT_PUBLIC_BASEURL}/content/${pid}`,
+          `${process.env.NEXT_PUBLIC_BASEURL}/content/${pid}?page=${page}`,
           {
             headers: { 'Content-Type': 'application/json' },
           }
         );
         const replylist = res.data.post_page.reply_page;
         setBid(res.data.post_page.post_desc.burrow_id);
+        setPostLen(res.data.post_page.post_desc.post_len);
+        setTitle(res.data.post_page.post_desc.title);
         setReplyList(replylist);
       } catch (error) {
         const err = error as AxiosError;
@@ -99,11 +102,11 @@ const PostDetial: NextPage = () => {
       <Menu.Item key='message'>
         <Link href='/message'>消息</Link>
       </Menu.Item>
-      <Menu.Item key='update'>
-        <Link href='/update'>动态</Link>
+      <Menu.Item key='trending'>
+        <Link href='/trending'>热榜</Link>
       </Menu.Item>
-      <Menu.Item key='setting'>
-        <Link href='/setting'>设置</Link>
+      <Menu.Item key='search'>
+        <Link href='/search/searchpage'>搜索</Link>
       </Menu.Item>
     </Menu>
   );
@@ -126,6 +129,7 @@ const PostDetial: NextPage = () => {
   return (
     <Layout className='layout'>
       <Header>
+        <title>{title}</title>
         <Row>
           <div className='logo' />
           <Col offset={2}>{menu}</Col>
@@ -142,8 +146,8 @@ const PostDetial: NextPage = () => {
           <Breadcrumb.Item>List</Breadcrumb.Item>
           <Breadcrumb.Item>App</Breadcrumb.Item>
         </Breadcrumb>
-        <Card>
-          <ReplyList listData={replyList} setPage={setPage} />
+        <Card title={title}>
+          <ReplyList listData={replyList} postLen={postLen} setPage={setPage} />
           <Form
             labelCol={{ span: 5 }}
             wrapperCol={{ span: 14 }}
@@ -160,11 +164,11 @@ const PostDetial: NextPage = () => {
               name='content'
               rules={[{ required: true, message: '回复不能为空' }]}
             >
-              <TextArea rows={4} />
+              <TextArea
+                rows={4}
+                placeholder={'友善的沟通是高质量交流的第一步~'}
+              />
             </Form.Item>
-            <div style={{ textAlign: 'center' }}>
-              友善的沟通是高质量交流的第一步~
-            </div>
             <Form.Item wrapperCol={{ offset: 11, span: 16 }}>
               <Button
                 type='primary'
