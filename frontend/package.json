@@ -19,6 +19,7 @@
     "react-dom": "^17.0.2"
   },
   "devDependencies": {
+    "@types/classnames": "^2.3.1",
     "@types/crypto-js": "^4.0.2",
     "@types/react": "17.0.33",
     "eslint": "<8.0.0",
