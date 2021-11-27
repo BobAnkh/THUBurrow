@@ -20,7 +20,6 @@ import moment from 'moment';
 import PostList from '../components/post-list';
 import Config from '../config.json';
 import '../node_modules/antd/dist/antd.css';
-
 const { Header, Content, Footer } = Layout;
 const { TextArea } = Input;
 
@@ -104,6 +103,7 @@ const Home: NextPage = () => {
       </Menu.Item>
     </Menu>
   );
+
   const UserMenu = (
     <Menu>
       <Menu.Item>
@@ -127,7 +127,7 @@ const Home: NextPage = () => {
         <Row>
           <div className='logo' />
           <Col offset={2}>{menu}</Col>
-          <Col offset={16} span={1}>
+          <Col offset={12} span={4}>
             <Dropdown overlay={UserMenu} placement='bottomCenter'>
               <Button icon={<UserOutlined />} />
             </Dropdown>
