@@ -34,12 +34,12 @@ export default function PostList({ listData, setPage }: Props) {
         onChange: (page) => {
           setPage(page);
         },
-        pageSize: 3,
+        pageSize: 20,
       }}
       dataSource={listData}
       footer={
         <div>
-          <b>ant design</b> footer part
+          <b>THU Burrow</b> footer part
         </div>
       }
       renderItem={(item: any) => (
@@ -48,28 +48,23 @@ export default function PostList({ listData, setPage }: Props) {
           actions={[
             <IconText
               icon={StarOutlined}
-              text={item.star}
+              text={item.collection_num}
               key='list-vertical-star-o'
             />,
             <IconText
               icon={LikeOutlined}
-              text={item.like}
+              text={item.like_num}
               key='list-vertical-like-o'
             />,
             <IconText
-              icon={DislikeOutlined}
-              text={item.dislike}
-              key='list-vertical-dislike-o'
-            />,
-            <IconText
               icon={MessageOutlined}
-              text={item.comment}
+              text={item.post_len}
               key='list-vertical-message'
             />,
           ]}
         >
           <List.Item.Meta
-            title={<Link href={`./post/${item.post_id}`}>{item.title}</Link>}
+            title={<Link href={`post/${item.post_id}`}>{item.title}</Link>}
             description={item.author}
           />
           {item.content}
