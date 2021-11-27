@@ -27,14 +27,4 @@ impl RelationTrait for Relation {
     }
 }
 
-impl Related<super::burrow::Entity> for Entity {
-    fn to() -> RelationDef {
-        super::user_follow::Relation::Burrow.def()
-    }
-
-    fn via() -> Option<RelationDef> {
-        Some(super::user_follow::Relation::User.def().rev())
-    }
-}
-
 impl ActiveModelBehavior for ActiveModel {}

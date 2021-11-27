@@ -409,19 +409,25 @@ pub async fn create_junction_table(db: &DbConn) -> Result<ExecResult, DbErr> {
         .table(pgdb::user_follow::Entity)
         .if_not_exists()
         .col(
-            ColumnDef::new(pgdb::user_follow::Column::Userid)
+            ColumnDef::new(pgdb::user_follow::Column::UserId)
                 .big_integer()
                 .not_null(),
         )
         .col(
-            ColumnDef::new(pgdb::user_follow::Column::Burrowid)
+            ColumnDef::new(pgdb::user_follow::Column::BurrowId)
                 .big_integer()
                 .not_null(),
         )
+        .col(
+            ColumnDef::new(pgdb::user_follow::Column::IsUpdate)
+                .boolean()
+                .not_null()
+                .default(false),
+        )
         .primary_key(
             Index::create()
-                .col(pgdb::user_follow::Column::Userid)
-                .col(pgdb::user_follow::Column::Burrowid),
+                .col(pgdb::user_follow::Column::UserId)
+                .col(pgdb::user_follow::Column::BurrowId),
         )
         .to_owned();
     build_statement(db, &stmt).await

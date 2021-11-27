@@ -4,25 +4,13 @@ use sea_orm::entity::prelude::*;
 #[sea_orm(table_name = "user_follow")]
 pub struct Model {
     #[sea_orm(primary_key)]
-    pub userid: i64,
+    pub user_id: i64,
     #[sea_orm(primary_key)]
-    pub burrowid: i64,
+    pub burrow_id: i64,
+    pub is_update: bool,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {
-    #[sea_orm(
-        belongs_to = "super::user::Entity",
-        from = "Column::Userid",
-        to = "super::user::Column::Uid"
-    )]
-    User,
-    #[sea_orm(
-        belongs_to = "super::burrow::Entity",
-        from = "Column::Burrowid",
-        to = "super::burrow::Column::BurrowId"
-    )]
-    Burrow,
-}
+pub enum Relation {}
 
 impl ActiveModelBehavior for ActiveModel {}

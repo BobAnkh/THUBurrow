@@ -1,5 +1,5 @@
 extern crate serde;
-use backend::pgdb::{content_post, prelude::*, user_collection, user_like};
+use backend::pgdb::{content_post, prelude::*, user_collection, user_follow, user_like};
 use backend::req::content::Post;
 use backend::req::pulsar::*;
 use futures::TryStreamExt;
@@ -502,11 +502,31 @@ async fn pulsar_relation() -> Result<(), pulsar::Error> {
                     Err(e) => println!("delete collection failed {:?}", e),
                 }
             }
-            PulsarRelationData::ActivateFollow(uid, uid_followed) => {
-                todo!()
+            PulsarRelationData::ActivateFollow(uid, burrow_id) => {
+                let follow = user_follow::ActiveModel {
+                    user_id: Set(uid),
+                    burrow_id: Set(burrow_id),
+                    ..Default::default()
+                };
+                match follow.insert(&db).await {
+                    Ok(_) => {
+                        println!("insert follow success");
+                    }
+                    Err(e) => println!("insert follow failed {:?}", e),
+                }
             }
-            PulsarRelationData::DeactivateFollow(uid, uid_followed) => {
-                todo!()
+            PulsarRelationData::DeactivateFollow(uid, burrow_id) => {
+                let follow = user_follow::ActiveModel {
+                    user_id: Set(uid),
+                    burrow_id: Set(burrow_id),
+                    ..Default::default()
+                };
+                match follow.delete(&db).await {
+                    Ok(res) => {
+                        println!("delete follow success {}", res.rows_affected);
+                    }
+                    Err(e) => println!("delete follow failed {:?}", e),
+                }
             }
         }
     }
@@ -533,9 +553,10 @@ async fn generate_trending() -> redis::RedisResult<()> {
     loop {
         interval.tick().await;
         let query_formula = Expr::cust(
-            r#"(ln("content_post"."post_len")+"content_post"."like_num"+"content_post"."collection_num")/((floor(extract(epoch from (CURRENT_TIMESTAMP - "content_post"."create_time") ) / 60 / 60)/2+floor(extract(epoch from (CURRENT_TIMESTAMP - "content_post"."last_modify_time") ) / 60 / 60)/2+2)^1.2+10)"#,
+            r#"(ln("content_post"."post_len")+"content_post"."like_num"+"content_post"."collection_num")/((floor(extract(epoch from (CURRENT_TIMESTAMP - "content_post"."create_time") ) / 60 / 60)/2+floor(extract(epoch from (CURRENT_TIMESTAMP - "content_post"."update_time") ) / 60 / 60)/2+2)^1.2+10)"#,
         );
         let trend_pages = ContentPost::find()
+            .filter(content_post::Column::PostState.eq(0))
             .order_by_desc(query_formula)
             .paginate(&pg_con, 50);
         match trend_pages.fetch_page(0).await {
