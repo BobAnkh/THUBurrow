@@ -1,4 +1,5 @@
 use chrono::{FixedOffset, Utc};
+// use futures::future;
 use rocket::http::Status;
 use rocket::http::{Cookie, CookieJar, SameSite};
 use rocket::serde::json::Json;
@@ -6,6 +7,7 @@ use rocket::{Build, Rocket};
 use rocket_db_pools::Connection;
 use sea_orm::entity::*;
 use sea_orm::QueryFilter;
+// , DatabaseConnection};
 
 use crate::pgdb;
 use crate::pgdb::user::Entity as User;
@@ -321,6 +323,14 @@ pub async fn get_burrow(
     db: Connection<PgDb>,
     sso: sso::SsoAuth,
 ) -> (Status, Json<Vec<UserGetBurrowResponse>>) {
+    // Ok(burrows) => {
+    //     // let mut posts_num = Vec::new();
+    //     let r: Vec<i64> = future::try_join_all(burrows.iter().map(move |burrow| {
+    //         let inner_conn = pg_con.clone();
+    //         GetBurrow::get_post(burrow, inner_conn)
+    //     }))
+    //     .await
+    //     .unwrap();
     let pg_con = db.into_inner();
     match pgdb::user_status::Entity::find_by_id(sso.id)
         .one(&pg_con)
