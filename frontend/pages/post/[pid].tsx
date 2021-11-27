@@ -38,7 +38,7 @@ const PostDetial: NextPage = () => {
     const fetchReplyList = async () => {
       try {
         const res = await axios.get(
-          `${process.env.NEXT_PUBLIC_BASEURL}/content/${pid}`,
+          `${process.env.NEXT_PUBLIC_BASEURL}/content/${pid}?page=${page}`,
           {
             headers: { 'Content-Type': 'application/json' },
           }

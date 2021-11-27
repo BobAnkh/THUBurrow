@@ -71,7 +71,7 @@ const Home: NextPage = () => {
     const fetchPostList = async () => {
       try {
         const res = await axios.get(
-          `${process.env.NEXT_PUBLIC_BASEURL}/content/list/${page}`,
+          `${process.env.NEXT_PUBLIC_BASEURL}/content/list?page=${page}`,
           {
             headers: { 'Content-Type': 'application/json' },
           }

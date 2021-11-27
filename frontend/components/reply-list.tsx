@@ -17,6 +17,9 @@ export default function ReplyList({ listData, postLen, setPage }: Props) {
           setPage(page);
         },
         pageSize: 20,
+        showQuickJumper: true,
+        showSizeChanger: false,
+        total: postLen,
       }}
       dataSource={listData}
       footer={
