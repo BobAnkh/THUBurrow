@@ -33,8 +33,8 @@ pub async fn create_burrow(
     {
         Ok(opt_state) => match opt_state {
             Some(state) => {
-                let valid_burrow_num = get_burrow_list(state.valid_burrow.clone()).len() as i32;
-                let banned_burrow_num = get_burrow_list(state.banned_burrow.clone()).len() as i32;
+                let valid_burrow_num = get_burrow_list(&state.valid_burrow).len() as i32;
+                let banned_burrow_num = get_burrow_list(&state.banned_burrow).len() as i32;
                 let max_burrow_num: i32 = *BURROW_LIMIT;
                 if banned_burrow_num + valid_burrow_num < max_burrow_num {
                     // get burrow info from request
@@ -63,9 +63,11 @@ pub async fn create_burrow(
                             ust.update_time =
                                 Set(Utc::now().with_timezone(&FixedOffset::east(8 * 3600)));
                             ust.valid_burrow = {
-                                let mut valid_burrows: Vec<i64> = get_burrow_list(ust.valid_burrow.unwrap().clone());
+                                let mut valid_burrows: Vec<i64> =
+                                    get_burrow_list(&ust.valid_burrow.unwrap());
                                 valid_burrows.push(burrow_id);
-                                let valid_burrows_str: Vec<String> = valid_burrows.iter().map(|x| x.to_string()).collect();
+                                let valid_burrows_str: Vec<String> =
+                                    valid_burrows.iter().map(|x| x.to_string()).collect();
                                 Set(valid_burrows_str.join(","))
                             };
                             match ust.update(&pg_con).await {
@@ -81,40 +83,40 @@ pub async fn create_burrow(
                                     (
                                         Status::Ok,
                                         Ok(Json(BurrowCreateResponse {
-                                            burrow_id: burrow_id,
+                                            burrow_id,
                                             title: res.title.unwrap(),
-                                            uid: uid,
+                                            uid,
                                             description: res.description.unwrap(),
                                         })),
                                     )
                                 }
                                 Err(e) => {
                                     error!("Database error: {:?}", e.to_string());
-                                    return (Status::InternalServerError, Err("".to_string()));
+                                    (Status::InternalServerError, Err(String::new()))
                                 }
                             }
                         }
                         Err(e) => {
                             error!("[Create-Burrow] Database Error: {:?}", e.to_string());
-                            (Status::InternalServerError, Err("".to_string()))
+                            (Status::InternalServerError, Err(String::new()))
                         }
                     }
                 } else {
                     info!("[CREATE-BURROW] Owned burrow amount reaches threshold.");
-                    return (
+                    (
                         Status::BadRequest,
                         Err("Owned burrow amount reaches threshold.".to_string()),
-                    );
+                    )
                 }
             }
             None => {
                 error!("[CREATE BURROW] Cannot find user_status by uid.");
-                return (Status::InternalServerError, Err(String::new()));
+                (Status::InternalServerError, Err(String::new()))
             }
         },
         Err(e) => {
             error!("[CREATE BURROW] Database Error: {:?}", e.to_string());
-            return (Status::InternalServerError, Err(String::new()));
+            (Status::InternalServerError, Err(String::new()))
         }
     }
 }
@@ -132,9 +134,9 @@ pub async fn discard_burrow(
     {
         Ok(opt_ust) => match opt_ust {
             Some(state) => {
-                let mut valid_burrows: Vec<i64> = get_burrow_list(state.valid_burrow.clone());
-                let mut banned_burrows: Vec<i64> = get_burrow_list(state.banned_burrow.clone());
-                if valid_burrows.contains(&burrow_id)||banned_burrows.contains(&burrow_id) {
+                let mut valid_burrows: Vec<i64> = get_burrow_list(&state.valid_burrow);
+                let mut banned_burrows: Vec<i64> = get_burrow_list(&state.banned_burrow);
+                if valid_burrows.contains(&burrow_id) || banned_burrows.contains(&burrow_id) {
                     // update valid_burrow / banned_burrow in user_status table
                     let mut ac_state: pgdb::user_status::ActiveModel = state.into();
                     // do some type-convert things, and fill in the row according to different situations
@@ -176,50 +178,47 @@ pub async fn discard_burrow(
                                                     "[DEL-BURROW] Database Error: {:?}",
                                                     e.to_string()
                                                 );
-                                                return (
-                                                    Status::InternalServerError,
-                                                    Err(String::new()),
-                                                );
+                                                (Status::InternalServerError, Err(String::new()))
                                             }
                                         }
                                     }
                                     None => {
                                         error!("[DEL-BURROW] Cannot find burrow by burrow_id.");
-                                        return (Status::InternalServerError, Err(String::new()));
+                                        (Status::InternalServerError, Err(String::new()))
                                     }
                                 },
                                 Err(e) => {
                                     error!("[DEL-BURROW] Database Error: {:?}", e.to_string());
-                                    return (Status::InternalServerError, Err(String::new()));
+                                    (Status::InternalServerError, Err(String::new()))
                                 }
                             }
                         }
                         Err(e) => {
                             error!("[DEL-BURROW] Database Error: {:?}", e.to_string());
-                            return (Status::InternalServerError, Err(String::new()));
+                            (Status::InternalServerError, Err(String::new()))
                         }
                     }
                 } else {
                     info!(
                         "[DEL-BURROW] Cannot delete burrow: Burrow doesn't belong to current user."
                     );
-                    return (
+                    (
                         Status::BadRequest,
                         Err(
                             "Burrow doesn't belong to current user or already discarded."
                                 .to_string(),
                         ),
-                    );
+                    )
                 }
             }
             None => {
                 error!("[DEL-BURROW] Cannot find user_status by uid.");
-                return (Status::InternalServerError, Err(String::new()));
+                (Status::InternalServerError, Err(String::new()))
             }
         },
         Err(e) => {
             error!("[DEL-BURROW] Database Error: {:?}", e.to_string());
-            return (Status::InternalServerError, Err(String::new()));
+            (Status::InternalServerError, Err(String::new()))
         }
     }
 }
@@ -262,21 +261,18 @@ pub async fn show_burrow(
                     ),
                     Err(e) => {
                         error!("[SHOW-BURROW] Database Error: {:?}", e.to_string());
-                        return (Status::InternalServerError, Err(String::new()));
+                        (Status::InternalServerError, Err(String::new()))
                     }
                 }
             }
             None => {
-                error!(
-                    "[SHOW-BURROW] Cannot find burrow {}",
-                    burrow_id
-                );
-                return (Status::BadRequest, Err(String::new()));
+                error!("[SHOW-BURROW] Cannot find burrow {}", burrow_id);
+                (Status::BadRequest, Err(String::new()))
             }
         },
         Err(e) => {
             error!("[SHOW-BURROW] Database Error: {:?}", e.to_string());
-            return (Status::InternalServerError, Err(String::new()));
+            (Status::InternalServerError, Err(String::new()))
         }
     }
 }
