@@ -231,19 +231,25 @@ async fn pulsar_typesense() -> Result<(), pulsar::Error> {
             }
             PulsarSearchData::UpdateBurrow(burrow) => {
                 // TODO: read from typesense first, check the time if it is newer than the one in typesense
-                let search_result:SearchResult = serde_json::from_str(&client
-                .build_get(&format!("/collections/burrows/documents/search?q={}&query_by=burrow_id&filter_by=&sort_by=",burrow.burrow_id))
-                .send()
-                .await.unwrap().text().await.unwrap()).unwrap();
-                match search_result.found {
-                    0 => println!("Burrow to update does not exist!"),
-                    _ => {
+                let retrieve_response = client
+                    .build_get(&format!(
+                        "/collections/burrows/documents/{}",
+                        burrow.burrow_id
+                    ))
+                    .send()
+                    .await
+                    .unwrap();
+                let status = retrieve_response.status().as_u16();
+                let search_result: SearchResult =
+                    serde_json::from_str(&retrieve_response.text().await.unwrap()).unwrap();
+                match status {
+                    404 => println!("Burrow to update does not exist!"),
+                    200 => {
                         let present_burrow: TypesenseBurrowData =
                             serde_json::from_value(search_result.hits[0].clone()).unwrap();
                         match DateTimeWithTimeZone::parse_from_rfc3339(&present_burrow.update_time)
                             .unwrap()
-                            .timestamp()
-                            < burrow.update_time.timestamp()
+                            < burrow.update_time
                         {
                             true => {
                                 let data: TypesenseBurrowData = burrow.into();
@@ -262,17 +268,22 @@ async fn pulsar_typesense() -> Result<(), pulsar::Error> {
                             false => println!("The burrow is already up to date."),
                         }
                     }
+                    _ => println!("Unknown status code when retrive."),
                 }
             }
             PulsarSearchData::UpdatePost(post) => {
                 // TODO: read from typesense first, check the time if it is newer than the one in typesense
-                let search_result:SearchResult = serde_json::from_str(&client
-                    .build_get(&format!("/collections/posts/documents/search?q={}&query_by=post_id&filter_by=&sort_by=",post.post_id))
+                let retrieve_response = client
+                    .build_get(&format!("/collections/posts/documents/{}", post.post_id))
                     .send()
-                    .await.unwrap().text().await.unwrap()).unwrap();
-                match search_result.found {
-                    0 => println!("Post to update does not exist!"),
-                    _ => {
+                    .await
+                    .unwrap();
+                let status = retrieve_response.status().as_u16();
+                let search_result: SearchResult =
+                    serde_json::from_str(&retrieve_response.text().await.unwrap()).unwrap();
+                match status {
+                    404 => println!("Post to update does not exist!"),
+                    200 => {
                         let present_post: TypesenseBurrowData =
                             serde_json::from_value(search_result.hits[0].clone()).unwrap();
                         match DateTimeWithTimeZone::parse_from_rfc3339(&present_post.update_time)
@@ -296,17 +307,25 @@ async fn pulsar_typesense() -> Result<(), pulsar::Error> {
                             false => println!("The burrow is already up to date."),
                         }
                     }
+                    _ => println!("Unknown status code when retrive."),
                 }
             }
             PulsarSearchData::UpdateReply(reply) => {
                 // TODO: read from typesense first, check the time if it is newer than the one in typesense
-                let search_result:SearchResult = serde_json::from_str(&client
-                    .build_get(&format!("/collections/replies/documents/search?q={}&query_by=reply_id&filter_by=&sort_by=",reply.reply_id))
+                let retrieve_response = client
+                    .build_get(&format!(
+                        "/collections/replies/documents/{}-{}",
+                        reply.post_id, reply.reply_id
+                    ))
                     .send()
-                    .await.unwrap().text().await.unwrap()).unwrap();
-                match search_result.found {
-                    0 => println!("Reply to update does not exist!"),
-                    _ => {
+                    .await
+                    .unwrap();
+                let status = retrieve_response.status().as_u16();
+                let search_result: SearchResult =
+                    serde_json::from_str(&retrieve_response.text().await.unwrap()).unwrap();
+                match status {
+                    404 => println!("Reply to update does not exist!"),
+                    200 => {
                         let present_reply: TypesenseBurrowData =
                             serde_json::from_value(search_result.hits[0].clone()).unwrap();
                         match DateTimeWithTimeZone::parse_from_rfc3339(&present_reply.update_time)
@@ -331,6 +350,7 @@ async fn pulsar_typesense() -> Result<(), pulsar::Error> {
                             false => println!("The burrow is already up to date."),
                         }
                     }
+                    _ => println!("Unknown status code when retrive."),
                 }
             }
             PulsarSearchData::DeleteBurrow(burrow_id) => {
