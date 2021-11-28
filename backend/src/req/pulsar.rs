@@ -315,11 +315,11 @@ pub struct SearchRequest2 {
 
 #[derive(Serialize, Deserialize)]
 pub enum SearchRequest {
-    SearchBurrowKeyword{keyword:String, page:usize},
-    RetrieveBurrow{burrow_id:i64},
-    SearchPostKeyword{keyword:String, page:usize},
-    SearchPostTag{tag:String, page:usize},
-    RetrievePost{post_id:i64},
+    SearchBurrowKeyword { keyword: String, page: usize },
+    RetrieveBurrow { burrow_id: i64 },
+    SearchPostKeyword { keyword: String, page: usize },
+    SearchPostTag { tag: String, page: usize },
+    RetrievePost { post_id: i64 },
 }
 
 #[derive(Serialize, Deserialize)]

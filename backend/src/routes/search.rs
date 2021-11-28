@@ -64,14 +64,14 @@ async fn search(searchpool: Connection<TypesenseSearch>, data: Json<SearchReques
                     return format!("{}", e);
                 }
             };
-            let result_qby_content: GroupedSearchResult = match serde_json::from_str(&response_qby_content)
-            {
-                Ok(a) => a,
-                Err(e) => {
-                    log::error!("{}", response_qby_content);
-                    return format!("{}", e);
-                }
-            };
+            let result_qby_content: GroupedSearchResult =
+                match serde_json::from_str(&response_qby_content) {
+                    Ok(a) => a,
+                    Err(e) => {
+                        log::error!("{}", response_qby_content);
+                        return format!("{}", e);
+                    }
+                };
 
             json!({
                 "found": result_qby_title.found + result_qby_content.found,
