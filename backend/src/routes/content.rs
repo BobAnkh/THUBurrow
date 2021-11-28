@@ -1,3 +1,4 @@
+use futures::future;
 use rocket::http::Status;
 use rocket::serde::json::Json;
 use rocket::{Build, Rocket};
@@ -43,14 +44,13 @@ pub async fn create_post(
     let mut errors: Vec<String> = Vec::new();
     // get content info from request
     let content = post_info.into_inner();
-    // check if title, author and section is empty, add corresponding error if so
+    // check if title, author and section is empty
     if content.title.is_empty() {
         errors.push("Empty Title".to_string());
     }
     if content.section.is_empty() {
         errors.push("Empty Section".to_string());
     }
-    // check if this burrow_id belongs to the user
     match Burrow::find_by_id(content.burrow_id)
         .one(&pg_con)
         .await
@@ -60,6 +60,7 @@ pub async fn create_post(
             errors.push("Burrow not exsits".to_string());
         }
         Some(burrow_info) => {
+            // check if this burrow_id belongs to the user
             if burrow_info.uid != auth.id {
                 errors.push("Wrong user".to_string());
             }
@@ -73,7 +74,7 @@ pub async fn create_post(
             }
         }
     };
-    // check if user has been banned, add corresponding error if so
+    // check if user has been banned
     match UserStatus::find_by_id(auth.id)
         .one(&pg_con)
         .await
@@ -177,8 +178,6 @@ pub async fn read_post(
             Json(PostReadResponse {
                 errors: "Post not exsits".to_string(),
                 post_page: None,
-                like: false,
-                collection: false,
             }),
         ),
         Some(post_info) => {
@@ -194,8 +193,6 @@ pub async fn read_post(
                         Json(PostReadResponse {
                             errors: format!("{}", e),
                             post_page: None,
-                            like: false,
-                            collection: false,
                         }),
                     );
                 }
@@ -203,13 +200,7 @@ pub async fn read_post(
             // get post metadata
             let post_desc: Post = post_info.into();
             let reply_page: Vec<Reply> = reply_info.iter().map(|r| r.into()).collect();
-            let post_page = PostPage {
-                post_desc,
-                reply_page,
-                page,
-            };
             let collection;
-            let like;
             // check if the user collect the post, if so, update the state is_update
             let record = pgdb::user_collection::ActiveModel {
                 uid: Set(auth.id),
@@ -230,25 +221,25 @@ pub async fn read_post(
                             Json(PostReadResponse {
                                 errors: format!("{}", e),
                                 post_page: None,
-                                like: false,
-                                collection: false,
                             }),
                         );
                     }
                 },
             };
             // check if the user like the post
-            match UserLike::find_by_id((auth.id, post_id))
-                .one(&pg_con)
-                .await
-                .expect("cannot fetch content from pgdb")
-            {
-                None => {
-                    like = false;
+            let like = match UserLike::find_by_id((auth.id, post_id)).one(&pg_con).await {
+                Ok(user_like) => user_like.is_some(),
+                Err(e) => {
+                    error!("[GET-BURROW] Database Error: {:?}", e.to_string());
+                    false
                 }
-                Some(_) => {
-                    like = true;
-                }
+            };
+            let post_page = PostPage {
+                post_desc,
+                reply_page,
+                page,
+                like,
+                collection,
             };
             // return the response
             (
@@ -256,8 +247,6 @@ pub async fn read_post(
                 Json(PostReadResponse {
                     errors: "".to_string(),
                     post_page: Some(post_page),
-                    like,
-                    collection,
                 }),
             )
         }
@@ -286,10 +275,6 @@ pub async fn read_post_list(
             );
         }
     };
-    // TODO: check if the post is banned?
-    let post_page: Vec<Post> = post_info.iter().map(|r| r.into()).collect();
-    // TODO: check if the user collect the posts
-    // TODO: check if the user like the posts
     // get total number of posts
     let post_num: i64;
     match ContentPost::find()
@@ -306,12 +291,24 @@ pub async fn read_post_list(
                     list_page: None,
                 }),
             )
-        },
+        }
         Some(post_last) => {
             post_num = post_last.post_id;
         }
     }
-    let list_page = ListPage { post_page, page, post_num };
+    // check if the user collect and like the posts
+    // TODO: check if the post is banned?
+    let post_page: Vec<PostDisplay> = future::try_join_all(post_info.iter().map(move |post| {
+        let inner_conn = pg_con.clone();
+        GetPostList::get_post_display(post, inner_conn, auth.id)
+    }))
+    .await
+    .unwrap();
+    let list_page = ListPage {
+        post_page,
+        page,
+        post_num,
+    };
     (
         Status::Ok,
         Json(ListReadResponse {

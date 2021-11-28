@@ -28,6 +28,8 @@ pub async fn postgres_table_setup(rocket: Rocket<Build>) -> fairing::Result {
     let _ = create_content_reply_table(conn).await;
     let _ = create_user_like_table(conn).await;
     let _ = create_user_collection_table(conn).await;
+    let _ = create_user_status_table(conn).await;
+    let _ = create_burrow_table(conn).await;
     // match t {
     //     Ok(_) => {}
     //     Err(e) => {

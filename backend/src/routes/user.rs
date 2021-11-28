@@ -24,14 +24,7 @@ use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 
 pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
-    rocket.mount(
-        "/users",
-        routes![
-            user_log_in,
-            user_sign_up,
-            user_relation,
-        ],
-    )
+    rocket.mount("/users", routes![user_log_in, user_sign_up, user_relation,])
 }
 
 #[post("/relation", data = "<relation_info>", format = "json")]
