@@ -1,6 +1,5 @@
 use pulsar::{producer, Error as PulsarError};
 use pulsar::{DeserializeMessage, Payload, SerializeMessage};
-use rand::distributions::Open01;
 use sea_orm::prelude::DateTimeWithTimeZone;
 use serde::{Deserialize, Serialize};
 
@@ -304,14 +303,23 @@ impl From<&PulsarSearchReplyData> for TypesenseReplyData {
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct SearchRequest {
+pub struct SearchRequest2 {
     pub keyword: Option<String>,
-    pub id: Option<i64>,
+    pub id: Option<usize>,
     pub tag: Option<String>,
     pub order: Option<String>,
     pub area: Option<String>,
     pub page: Option<i16>,
-    pub filter_by:Option<String>
+    pub filter_by: Option<String>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub enum SearchRequest {
+    SearchBurrowKeyword{keyword:String, page:usize},
+    RetrieveBurrow{burrow_id:i64},
+    SearchPostKeyword{keyword:String, page:usize},
+    SearchPostTag{tag:String, page:usize},
+    RetrievePost{post_id:i64},
 }
 
 #[derive(Serialize, Deserialize)]
@@ -321,7 +329,12 @@ pub struct SearchResult {
 }
 
 #[derive(Serialize, Deserialize)]
+pub struct GroupedSearchResult {
+    pub found: i64,
+    pub grouped_hits: Vec<serde_json::Value>,
+}
+
+#[derive(Serialize, Deserialize)]
 pub struct Keyword {
     pub keyword: String,
 }
-

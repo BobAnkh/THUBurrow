@@ -207,7 +207,7 @@ async fn pulsar_typesense() -> Result<(), pulsar::Error> {
                 let data: TypesensePostData = post.into();
 
                 match client
-                    .build_post("/collections/burrows/documents")
+                    .build_post("/collections/posts/documents")
                     .body(serde_json::to_string(&data).unwrap())
                     .send()
                     .await
@@ -220,7 +220,7 @@ async fn pulsar_typesense() -> Result<(), pulsar::Error> {
                 let data: TypesenseReplyData = reply.into();
 
                 match client
-                    .post("/collections/burrows/documents")
+                    .post("/collections/replies/documents")
                     .body(serde_json::to_string(&data).unwrap())
                     .send()
                     .await
@@ -277,8 +277,7 @@ async fn pulsar_typesense() -> Result<(), pulsar::Error> {
                             serde_json::from_value(search_result.hits[0].clone()).unwrap();
                         match DateTimeWithTimeZone::parse_from_rfc3339(&present_post.update_time)
                             .unwrap()
-                            .timestamp()
-                            < post.update_time.timestamp()
+                            < post.update_time
                         {
                             true => {
                                 let data: TypesensePostData = post.into();
