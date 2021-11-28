@@ -1,23 +1,136 @@
 extern crate serde;
+use backend::pgdb::{content_post, prelude::*, user_collection, user_follow, user_like};
+use backend::req::content::Post;
 use backend::req::pulsar::*;
 use futures::TryStreamExt;
 use lazy_static::lazy_static;
 use pulsar::{Consumer, Pulsar, SubType, TokioExecutor};
+use sea_orm::sea_query::Expr;
+use sea_orm::{entity::*, PaginatorTrait, QueryOrder};
+use sea_orm::{Database, DatabaseConnection, QueryFilter};
 use serde_json::json;
+use std::collections::HashMap;
 use std::env;
-use tokio::time::sleep;
 use tokio::time::Duration;
 
 lazy_static! {
     static ref TYPESENSE_API_KEY: String = {
-        env::var("TYPESENSE_API_KEY")
-            .ok()
-            .unwrap_or_else(|| "8Dz4jRrsBjYgdCD/VGP1bleph7oBThJr5IcF43l0U24=".to_string())
+        let env_v = "ROCKET_DATABASES=".to_string() + &env::var("ROCKET_DATABASES").ok().unwrap_or_else(|| r#"{search={url="http://127.0.0.1:8108@$8Dz4jRrsBjYgdCD/VGP1bleph7oBThJr5IcF43l0U24="}}"#.to_string());
+        let env_v =
+            toml::from_str::<HashMap<String, HashMap<String, HashMap<String, String>>>>(&env_v)
+                .unwrap();
+        let url: String = match env_v.get("ROCKET_DATABASES") {
+            Some(r) => match r.get("search") {
+                Some(r) => match r.get("url") {
+                    Some(r) => r.to_owned(),
+                    None => "http://127.0.0.1:8108@$8Dz4jRrsBjYgdCD/VGP1bleph7oBThJr5IcF43l0U24="
+                        .to_string(),
+                },
+                None => "http://127.0.0.1:8108@$8Dz4jRrsBjYgdCD/VGP1bleph7oBThJr5IcF43l0U24="
+                    .to_string(),
+            },
+            None => {
+                "http://127.0.0.1:8108@$8Dz4jRrsBjYgdCD/VGP1bleph7oBThJr5IcF43l0U24=".to_string()
+            }
+        };
+        let info: Vec<&str> = url.split('@').collect();
+        let api_key: String;
+        if info.len() == 1 {
+            api_key = "8Dz4jRrsBjYgdCD/VGP1bleph7oBThJr5IcF43l0U24=".to_owned();
+        } else if info.len() == 2 {
+            api_key = info[1].to_owned();
+        } else {
+            panic!("Invalid typesense url.");
+        }
+        api_key
     };
     static ref TYPESENSE_ADDR: String = {
-        env::var("TYPESENSE_ADDR")
-            .ok()
-            .unwrap_or_else(|| "http://127.0.0.1:8108".to_string())
+        let env_v = "ROCKET_DATABASES=".to_string() + &env::var("ROCKET_DATABASES").ok().unwrap_or_else(|| r#"{search={url="http://127.0.0.1:8108@$8Dz4jRrsBjYgdCD/VGP1bleph7oBThJr5IcF43l0U24="}}"#.to_string());
+        let env_v =
+            toml::from_str::<HashMap<String, HashMap<String, HashMap<String, String>>>>(&env_v)
+                .unwrap();
+        let url: String = match env_v.get("ROCKET_DATABASES") {
+            Some(r) => match r.get("search") {
+                Some(r) => match r.get("url") {
+                    Some(r) => r.to_owned(),
+                    None => "http://127.0.0.1:8108@$8Dz4jRrsBjYgdCD/VGP1bleph7oBThJr5IcF43l0U24="
+                        .to_string(),
+                },
+                None => "http://127.0.0.1:8108@$8Dz4jRrsBjYgdCD/VGP1bleph7oBThJr5IcF43l0U24="
+                    .to_string(),
+            },
+            None => {
+                "http://127.0.0.1:8108@$8Dz4jRrsBjYgdCD/VGP1bleph7oBThJr5IcF43l0U24=".to_string()
+            }
+        };
+        let info: Vec<&str> = url.split('@').collect();
+        let addr: String;
+        if info.len() == 1 || info.len() == 2 {
+            addr = info[0].to_owned();
+        } else {
+            panic!("Invalid typesense url.");
+        }
+        addr
+    };
+    static ref POSTGRES_ADDR: String = {
+        let env_v = "ROCKET_DATABASES=".to_string()
+            + &env::var("ROCKET_DATABASES").ok().unwrap_or_else(|| {
+                r#"{pgdb={url="postgres://postgres:postgres@127.0.0.1:5432/pgdb"}}"#.to_string()
+            });
+        let env_v =
+            toml::from_str::<HashMap<String, HashMap<String, HashMap<String, String>>>>(&env_v)
+                .unwrap();
+        let url: String = match env_v.get("ROCKET_DATABASES") {
+            Some(r) => match r.get("pgdb") {
+                Some(r) => match r.get("url") {
+                    Some(r) => r.to_owned(),
+                    None => "postgres://postgres:postgres@127.0.0.1:5432/pgdb".to_string(),
+                },
+                None => "postgres://postgres:postgres@127.0.0.1:5432/pgdb".to_string(),
+            },
+            None => "postgres://postgres:postgres@127.0.0.1:5432/pgdb".to_string(),
+        };
+        url
+    };
+    static ref PULSAR_ADDR: String = {
+        let env_v = "ROCKET_DATABASES=".to_string()
+            + &env::var("ROCKET_DATABASES")
+                .ok()
+                .unwrap_or_else(|| r#"{pulsar-mq={url="pulsar://127.0.0.1:6650"}}"#.to_string());
+        let env_v =
+            toml::from_str::<HashMap<String, HashMap<String, HashMap<String, String>>>>(&env_v)
+                .unwrap();
+        let url: String = match env_v.get("ROCKET_DATABASES") {
+            Some(r) => match r.get("pulsar-mq") {
+                Some(r) => match r.get("url") {
+                    Some(r) => r.to_owned(),
+                    None => "pulsar://127.0.0.1:6650".to_string(),
+                },
+                None => "pulsar://127.0.0.1:6650".to_string(),
+            },
+            None => "pulsar://127.0.0.1:6650".to_string(),
+        };
+        url
+    };
+    static ref REDIS_ADDR: String = {
+        let env_v = "ROCKET_DATABASES=".to_string()
+            + &env::var("ROCKET_DATABASES").ok().unwrap_or_else(|| {
+                r#"{keydb={url="redis://:keypassword@127.0.0.1:6300"}}"#.to_string()
+            });
+        let env_v =
+            toml::from_str::<HashMap<String, HashMap<String, HashMap<String, String>>>>(&env_v)
+                .unwrap();
+        let url: String = match env_v.get("ROCKET_DATABASES") {
+            Some(r) => match r.get("keydb") {
+                Some(r) => match r.get("url") {
+                    Some(r) => r.to_owned(),
+                    None => "redis://:keypassword@127.0.0.1:6300".to_string(),
+                },
+                None => "redis://:keypassword@127.0.0.1:6300".to_string(),
+            },
+            None => "redis://:keypassword@127.0.0.1:6300".to_string(),
+        };
+        url
     };
 }
 
@@ -27,6 +140,19 @@ lazy_static! {
 //         Err(e) => panic!("Error initial logger: {}", e),
 //     }
 // }
+
+#[tokio::main]
+async fn main() {
+    // log_init();
+    let scheduler = vec![tokio::spawn(generate_trending())];
+    let handles = vec![
+        tokio::spawn(pulsar_relation()),
+        tokio::spawn(pulsar_typesense()),
+    ];
+    futures::future::join_all(handles).await;
+    futures::future::join_all(scheduler).await;
+    std::thread::sleep(Duration::from_millis(1000));
+}
 
 async fn create_typesense_collections() -> Result<(), reqwest::Error> {
     //create typesense collections
@@ -110,22 +236,11 @@ impl Typesense for reqwest::Client {
     }
 }
 
-#[tokio::main]
-async fn main() {
-    // log_init();
-    let handles = vec![tokio::spawn(pulsar_typesense())];
-    futures::future::join_all(handles).await;
-    std::thread::sleep(Duration::from_millis(1000));
-}
-
 async fn pulsar_typesense() -> Result<(), pulsar::Error> {
     // setup pulsar consumer
-    let addr = env::var("PULSAR_ADDRESS")
-        .ok()
-        .unwrap_or_else(|| "pulsar://127.0.0.1:6650".to_string());
-    let topic = env::var("PULSAR_TOPIC")
-        .ok()
-        .unwrap_or_else(|| "persistent://public/default/search".to_string());
+    let pulsar_addr: String = PULSAR_ADDR.to_owned();
+    let addr = pulsar_addr;
+    let topic = "persistent://public/default/search".to_string();
     let builder = Pulsar::builder(addr, TokioExecutor);
     let pulsar: Pulsar<_> = builder.build().await?;
     let mut consumer: Consumer<PulsarSearchData, _> = pulsar
@@ -268,4 +383,200 @@ async fn pulsar_typesense() -> Result<(), pulsar::Error> {
     }
 
     Ok(())
+}
+
+async fn pulsar_relation() -> Result<(), pulsar::Error> {
+    // setup pulsar consumer
+    let pulsar_addr: String = PULSAR_ADDR.to_owned();
+    let addr = pulsar_addr;
+    let topic = "persistent://public/default/relation".to_string();
+    let builder = Pulsar::builder(addr, TokioExecutor);
+    let pulsar: Pulsar<_> = builder.build().await?;
+    let mut consumer: Consumer<PulsarRelationData, _> = pulsar
+        .consumer()
+        .with_topic(topic)
+        .with_subscription_type(SubType::Exclusive)
+        .build()
+        .await?;
+    let postgres_addr: &str = &POSTGRES_ADDR;
+    let db: DatabaseConnection = match Database::connect(postgres_addr).await {
+        Ok(db) => db,
+        Err(e) => {
+            println!("{:?}", e);
+            panic!("database connection failed");
+        }
+    };
+    while let Some(msg) = consumer.try_next().await? {
+        consumer.ack(&msg).await?;
+        let data = match msg.deserialize() {
+            Ok(data) => data,
+            Err(e) => {
+                println!("could not deserialize message: {:?}", e);
+                continue;
+            }
+        };
+        match data {
+            PulsarRelationData::ActivateLike(uid, post_id) => {
+                let like = user_like::ActiveModel {
+                    uid: Set(uid),
+                    post_id: Set(post_id),
+                };
+                match like.insert(&db).await {
+                    Ok(_) => {
+                        println!("insert like success");
+                        let _ = ContentPost::update_many()
+                            .col_expr(
+                                content_post::Column::LikeNum,
+                                Expr::col(content_post::Column::LikeNum).add(1),
+                            )
+                            .filter(content_post::Column::PostId.eq(post_id))
+                            .exec(&db)
+                            .await;
+                    }
+                    Err(e) => println!("insert like failed {:?}", e),
+                }
+            }
+            PulsarRelationData::DeactivateLike(uid, post_id) => {
+                let like = user_like::ActiveModel {
+                    uid: Set(uid),
+                    post_id: Set(post_id),
+                };
+                match like.delete(&db).await {
+                    Ok(res) => {
+                        println!("delete like success {}", res.rows_affected);
+                        if res.rows_affected == 1 {
+                            let _ = ContentPost::update_many()
+                                .col_expr(
+                                    content_post::Column::LikeNum,
+                                    Expr::col(content_post::Column::LikeNum).sub(1),
+                                )
+                                .filter(content_post::Column::PostId.eq(post_id))
+                                .exec(&db)
+                                .await;
+                        }
+                    }
+                    Err(e) => println!("delete like failed {:?}", e),
+                }
+            }
+            PulsarRelationData::ActivateCollection(uid, post_id) => {
+                let collection = user_collection::ActiveModel {
+                    uid: Set(uid),
+                    post_id: Set(post_id),
+                    ..Default::default()
+                };
+                match collection.insert(&db).await {
+                    Ok(_) => {
+                        println!("insert collection success");
+                        let _ = ContentPost::update_many()
+                            .col_expr(
+                                content_post::Column::CollectionNum,
+                                Expr::col(content_post::Column::CollectionNum).add(1),
+                            )
+                            .filter(content_post::Column::PostId.eq(post_id))
+                            .exec(&db)
+                            .await;
+                    }
+                    Err(e) => println!("insert collection failed {:?}", e),
+                }
+            }
+            PulsarRelationData::DeactivateCollection(uid, post_id) => {
+                let collection = user_collection::ActiveModel {
+                    uid: Set(uid),
+                    post_id: Set(post_id),
+                    ..Default::default()
+                };
+                match collection.delete(&db).await {
+                    Ok(res) => {
+                        println!("delete collection success {}", res.rows_affected);
+                        if res.rows_affected == 1 {
+                            let _ = ContentPost::update_many()
+                                .col_expr(
+                                    content_post::Column::CollectionNum,
+                                    Expr::col(content_post::Column::CollectionNum).sub(1),
+                                )
+                                .filter(content_post::Column::PostId.eq(post_id))
+                                .exec(&db)
+                                .await;
+                        }
+                    }
+                    Err(e) => println!("delete collection failed {:?}", e),
+                }
+            }
+            PulsarRelationData::ActivateFollow(uid, burrow_id) => {
+                let follow = user_follow::ActiveModel {
+                    user_id: Set(uid),
+                    burrow_id: Set(burrow_id),
+                    ..Default::default()
+                };
+                match follow.insert(&db).await {
+                    Ok(_) => {
+                        println!("insert follow success");
+                    }
+                    Err(e) => println!("insert follow failed {:?}", e),
+                }
+            }
+            PulsarRelationData::DeactivateFollow(uid, burrow_id) => {
+                let follow = user_follow::ActiveModel {
+                    user_id: Set(uid),
+                    burrow_id: Set(burrow_id),
+                    ..Default::default()
+                };
+                match follow.delete(&db).await {
+                    Ok(res) => {
+                        println!("delete follow success {}", res.rows_affected);
+                    }
+                    Err(e) => println!("delete follow failed {:?}", e),
+                }
+            }
+        }
+    }
+
+    Ok(())
+}
+
+async fn generate_trending() -> redis::RedisResult<()> {
+    // setup pulsar consumer
+    let redis_addr: String = REDIS_ADDR.to_owned();
+    let addr = redis_addr;
+    let client = redis::Client::open(addr)?;
+    let mut kv_conn = client.get_async_connection().await?;
+    let postgres_addr: &str = &POSTGRES_ADDR;
+    let pg_con: DatabaseConnection = match Database::connect(postgres_addr).await {
+        Ok(db) => db,
+        Err(e) => {
+            println!("{:?}", e);
+            panic!("database connection failed");
+        }
+    };
+    let seconds = 900;
+    let mut interval = tokio::time::interval(Duration::from_secs(seconds));
+    loop {
+        interval.tick().await;
+        let query_formula = Expr::cust(
+            r#"(ln("content_post"."post_len")+"content_post"."like_num"+"content_post"."collection_num")/((floor(extract(epoch from (CURRENT_TIMESTAMP - "content_post"."create_time") ) / 60 / 60)/2+floor(extract(epoch from (CURRENT_TIMESTAMP - "content_post"."update_time") ) / 60 / 60)/2+2)^1.2+10)"#,
+        );
+        let trend_pages = ContentPost::find()
+            .filter(content_post::Column::PostState.eq(0))
+            .order_by_desc(query_formula)
+            .paginate(&pg_con, 50);
+        match trend_pages.fetch_page(0).await {
+            Ok(t) => {
+                let trend: Vec<Post> = t.iter().map(|r| r.into()).collect();
+                match serde_json::to_string(&trend) {
+                    Ok(trending) => {
+                        let _: Result<String, redis::RedisError> = redis::cmd("SETEX")
+                            .arg("trending")
+                            .arg(3600i32)
+                            .arg(&trending)
+                            .query_async(&mut kv_conn)
+                            .await;
+                    }
+                    Err(e) => log::error!("{}", e),
+                }
+            }
+            Err(e) => {
+                log::error!("[TRENDING] Err: {}", e);
+            }
+        }
+    }
 }

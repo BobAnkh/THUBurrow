@@ -11,11 +11,13 @@ use sea_orm::QueryFilter;
 
 use crate::pgdb;
 use crate::pgdb::user::Entity as User;
-use crate::pool::{PgDb, RedisDb};
+use crate::pool::{PgDb, PulsarSearchProducerMq, RedisDb, RocketPulsarProducer};
+use crate::req::pulsar::*;
 use crate::req::user::*;
 use crate::utils::email;
 use crate::utils::get_valid_burrow::*;
 use crate::utils::sso;
+use crate::utils::sso::SsoAuth;
 
 use crypto::digest::Digest;
 use crypto::sha3::Sha3;
@@ -35,9 +37,38 @@ pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
             user_sign_up,
             get_follow,
             get_collection,
-            get_burrow
+            get_burrow,
+            user_relation,
         ],
     )
+}
+
+#[post("/relation", data = "<relation_info>", format = "json")]
+pub async fn user_relation(
+    auth: SsoAuth,
+    pulsar: Connection<PulsarSearchProducerMq>,
+    relation_info: Json<RelationData>,
+) -> Status {
+    let relation = relation_info.into_inner();
+    let msg = relation.to_pulsar(auth.id);
+    let mut producer = match pulsar
+        .get_producer("persistent://public/default/relation")
+        .await
+    {
+        Ok(producer) => producer,
+        Err(e) => {
+            log::error!("{}", e);
+            return Status::InternalServerError;
+        }
+    };
+    match producer.send(msg).await {
+        Ok(_) => log::info!("send data to pulsar successfully!"),
+        Err(e) => {
+            log::error!("Err: {}", e);
+            return Status::InternalServerError;
+        }
+    }
+    Status::Ok
 }
 
 pub async fn gen_salt() -> String {
