@@ -367,8 +367,8 @@ pub async fn get_burrow(
     {
         Ok(opt_state) => match opt_state {
             Some(state) => {
-                let valid_burrows = get_burrow_list(state.valid_burrow.clone());
-                let banned_burrows = get_burrow_list(state.banned_burrow.clone());
+                let valid_burrows = get_burrow_list(&state.valid_burrow);
+                let banned_burrows = get_burrow_list(&state.banned_burrow);
                 let burrows_id = [valid_burrows, banned_burrows].concat();
                 let mut response = Vec::new();
                 for burrow_id in burrows_id {
