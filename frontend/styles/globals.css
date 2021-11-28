@@ -10,7 +10,10 @@ a {
   color: inherit;
   text-decoration: none;
 }
-
+.ant-cascader-menu {
+  height: 80px !important;
+  min-width: 60px !important;
+}
 * {
   box-sizing: border-box;
 }
