@@ -40,11 +40,11 @@ const GlobalHeader: React.FC = () => {
       <Menu.Item key='message'>
         <Link href='/message'>消息</Link>
       </Menu.Item>
-      <Menu.Item key='update'>
-        <Link href='/update'>动态</Link>
+      <Menu.Item key='trending'>
+        <Link href='/trending'>热榜</Link>
       </Menu.Item>
-      <Menu.Item key='setting'>
-        <Link href='./searchpage'>搜索</Link>
+      <Menu.Item key='searchpage'>
+        <Link href='/searchpage'>搜索</Link>
       </Menu.Item>
     </Menu>
   );
@@ -71,12 +71,9 @@ const GlobalHeader: React.FC = () => {
       <Row>
         <div className='logo' />
         <Col offset={2}>{menu}</Col>
-        <Col offset={12}>
-          <Button icon={<SearchOutlined />} />
-        </Col>
-        <Col offset={1}>
+        <Col offset={16} span={1}>
           <Dropdown overlay={UserMenu} placement='bottomCenter'>
-            <Button href='../search/searchPage' icon={<UserOutlined />} />
+            <Button icon={<UserOutlined />} />
           </Dropdown>
         </Col>
       </Row>

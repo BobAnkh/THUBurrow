@@ -30,7 +30,7 @@ const FormItem = Form.Item;
 const SearchPage: FC = () => {
   const [search_text, settext] = useState({ keyword: '', id: 0, tag: '' });
   const [page, setpage] = useState(1);
-  const [order, setorder] = useState('time');
+  //  const [order, setorder] = useState('time');
   const [area, setarea] = useState('post');
 
   const [form] = Form.useForm();
@@ -42,20 +42,84 @@ const SearchPage: FC = () => {
   const [listData, setdata] = useState([]);
   const [found_number, setfound_number] = useState(0);
 
-  async function getData(params: Params) {
-    if (params.keyword != '' || params.id != 0 || params.tag != '') {
+  async function sendkeyword(Keyword: string, page: number) {
+    if (area === 'post') {
+      const SearchPostKeyword = { keyword: Keyword, page: 1 + page };
       setloading(true);
-      axios.post(fakeDataUrl, { body: params }).then(function (res) {
-        setdata(() => {
-          if (res.data.hits[0].document.burrow_id != null) {
-            setstate('burrow');
-          } else setstate('post');
-          setfound_number(res.data.found);
-          return res.data.hits;
+      axios
+        .post(fakeDataUrl, { SearchPostKeyword: SearchPostKeyword })
+        .then(function (res) {
+          setdata(() => {
+            setstate('post');
+            setfound_number(res.data.found);
+            if (page == 1) return res.data.hits;
+            else return listData.concat(res.data.hits);
+          });
         });
-      });
+      setloading(false);
+    } else {
+      const SearchBurrowKeyword = { keyword: Keyword, page: 1 + page };
+      setloading(true);
+      axios
+        .post(fakeDataUrl, { SearchBurrowKeyword: SearchBurrowKeyword })
+        .then(function (res) {
+          setdata(() => {
+            setstate('burrow');
+            setfound_number(res.data.found);
+            if (page == 1) return res.data.hits;
+            else return listData.concat(res.data.hits);
+          });
+        });
       setloading(false);
     }
+  }
+
+  async function sendid(id: number, page: number) {
+    if (area == 'post') {
+      const RetrievePost = { post_id: id, page: 1 + page };
+      setloading(true);
+      axios
+        .post(fakeDataUrl, { RetrievePost: RetrievePost })
+        .then(function (res) {
+          setdata(() => {
+            setstate('post');
+            setfound_number(res.data.found);
+            if (page == 1) return res.data.hits;
+            else return listData.concat(res.data.hits);
+          });
+        });
+      setloading(false);
+    } else {
+      const RetrieveBurrow = { burrow_id: id, page: 1 + page };
+      setloading(true);
+      axios
+        .post(fakeDataUrl, { RetrieveBurrow: RetrieveBurrow })
+        .then(function (res) {
+          setdata(() => {
+            setstate('burrow');
+            setfound_number(res.data.found);
+            if (page == 1) return res.data.hits;
+            else return listData.concat(res.data.hits);
+          });
+        });
+      setloading(false);
+    }
+  }
+
+  async function sendtag(tag: string, page: number) {
+    const SearchPostTag = { tag: tag, page: 1 + page };
+    setloading(true);
+    axios
+      .post(fakeDataUrl, { SearchPostTag: SearchPostTag })
+      .then(function (res) {
+        setdata(() => {
+          setstate('post');
+          setfound_number(res.data.found);
+          if (page == 1) return res.data.hits;
+          else return listData.concat(res.data.hits);
+        });
+      });
+    setloading(false);
   }
 
   useEffect(() => {
@@ -63,43 +127,33 @@ const SearchPage: FC = () => {
       keyword: search_text.keyword,
       id: search_text.id,
       tag: search_text.tag,
-      order: order,
+      page: page,
       area: area,
-      page: 1,
     };
     if (params.tag !== '' && params.area === 'burrow') {
       params.keyword = params.tag;
       params.tag = '';
     }
-    getData(params);
-  }, [search_text, area, order]);
+    if (params.keyword != '') {
+      sendkeyword(params.keyword, params.page);
+    }
+    if (params.tag != '') {
+      sendtag(params.tag, params.page);
+    }
+    if (params.id != 0) {
+      sendid(params.id, params.page);
+    }
+  }, [search_text, page]);
 
   const on_change_area = (data: string) => {
     setarea(data);
     setpage(1);
   };
-  const on_change_order = (data: string) => {
-    setorder(data);
-    setpage(1);
-  };
 
   const loadMore = () => {
     setloadingMore(true);
-    const params = {
-      keyword: search_text.keyword,
-      id: search_text.id,
-      tag: search_text.tag,
-      order: order,
-      area: area,
-      page: page + 1,
-    };
     setpage(() => {
       return page + 1;
-    });
-    axios.post(fakeDataUrl, { body: params }).then(function (res) {
-      setdata(() => {
-        return listData.concat(res.data.hits);
-      });
     });
     setloadingMore(false);
   };
@@ -186,49 +240,34 @@ const SearchPage: FC = () => {
   };
   const selectarea = (
     <Select placeholder={'搜索范围'} onChange={on_change_area}>
-      <Option value='搜洞'>搜洞</Option>
-      <Option value='搜帖'>搜帖</Option>
+      <Option value='burrow'>搜洞</Option>
+      <Option value='post'>搜帖</Option>
     </Select>
   );
 
   return (
     <>
       <GlobalHeader />
-      <div className={styles.controlbar}>
-        <Search
-          style={{ width: '400px' }}
-          addonBefore={selectarea}
-          placeholder={'搜索关键词 或 #洞号，帖号'}
-          allowClear
-          onSearch={handleFormSubmit}
-        />
-      </div>
 
+      <Card bordered={false} className={styles.container}>
+        <div className={styles.controlbar} style={{ textAlign: 'center' }}>
+          <Search
+            style={{ width: '400px' }}
+            addonBefore={selectarea}
+            placeholder={'搜索关键词 或 #洞、帖号, tag'}
+            allowClear
+            onSearch={handleFormSubmit}
+          />
+        </div>
+      </Card>
       <Card bordered={false}>
-        <Form layout='inline' form={form}>
-          <p>找到{found_number}个结果</p>
-          <StandardFormRow grid last>
-            <Row gutter={16}>
-              <Col xl={8} lg={10} md={12} sm={24} xs={24}>
-                <FormItem {...formItemLayout} label='排序方式' name='order'>
-                  <Select
-                    placeholder='按时间'
-                    style={{ maxWidth: 200, width: '100%' }}
-                    onChange={on_change_order}
-                  >
-                    <Option value='time'>按时间</Option>
-                    <Option value='heat'>按热度</Option>
-                  </Select>
-                </FormItem>
-              </Col>
-            </Row>
-          </StandardFormRow>
-        </Form>
+        <p>找到{found_number}个结果</p>
       </Card>
       <Card
         style={{ marginTop: 24 }}
         bordered={false}
-        bodyStyle={{ padding: '8px 32px 32px 32px' }}
+        className={styles.container}
+        bodyStyle={{ padding: '32px 200px 32px 200px' }}
       >
         {state == 'post' ? (
           <List<PostListItemDataType>
