@@ -191,7 +191,7 @@ async fn create_typesense_collections() -> Result<(), reqwest::Error> {
     });
     let client = reqwest::Client::new();
     for each in [collection_burrows, collection_posts, collection_replies].iter() {
-        let res = client.build_post("/collections").json(&each).send().await?;
+        let _res = client.build_post("/collections").json(&each).send().await?;
         // TODO: match the status code of Response here, to see whether it is successfully created or is already created, or failed
     }
     Ok(())
@@ -504,7 +504,7 @@ async fn pulsar_relation() -> Result<(), pulsar::Error> {
             }
             PulsarRelationData::ActivateFollow(uid, burrow_id) => {
                 let follow = user_follow::ActiveModel {
-                    user_id: Set(uid),
+                    uid: Set(uid),
                     burrow_id: Set(burrow_id),
                     ..Default::default()
                 };
@@ -517,7 +517,7 @@ async fn pulsar_relation() -> Result<(), pulsar::Error> {
             }
             PulsarRelationData::DeactivateFollow(uid, burrow_id) => {
                 let follow = user_follow::ActiveModel {
-                    user_id: Set(uid),
+                    uid: Set(uid),
                     burrow_id: Set(burrow_id),
                     ..Default::default()
                 };

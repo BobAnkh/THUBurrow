@@ -266,7 +266,7 @@ pub async fn read_post(
 
 #[get("/post/list?<page>")]
 pub async fn read_post_list(
-    auth: SsoAuth,
+    _auth: SsoAuth,
     db: Connection<PgDb>,
     page: usize,
 ) -> (Status, Json<ListReadResponse>) {
@@ -306,12 +306,16 @@ pub async fn read_post_list(
                     list_page: None,
                 }),
             )
-        },
+        }
         Some(post_last) => {
             post_num = post_last.post_id;
         }
     }
-    let list_page = ListPage { post_page, page, post_num };
+    let list_page = ListPage {
+        post_page,
+        page,
+        post_num,
+    };
     (
         Status::Ok,
         Json(ListReadResponse {
@@ -637,7 +641,7 @@ pub async fn update_reply(
 
 #[delete("/post/<post_id>")]
 pub async fn delete_post(
-    auth: SsoAuth,
+    _auth: SsoAuth,
     db: Connection<PgDb>,
     post_id: i64,
 ) -> (Status, Json<PostDeleteResponse>) {

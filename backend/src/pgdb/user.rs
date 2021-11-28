@@ -18,22 +18,31 @@ pub struct Model {
     pub salt: String,
 }
 
+// #[derive(Copy, Clone, Debug, EnumIter)]
+// pub enum Relation {}
+
+// impl RelationTrait for Relation {
+//     fn def(&self) -> RelationDef {
+//         panic!("No RelationDef")
+//     }
+// }
+
+// impl Related<super::burrow::Entity> for Entity {
+//     fn to() -> RelationDef {
+//         super::user_follow::Relation::Burrow.def()
+//     }
+
+//     fn via() -> Option<RelationDef> {
+//         Some(super::user_follow::Relation::User.def().rev())
+//     }
+// }
+
 #[derive(Copy, Clone, Debug, EnumIter)]
 pub enum Relation {}
 
 impl RelationTrait for Relation {
     fn def(&self) -> RelationDef {
         panic!("No RelationDef")
-    }
-}
-
-impl Related<super::burrow::Entity> for Entity {
-    fn to() -> RelationDef {
-        super::user_follow::Relation::Burrow.def()
-    }
-
-    fn via() -> Option<RelationDef> {
-        Some(super::user_follow::Relation::User.def().rev())
     }
 }
 

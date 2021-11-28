@@ -25,14 +25,23 @@ impl RelationTrait for Relation {
     }
 }
 
-impl Related<super::user::Entity> for Entity {
-    fn to() -> RelationDef {
-        super::user_follow::Relation::User.def()
-    }
+// #[derive(Copy, Clone, Debug, EnumIter)]
+// pub enum Relation {}
 
-    fn via() -> Option<RelationDef> {
-        Some(super::user_follow::Relation::Burrow.def().rev())
-    }
-}
+// impl RelationTrait for Relation {
+//     fn def(&self) -> RelationDef {
+//         panic!("No RelationDef")
+//     }
+// }
+
+// impl Related<super::user::Entity> for Entity {
+//     fn to() -> RelationDef {
+//         super::user_follow::Relation::User.def()
+//     }
+
+//     fn via() -> Option<RelationDef> {
+//         Some(super::user_follow::Relation::Burrow.def().rev())
+//     }
+// }
 
 impl ActiveModelBehavior for ActiveModel {}

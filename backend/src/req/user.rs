@@ -1,6 +1,6 @@
+use lazy_static::lazy_static;
 use rocket::serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use lazy_static::lazy_static;
 
 lazy_static! {
     pub static ref POST_PER_PAGE: i32 = 20;
@@ -44,6 +44,7 @@ pub struct UserGetFollowResponse {
     pub id: i64,
     pub title: String,
     pub description: String,
+    pub post_num: i32,
     pub update: bool,
 }
 

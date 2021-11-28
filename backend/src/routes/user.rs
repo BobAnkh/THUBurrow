@@ -5,15 +5,15 @@ use rocket::http::{Cookie, CookieJar, SameSite};
 use rocket::serde::json::Json;
 use rocket::{Build, Rocket};
 use rocket_db_pools::Connection;
-use sea_orm::{entity::*, query::*};
 use sea_orm::QueryFilter;
+use sea_orm::{entity::*, query::*};
 // , DatabaseConnection};
 
 use crate::pgdb;
 use crate::pgdb::user::Entity as User;
 use crate::pool::{PgDb, PulsarSearchProducerMq, RedisDb, RocketPulsarProducer};
 use crate::req::pulsar::*;
-use crate::req::user::*;
+use crate::req::{burrow::BURROW_PER_PAGE, content::Post, user::*};
 use crate::utils::email;
 use crate::utils::get_valid_burrow::*;
 use crate::utils::sso;
@@ -22,7 +22,6 @@ use crate::utils::sso::SsoAuth;
 use crypto::digest::Digest;
 use crypto::sha3::Sha3;
 use std::iter;
-use std::ops::Deref;
 
 use idgenerator::IdHelper;
 
@@ -401,12 +400,12 @@ pub async fn get_burrow(
             }
             None => {
                 error!("[GET BURROW] Cannot find user_status by uid.");
-                return (Status::InternalServerError, Json(Vec::new()));
+                (Status::InternalServerError, Json(Vec::new()))
             }
         },
         Err(e) => {
             error!("[GET BURROW] Database Error: {:?}", e.to_string());
-            return (Status::InternalServerError, Json(Vec::new()));
+            (Status::InternalServerError, Json(Vec::new()))
         }
     }
 }
@@ -416,11 +415,11 @@ pub async fn get_collection(
     db: Connection<PgDb>,
     sso: sso::SsoAuth,
     page: usize,
-) -> (Status, Json<Vec<UserGetFavResponse>>) {
+) -> (Status, Json<Vec<Post>>) {
     let pg_con = db.into_inner();
-    match pgdb::user_like::Entity::find()
-        .filter(pgdb::user_like::Column::Uid.eq(sso.id))
-        .order_by_asc(pgdb::content_post::Column::PostId)
+    match pgdb::user_collection::Entity::find()
+        .filter(pgdb::user_collection::Column::Uid.eq(sso.id))
+        .order_by_desc(pgdb::user_collection::Column::PostId)
         .paginate(&pg_con, *POST_PER_PAGE as usize)
         .fetch_page(page)
         .await
@@ -448,85 +447,89 @@ pub async fn get_collection(
                     }
                 };
             }
-            // find burrow title by burrow_id
-            let mut burrow_titles = Vec::new();
-            for post in &posts {
-                match pgdb::burrow::Entity::find_by_id(post.post_id)
-                    .one(&pg_con)
-                    .await
-                {
-                    Ok(opt_burrow) => match opt_burrow {
-                        Some(burrow) => {
-                            burrow_titles.push(burrow.title);
-                        }
-                        None => {
-                            error!("[GET-FAV] Database Error: cannot find post in table content_post by post_id from table user_like");
-                            return (Status::InternalServerError, Json(Vec::new()));
-                        }
-                    },
-                    Err(e) => {
-                        error!("[GET-FAV] Database Error: {:?}", e.to_string());
-                        return (Status::InternalServerError, Json(Vec::new()));
-                    }
-                };
-            }
-            let mut burrow_titles = burrow_titles.iter();
             (
                 Status::Ok,
-                Json(
-                    posts
-                        .iter()
-                        .map(|x| UserGetFavResponse {
-                            post_id: x.post_id,
-                            title: x.title.clone(),
-                            tags: x.tag.clone(),
-                            burrow_id: x.burrow_id,
-                            burrow_name: burrow_titles.next().unwrap().deref().to_string(),
-                        })
-                        .collect(),
-                ),
+                Json(posts.iter().map(|post| post.into()).collect()),
             )
         }
         Err(e) => {
             error!("[GET-FAV] Database Error: {:?}", e.to_string());
-            return (Status::InternalServerError, Json(Vec::new()));
+            (Status::InternalServerError, Json(Vec::new()))
         }
     }
 }
 
-#[get("/follow")]
+#[get("/follow?<page>")]
 pub async fn get_follow(
     db: Connection<PgDb>,
     sso: sso::SsoAuth,
+    page: usize,
 ) -> (Status, Json<Vec<UserGetFollowResponse>>) {
     let pg_con = db.into_inner();
-    match pgdb::user::Entity::find_by_id(sso.id).one(&pg_con).await {
-        Ok(user) => {
-            let user = user.unwrap();
-            match user.find_related(pgdb::burrow::Entity).all(&pg_con).await {
-                Ok(burrows) => {
-                    (
-                        Status::Ok,
-                        Json(
-                            burrows
-                                .iter()
-                                .map(|x| UserGetFollowResponse {
-                                    id: x.burrow_id,
-                                    title: x.title.clone(),
-                                    description: x.description.clone(),
-                                    // TODO
-                                    update: false,
-                                })
-                                .collect(),
-                        ),
-                    )
-                }
-                Err(e) => {
-                    error!("[GET-FOLLOW] Database Error: {:?}", e.to_string());
-                    (Status::InternalServerError, Json(Vec::new()))
+    match pgdb::user_status::Entity::find_by_id(sso.id)
+        .one(&pg_con)
+        .await
+    {
+        Ok(opt_user) => match opt_user {
+            Some(user) => {
+                match pgdb::user_follow::Entity::find()
+                    .filter(pgdb::user_follow::Column::Uid.eq(user.uid))
+                    .order_by_desc(pgdb::user_follow::Column::BurrowId)
+                    .paginate(&pg_con, *BURROW_PER_PAGE as usize)
+                    .fetch_page(page)
+                    .await
+                {
+                    Ok(results) => {
+                        let mut burrows = Vec::new();
+                        for result in &results {
+                            match pgdb::burrow::Entity::find()
+                                .filter(pgdb::burrow::Column::BurrowId.eq(result.burrow_id))
+                                .one(&pg_con)
+                                .await
+                            {
+                                Ok(opt_burrow) => match opt_burrow {
+                                    Some(burrow) => {
+                                        burrows.push(burrow);
+                                    }
+                                    None => {
+                                        error!("[GET-FOLLOW] Database Error: cannot find burrow.");
+                                        return (Status::InternalServerError, Json(Vec::new()));
+                                    }
+                                },
+                                Err(e) => {
+                                    error!("[GET-FOLLOW] DataBase Error: {:?}", e.to_string());
+                                    return (Status::InternalServerError, Json(Vec::new()));
+                                }
+                            };
+                        }
+                        (
+                            Status::Ok,
+                            Json(
+                                burrows
+                                    .iter()
+                                    .map(|burrow| UserGetFollowResponse {
+                                        id: burrow.burrow_id,
+                                        title: burrow.title.clone(),
+                                        description: burrow.description.clone(),
+                                        post_num: burrow.post_num,
+                                        // TODO
+                                        update: false,
+                                    })
+                                    .collect(),
+                            ),
+                        )
+                    }
+                    Err(e) => {
+                        error!("[GET-FOLLOW] Database Error: {:?}", e.to_string());
+                        (Status::InternalServerError, Json(Vec::new()))
+                    }
                 }
             }
-        }
+            None => {
+                error!("[GET-FOLLOW] Database Error: cannot find user by uid.");
+                (Status::InternalServerError, Json(Vec::new()))
+            }
+        },
         Err(e) => {
             error!("[GET-FOLLOW] Database Error: {:?}", e.to_string());
             (Status::InternalServerError, Json(Vec::new()))

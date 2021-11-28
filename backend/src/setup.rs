@@ -372,12 +372,6 @@ pub async fn create_burrow_table(db: &DbConn) -> Result<ExecResult, DbErr> {
                 .not_null()
                 .default(0),
         )
-        .col(
-            ColumnDef::new(pgdb::burrow::Column::PostNum)
-                .integer()
-                .not_null()
-                .default(0),
-        )
         .to_owned();
     build_statement(db, &stmt).await
 }
