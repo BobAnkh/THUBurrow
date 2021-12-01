@@ -12,7 +12,7 @@ use crate::db;
 use crate::pool::{PgDb, PulsarSearchProducerMq, RedisDb, RocketPulsarProducer};
 use crate::req::pulsar::*;
 use crate::req::user::*;
-use crate::utils::sso::{self, AuthTokenError, SsoAuth, ValidToken};
+use crate::utils::auth::{self, Auth, AuthTokenError, ValidToken};
 
 use chrono::prelude::*;
 use chrono::Local;
@@ -46,12 +46,12 @@ pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
 }
 
 #[get("/test/sso")]
-pub async fn sso_test(a: sso::SsoAuth) -> Json<i64> {
+pub async fn sso_test(a: auth::Auth) -> Json<i64> {
     Json(a.id)
 }
 
 #[get("/auth/<name>")]
-async fn auth_name(auth: Result<SsoAuth, AuthTokenError>, name: &str) -> String {
+async fn auth_name(auth: Result<Auth, AuthTokenError>, name: &str) -> String {
     if let Err(e) = auth {
         match e {
             AuthTokenError::Invalid => return "Invalid token".to_string(),
@@ -63,14 +63,14 @@ async fn auth_name(auth: Result<SsoAuth, AuthTokenError>, name: &str) -> String 
 }
 
 #[get("/auth/new/<name>")]
-async fn auth_new(auth: SsoAuth, name: &str) -> String {
+async fn auth_new(auth: Auth, name: &str) -> String {
     format!("Hello, {}, your id is {}!", name, auth.id)
 }
 
 #[catch(400)]
 async fn auth_new_bad_request(request: &Request<'_>) -> String {
     let user_result = request
-        .local_cache_async(async { sso::auth_token(request).await })
+        .local_cache_async(async { auth::auth_token(request).await })
         .await;
     match user_result {
         Some(e) => match e {
@@ -87,7 +87,7 @@ async fn auth_new_bad_request(request: &Request<'_>) -> String {
 #[catch(401)]
 async fn auth_new_unauthorized(request: &Request<'_>) -> String {
     let user_result = request
-        .local_cache_async(async { sso::auth_token(request).await })
+        .local_cache_async(async { auth::auth_token(request).await })
         .await;
     match user_result {
         Some(e) => match e {

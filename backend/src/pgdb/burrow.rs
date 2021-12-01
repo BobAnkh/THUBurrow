@@ -5,12 +5,12 @@ use sea_orm::entity::prelude::*;
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
 #[sea_orm(table_name = "burrow")]
 pub struct Model {
-    #[sea_orm(primary_key, auto_increment = true)]
+    #[sea_orm(primary_key)]
     pub burrow_id: i64,
-    #[sea_orm(column_type = "Text", nullable)]
-    pub description: String,
     #[sea_orm(column_type = "Text")]
     pub title: String,
+    #[sea_orm(column_type = "Text")]
+    pub description: String,
     pub uid: i64,
     pub burrow_state: i32,
     pub post_num: i32,
@@ -24,24 +24,5 @@ impl RelationTrait for Relation {
         panic!("No RelationDef")
     }
 }
-
-// #[derive(Copy, Clone, Debug, EnumIter)]
-// pub enum Relation {}
-
-// impl RelationTrait for Relation {
-//     fn def(&self) -> RelationDef {
-//         panic!("No RelationDef")
-//     }
-// }
-
-// impl Related<super::user::Entity> for Entity {
-//     fn to() -> RelationDef {
-//         super::user_follow::Relation::User.def()
-//     }
-
-//     fn via() -> Option<RelationDef> {
-//         Some(super::user_follow::Relation::Burrow.def().rev())
-//     }
-// }
 
 impl ActiveModelBehavior for ActiveModel {}

@@ -351,10 +351,14 @@ pub async fn create_burrow_table(db: &DbConn) -> Result<ExecResult, DbErr> {
         )
         .col(
             ColumnDef::new(pgdb::burrow::Column::Title)
-                .string()
+                .text()
                 .not_null(),
         )
-        .col(ColumnDef::new(pgdb::burrow::Column::Description).string())
+        .col(
+            ColumnDef::new(pgdb::burrow::Column::Description)
+                .text()
+                .not_null(),
+        )
         .col(
             ColumnDef::new(pgdb::burrow::Column::Uid)
                 .big_integer()

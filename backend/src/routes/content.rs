@@ -12,11 +12,9 @@ use crate::pgdb;
 use crate::pgdb::prelude::*;
 use crate::pool::PgDb;
 use crate::req::content::*;
-use crate::utils::sso::SsoAuth;
+use crate::utils::auth::Auth;
 
 use chrono::prelude::*;
-
-static REPLY_PER_PAGE: usize = 20;
 
 pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
     rocket.mount(
@@ -34,7 +32,7 @@ pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
 
 #[post("/post", data = "<post_info>", format = "json")]
 pub async fn create_post(
-    auth: SsoAuth,
+    auth: Auth,
     db: Connection<PgDb>,
     post_info: Json<PostInfo>,
 ) -> (Status, Json<PostCreateResponse>) {
@@ -160,12 +158,13 @@ pub async fn create_post(
 
 #[get("/post/<post_id>?<page>")]
 pub async fn read_post(
-    auth: SsoAuth,
+    auth: Auth,
     db: Connection<PgDb>,
     post_id: i64,
-    page: usize,
+    page: Option<usize>,
 ) -> (Status, Json<PostReadResponse>) {
     let pg_con = db.into_inner();
+    let page = page.unwrap_or(0);
     // check if the post not exsits, add corresponding error if so
     match ContentPost::find_by_id(post_id)
         .one(&pg_con)
@@ -266,11 +265,12 @@ pub async fn read_post(
 
 #[get("/post/list?<page>")]
 pub async fn read_post_list(
-    _auth: SsoAuth,
+    _auth: Auth,
     db: Connection<PgDb>,
-    page: usize,
+    page: Option<usize>,
 ) -> (Status, Json<ListReadResponse>) {
     let pg_con = db.into_inner();
+    let page = page.unwrap_or(0);
     let post_pages = ContentPost::find()
         .order_by_desc(pgdb::content_post::Column::PostId)
         .paginate(&pg_con, REPLY_PER_PAGE);
@@ -327,7 +327,7 @@ pub async fn read_post_list(
 
 #[post("/reply", data = "<reply_info>", format = "json")]
 pub async fn create_reply(
-    auth: SsoAuth,
+    auth: Auth,
     db: Connection<PgDb>,
     reply_info: Json<ReplyInfo>,
 ) -> (Status, Json<ReplyCreateResponse>) {
@@ -490,7 +490,7 @@ pub async fn create_reply(
 
 #[post("/reply/update", data = "<reply_update_info>", format = "json")]
 pub async fn update_reply(
-    auth: SsoAuth,
+    auth: Auth,
     db: Connection<PgDb>,
     reply_update_info: Json<ReplyUpdateInfo>,
 ) -> (Status, Json<ReplyCreateResponse>) {
@@ -641,7 +641,7 @@ pub async fn update_reply(
 
 #[delete("/post/<post_id>")]
 pub async fn delete_post(
-    _auth: SsoAuth,
+    _auth: Auth,
     db: Connection<PgDb>,
     post_id: i64,
 ) -> (Status, Json<PostDeleteResponse>) {

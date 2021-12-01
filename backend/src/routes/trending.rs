@@ -8,7 +8,7 @@ use sea_orm::{entity::*, PaginatorTrait, QueryFilter, QueryOrder};
 use crate::pgdb::{content_post, prelude::*};
 use crate::pool::{PgDb, RedisDb};
 use crate::req::content::*;
-use crate::utils::sso::SsoAuth;
+use crate::utils::auth::Auth;
 
 pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
     rocket.mount("/", routes![read_trending])
@@ -16,7 +16,7 @@ pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
 
 #[get("/trending")]
 pub async fn read_trending(
-    _auth: SsoAuth,
+    _auth: Auth,
     db: Connection<PgDb>,
     kvdb: Connection<RedisDb>,
 ) -> (Status, String) {

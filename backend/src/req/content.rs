@@ -3,6 +3,9 @@ use rocket::serde::{Deserialize, Serialize};
 use sea_orm::prelude::DateTimeWithTimeZone;
 use std::convert::From;
 
+pub static POST_PER_PAGE: usize = 20;
+pub static REPLY_PER_PAGE: usize = 20;
+
 #[derive(Serialize)]
 pub struct PostCreateResponse {
     pub errors: Vec<String>,

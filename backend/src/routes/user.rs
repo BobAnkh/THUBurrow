@@ -5,19 +5,22 @@ use rocket::http::{Cookie, CookieJar, SameSite};
 use rocket::serde::json::Json;
 use rocket::{Build, Rocket};
 use rocket_db_pools::Connection;
-use sea_orm::QueryFilter;
 use sea_orm::{entity::*, query::*};
+use sea_orm::{DbErr, QueryFilter};
 // , DatabaseConnection};
 
 use crate::pgdb;
-use crate::pgdb::user::Entity as User;
+use crate::pgdb::prelude::*;
 use crate::pool::{PgDb, PulsarSearchProducerMq, RedisDb, RocketPulsarProducer};
 use crate::req::pulsar::*;
-use crate::req::{burrow::BURROW_PER_PAGE, content::Post, user::*};
+use crate::req::{
+    burrow::BURROW_PER_PAGE,
+    content::{Post, POST_PER_PAGE},
+    user::*,
+};
+use crate::utils::auth::Auth;
+use crate::utils::burrow_valid::*;
 use crate::utils::email;
-use crate::utils::get_valid_burrow::*;
-use crate::utils::sso;
-use crate::utils::sso::SsoAuth;
 
 use crypto::digest::Digest;
 use crypto::sha3::Sha3;
@@ -42,9 +45,18 @@ pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
     )
 }
 
+async fn gen_salt() -> String {
+    let salt: String = iter::repeat(())
+        .map(|()| thread_rng().sample(Alphanumeric))
+        .map(char::from)
+        .take(8)
+        .collect();
+    salt
+}
+
 #[post("/relation", data = "<relation_info>", format = "json")]
 pub async fn user_relation(
-    auth: SsoAuth,
+    auth: Auth,
     pulsar: Connection<PulsarSearchProducerMq>,
     relation_info: Json<RelationData>,
 ) -> Status {
@@ -68,15 +80,6 @@ pub async fn user_relation(
         }
     }
     Status::Ok
-}
-
-pub async fn gen_salt() -> String {
-    let salt: String = iter::repeat(())
-        .map(|()| thread_rng().sample(Alphanumeric))
-        .map(char::from)
-        .take(8)
-        .collect();
-    salt
 }
 
 #[post("/sign-up", data = "<user_info>", format = "json")]
@@ -162,31 +165,25 @@ pub async fn user_sign_up(
             ..Default::default()
         };
         // insert rows in database
-        let ins_user_result = users.insert(&pg_con).await;
-        match ins_user_result {
-            Ok(_) => {
-                let ins_user_status_result = users_status.insert(&pg_con).await;
-                match ins_user_status_result {
-                    Ok(res) => {
-                        info!(
-                            "[SIGN-UP] User signup Succ, save user: {}",
-                            res.uid.unwrap()
-                        );
-                        (Status::Ok, Json(UserResponse { errors }))
-                    }
-                    Err(e) => {
-                        error!("[SIGN-UP] Database error: {:?}", e.to_string());
-                        (
-                            Status::InternalServerError,
-                            Json(UserResponse { errors: Vec::new() }),
-                        )
-                    }
-                }
+        // <Fn, A, B> -> Result<A, B>
+        match pg_con
+            .transaction::<_, (), DbErr>(|txn| {
+                Box::pin(async move {
+                    users.insert(txn).await?;
+                    users_status.insert(txn).await?;
+                    Ok(())
+                })
+            })
+            .await
+        {
+            Ok(_) => (Status::Ok, Json(UserResponse { errors })),
+            Err(e) => {
+                error!("[SIGN-UP] Database error: {:?}", e);
+                (
+                    Status::InternalServerError,
+                    Json(UserResponse { errors: Vec::new() }),
+                )
             }
-            _ => (
-                Status::InternalServerError,
-                Json(UserResponse { errors: Vec::new() }),
-            ),
         }
     }
 }
@@ -350,7 +347,7 @@ pub async fn user_log_in(
 #[get("/burrow")]
 pub async fn get_burrow(
     db: Connection<PgDb>,
-    sso: sso::SsoAuth,
+    auth: Auth,
 ) -> (Status, Json<Vec<UserGetBurrowResponse>>) {
     // Ok(burrows) => {
     //     // let mut posts_num = Vec::new();
@@ -361,7 +358,7 @@ pub async fn get_burrow(
     //     .await
     //     .unwrap();
     let pg_con = db.into_inner();
-    match pgdb::user_status::Entity::find_by_id(sso.id)
+    match pgdb::user_status::Entity::find_by_id(auth.id)
         .one(&pg_con)
         .await
     {
@@ -413,14 +410,15 @@ pub async fn get_burrow(
 #[get("/collection?<page>")]
 pub async fn get_collection(
     db: Connection<PgDb>,
-    sso: sso::SsoAuth,
-    page: usize,
+    auth: Auth,
+    page: Option<usize>,
 ) -> (Status, Json<Vec<Post>>) {
     let pg_con = db.into_inner();
+    let page = page.unwrap_or(0);
     match pgdb::user_collection::Entity::find()
-        .filter(pgdb::user_collection::Column::Uid.eq(sso.id))
+        .filter(pgdb::user_collection::Column::Uid.eq(auth.id))
         .order_by_desc(pgdb::user_collection::Column::PostId)
-        .paginate(&pg_con, *POST_PER_PAGE as usize)
+        .paginate(&pg_con, POST_PER_PAGE)
         .fetch_page(page)
         .await
     {
@@ -462,74 +460,58 @@ pub async fn get_collection(
 #[get("/follow?<page>")]
 pub async fn get_follow(
     db: Connection<PgDb>,
-    sso: sso::SsoAuth,
-    page: usize,
+    auth: Auth,
+    page: Option<usize>,
 ) -> (Status, Json<Vec<UserGetFollowResponse>>) {
     let pg_con = db.into_inner();
-    match pgdb::user_status::Entity::find_by_id(sso.id)
-        .one(&pg_con)
+    let page = page.unwrap_or(0);
+    match pgdb::user_follow::Entity::find()
+        .filter(pgdb::user_follow::Column::Uid.eq(auth.id))
+        .order_by_desc(pgdb::user_follow::Column::BurrowId)
+        .paginate(&pg_con, BURROW_PER_PAGE)
+        .fetch_page(page)
         .await
     {
-        Ok(opt_user) => match opt_user {
-            Some(user) => {
-                match pgdb::user_follow::Entity::find()
-                    .filter(pgdb::user_follow::Column::Uid.eq(user.uid))
-                    .order_by_desc(pgdb::user_follow::Column::BurrowId)
-                    .paginate(&pg_con, *BURROW_PER_PAGE as usize)
-                    .fetch_page(page)
+        Ok(results) => {
+            let mut burrows = Vec::new();
+            for result in &results {
+                match pgdb::burrow::Entity::find()
+                    .filter(pgdb::burrow::Column::BurrowId.eq(result.burrow_id))
+                    .one(&pg_con)
                     .await
                 {
-                    Ok(results) => {
-                        let mut burrows = Vec::new();
-                        for result in &results {
-                            match pgdb::burrow::Entity::find()
-                                .filter(pgdb::burrow::Column::BurrowId.eq(result.burrow_id))
-                                .one(&pg_con)
-                                .await
-                            {
-                                Ok(opt_burrow) => match opt_burrow {
-                                    Some(burrow) => {
-                                        burrows.push(burrow);
-                                    }
-                                    None => {
-                                        error!("[GET-FOLLOW] Database Error: cannot find burrow.");
-                                        return (Status::InternalServerError, Json(Vec::new()));
-                                    }
-                                },
-                                Err(e) => {
-                                    error!("[GET-FOLLOW] DataBase Error: {:?}", e.to_string());
-                                    return (Status::InternalServerError, Json(Vec::new()));
-                                }
-                            };
+                    Ok(opt_burrow) => match opt_burrow {
+                        Some(burrow) => {
+                            burrows.push(burrow);
                         }
-                        (
-                            Status::Ok,
-                            Json(
-                                burrows
-                                    .iter()
-                                    .map(|burrow| UserGetFollowResponse {
-                                        id: burrow.burrow_id,
-                                        title: burrow.title.clone(),
-                                        description: burrow.description.clone(),
-                                        post_num: burrow.post_num,
-                                        // TODO
-                                        update: false,
-                                    })
-                                    .collect(),
-                            ),
-                        )
-                    }
+                        None => {
+                            error!("[GET-FOLLOW] Database Error: cannot find burrow.");
+                            return (Status::InternalServerError, Json(Vec::new()));
+                        }
+                    },
                     Err(e) => {
-                        error!("[GET-FOLLOW] Database Error: {:?}", e.to_string());
-                        (Status::InternalServerError, Json(Vec::new()))
+                        error!("[GET-FOLLOW] DataBase Error: {:?}", e.to_string());
+                        return (Status::InternalServerError, Json(Vec::new()));
                     }
-                }
+                };
             }
-            None => {
-                error!("[GET-FOLLOW] Database Error: cannot find user by uid.");
-                (Status::InternalServerError, Json(Vec::new()))
-            }
-        },
+            (
+                Status::Ok,
+                Json(
+                    burrows
+                        .iter()
+                        .map(|burrow| UserGetFollowResponse {
+                            id: burrow.burrow_id,
+                            title: burrow.title.clone(),
+                            description: burrow.description.clone(),
+                            post_num: burrow.post_num,
+                            // TODO
+                            update: false,
+                        })
+                        .collect(),
+                ),
+            )
+        }
         Err(e) => {
             error!("[GET-FOLLOW] Database Error: {:?}", e.to_string());
             (Status::InternalServerError, Json(Vec::new()))
