@@ -1,17 +1,22 @@
-use crate::pgdb;
-use sea_orm::{entity::*, DatabaseConnection};
+pub fn get_burrow_list(burrows: &str) -> Vec<i64> {
+    if burrows.is_empty() {
+        return Vec::new();
+    }
+    burrows
+        .split(',')
+        .map(|x| x.parse::<i64>().unwrap())
+        .collect()
+}
 
-pub async fn get_valid_burrow(conn: DatabaseConnection, id: i64) -> Result<Vec<i64>, String> {
-    match pgdb::user_status::Entity::find_by_id(id).one(&conn).await {
-        Ok(res) => match res {
-            Some(user) => {
-                let vec_str: Vec<&str> = user.valid_burrow.split(',').collect();
-                println!("{:?}", vec_str);
-                let vec_i64: Vec<i64> = vec_str.iter().map(|x| x.parse::<i64>().unwrap()).collect();
-                Ok(vec_i64)
-            }
-            None => Err("User not found.".to_string()),
-        },
-        Err(e) => Err("Database Error:".to_string() + &e.to_string()),
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_burrow_list() {
+        let v1: Vec<i64> = Vec::new();
+        assert_eq!(get_burrow_list(""), v1);
+        assert_eq!(get_burrow_list("1"), vec![1]);
+        assert_eq!(get_burrow_list("1,2"), vec![1, 2]);
     }
 }

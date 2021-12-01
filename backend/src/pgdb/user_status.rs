@@ -8,10 +8,12 @@ pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub uid: i64,
     // the latest time of user creating a burrow
-    pub modified_time: DateTimeWithTimeZone,
-    pub banned: i16,
+    pub update_time: DateTimeWithTimeZone,
+    pub user_state: i32,
     #[sea_orm(column_type = "Text")]
     pub valid_burrow: String,
+    #[sea_orm(column_type = "Text")]
+    pub banned_burrow: String,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter)]

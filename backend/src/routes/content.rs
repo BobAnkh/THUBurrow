@@ -65,7 +65,7 @@ pub async fn create_post(
                 errors.push("Wrong user".to_string());
             }
             // check if burrow has been banned
-            if burrow_info.status == 1 {
+            if burrow_info.burrow_status == 1 {
                 errors.push("Burrow banned".to_string());
             }
             // check if the burrow_id is still valid

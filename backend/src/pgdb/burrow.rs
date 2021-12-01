@@ -8,11 +8,11 @@ pub struct Model {
     #[sea_orm(primary_key, auto_increment = true)]
     pub burrow_id: i64,
     #[sea_orm(column_type = "Text", nullable)]
-    pub description: Option<String>,
+    pub description: String,
     #[sea_orm(column_type = "Text")]
     pub title: String,
     pub uid: i64,
-    pub status: i16,
+    pub burrow_state: i32,
     pub post_num: i32,
 }
 
