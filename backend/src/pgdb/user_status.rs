@@ -7,7 +7,6 @@ use sea_orm::entity::prelude::*;
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub uid: i64,
-    // the latest time of user creating a burrow
     pub update_time: DateTimeWithTimeZone,
     pub user_state: i32,
     #[sea_orm(column_type = "Text")]

@@ -4,7 +4,8 @@ use sea_orm::prelude::DateTimeWithTimeZone;
 use serde::{Deserialize, Serialize};
 
 /// Json format for PulsarSearchData.data:
-
+///
+/// ```text
 ///     create burrow:
 ///             {
 ///                 "burrow_id": i64,
@@ -70,6 +71,7 @@ use serde::{Deserialize, Serialize};
 ///             {
 ///                 "reply_id": i64,
 ///             }
+/// ```
 #[derive(Serialize, Deserialize)]
 pub enum PulsarSearchData {
     CreateBurrow(PulsarSearchBurrowData),
