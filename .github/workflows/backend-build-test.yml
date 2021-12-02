@@ -133,8 +133,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Add containers
-        run: docker-compose -f docker-compose-dev.yml up -d
 
       - name: Install latest nightly
         uses: actions-rs/toolchain@v1
@@ -149,8 +147,11 @@ jobs:
         uses: Swatinem/rust-cache@v1
         with:
           working-directory: backend
-
+      - name: Add containers
+        run: docker-compose -f docker-compose-dev.yml up -d
       - name: cargo test
-        run: cargo test -- --no-fail-fast --nocapture
+        run: cargo test --no-fail-fast -- --nocapture
+      - name: remove containers
+        run: docker-compose -f docker-compose-dev.yml down && sudo rm -rf data
         
 
