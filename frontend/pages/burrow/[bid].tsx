@@ -76,7 +76,6 @@ const Burrow: NextPage = () => {
 
   useEffect(() => {
     const fetchListData = async () => {
-      console.log(`ad: ${process.env.NEXT_PUBLIC_BASEURL}/burrows/1`);
       const res = await fetch(`${process.env.NEXT_PUBLIC_BASEURL}/burrows/1`, {
         method: 'GET',
       });

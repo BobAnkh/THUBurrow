@@ -39,7 +39,6 @@ export default function PostList({ listData, postNum, setPage }: Props) {
   const [colNum, setColNum] = useState(initialnum2);
   const clickCol = async (pid: number, activate: Boolean, index: number) => {
     let newChangeCol: boolean[] = changeCol;
-    console.log('changecol');
     newChangeCol[index] = !changeCol[index];
     setChangeCol([...newChangeCol]);
     const newColNum = colNum;
@@ -69,7 +68,6 @@ export default function PostList({ listData, postNum, setPage }: Props) {
   };
 
   const clickLike = async (pid: number, activate: Boolean, index: number) => {
-    console.log('changeLike');
     let newChangeLike: boolean[] = changeLike;
     newChangeLike[index] = !changeLike[index];
     setChangeLike([...newChangeLike]);

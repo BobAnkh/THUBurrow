@@ -60,8 +60,8 @@ const PostDetial: NextPage = () => {
         setPid(res.data.post_page.post_desc.post_id);
         setPostLen(res.data.post_page.post_desc.post_len);
         setTitle(res.data.post_page.post_desc.title);
-        setLike(res.data.like);
-        setCollection(res.data.collection);
+        setLike(res.data.post_page.like);
+        setCollection(res.data.post_page.collection);
         setReplyList(replylist);
       } catch (error) {
         const err = error as AxiosError;
@@ -73,7 +73,7 @@ const PostDetial: NextPage = () => {
       }
     };
     fetchReplyList();
-  }, [page, pid, router]);
+  }, []);
 
   const clickCol = async (pid: number, activate: Boolean) => {
     const newChangeCol: boolean = !changeCol;
