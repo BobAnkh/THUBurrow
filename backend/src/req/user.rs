@@ -1,5 +1,11 @@
+// use std::convert::TryInto;
+
 use rocket::serde::{Deserialize, Serialize};
+// use sea_orm::{DatabaseConnection, EntityTrait, ColumnTrait, QueryFilter};
 use uuid::Uuid;
+
+// use crate::pgdb::{self, prelude::*};
+use super::burrow::BurrowMetadata;
 
 #[derive(Serialize, Deserialize)]
 pub struct UserData {
@@ -27,38 +33,27 @@ pub struct UserResponse {
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct UserGetBurrowResponse {
-    pub id: i64,
-    pub title: String,
-    pub description: String,
-    pub post_num: i32,
-}
-
-#[derive(Serialize, Deserialize)]
 pub struct UserGetFollowResponse {
-    pub id: i64,
-    pub title: String,
-    pub description: String,
-    pub post_num: i32,
-    pub update: bool,
+    pub burrow: BurrowMetadata,
+    pub is_update: bool,
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct UserGetFavResponse {
-    pub post_id: i64,
-    pub title: String,
-    pub tags: String,
-    pub burrow_id: i64,
-    pub burrow_name: String,
-}
+// #[derive(Serialize, Deserialize)]
+// pub struct UserGetFavResponse {
+//     pub post_id: i64,
+//     pub title: String,
+//     pub tags: String,
+//     pub burrow_id: i64,
+//     pub burrow_name: String,
+// }
 
-// struct GetBurrow {}
-// impl GetBurrow {
+// pub struct GetBatch {}
+// impl GetBatch {
 //     async fn get_post(
 //         burrow: &pgdb::burrow::Model,
 //         inner_conn: DatabaseConnection,
 //     ) -> Result<i64, Box<dyn std::error::Error>> {
-//         let post_num: i64 = match pgdb::content_post::Entity::find()
+//         let post_num: i64 = match ContentPost::find()
 //             .filter(pgdb::content_post::Column::BurrowId.eq(burrow.burrow_id))
 //             .all(&inner_conn)
 //             .await

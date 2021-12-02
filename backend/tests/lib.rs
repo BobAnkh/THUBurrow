@@ -148,6 +148,38 @@ fn test_burrow() {
         .unwrap();
     let burrow_id = res.burrow_id;
     println!("Burrow Id: {}", burrow_id);
+    // follow the burrow
+    let response = client
+        .post("/users/relation")
+        .json(&json!({ "ActivateFollow": burrow_id }))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    println!("{:?}", response.into_string());
+    std::thread::sleep(std::time::Duration::from_secs(10));
+    // create burrow: perform a correct action
+    let response = client
+        .post("/burrows")
+        .json(&json!({
+            "description": format!("Second burrow of {}", name),
+            "title": "Burrow 2"}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    // println!("{}", response.into_string().unwrap());
+    let res = response
+        .into_json::<backend::req::burrow::BurrowCreateResponse>()
+        .unwrap();
+    let burrow_id = res.burrow_id;
+    println!("Burrow Id: {}", burrow_id);
+    // folloe the burrow
+    let response = client
+        .post("/users/relation")
+        .json(&json!({ "ActivateFollow": burrow_id }))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    println!("{:?}", response.into_string());
     // get burrow
     let response = client
         .get(format!("/burrows/{}", burrow_id))
@@ -168,6 +200,20 @@ fn test_burrow() {
     // get burrow
     let response = client
         .get(format!("/burrows/{}", burrow_id))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    println!("{}", response.into_string().unwrap());
+    // get burrow of a user
+    let response = client
+        .get("/users/burrow")
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    println!("{}", response.into_string().unwrap());
+    // get following burrows of a user
+    let response = client
+        .get("/users/follow")
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
