@@ -99,6 +99,7 @@ pub async fn user_sign_up(
         return (
             Status::BadRequest,
             Json(UserResponse {
+                default_burrow: -1,
                 errors: vec!["Illegal Email Address".to_string()],
             }),
         );
@@ -117,7 +118,10 @@ pub async fn user_sign_up(
         _ => {
             return (
                 Status::InternalServerError,
-                Json(UserResponse { errors: Vec::new() }),
+                Json(UserResponse {
+                    default_burrow: -1,
+                    errors: Vec::new(),
+                }),
             )
         }
     }
@@ -135,13 +139,22 @@ pub async fn user_sign_up(
         _ => {
             return (
                 Status::InternalServerError,
-                Json(UserResponse { errors: Vec::new() }),
+                Json(UserResponse {
+                    default_burrow: -1,
+                    errors: Vec::new(),
+                }),
             )
         }
     }
     // if error exists, refuse to add user
     if !errors.is_empty() {
-        (Status::BadRequest, Json(UserResponse { errors }))
+        (
+            Status::BadRequest,
+            Json(UserResponse {
+                default_burrow: -1,
+                errors,
+            }),
+        )
     } else {
         // generate salt
         let salt = gen_salt().await;
@@ -152,38 +165,58 @@ pub async fn user_sign_up(
         // generate uid
         let uid: i64 = IdHelper::next_id();
         // fill the row of table 'user' and 'user_status'
-        let create_time = Utc::now().with_timezone(&FixedOffset::east(8 * 3600));
+        let now = Utc::now().with_timezone(&FixedOffset::east(8 * 3600));
         let users = pgdb::user::ActiveModel {
-            uid: Set(uid.to_owned()),
+            uid: Set(uid),
             username: Set(user.username.to_string()),
             password: Set(password),
             email: Set(user.email.to_string()),
-            create_time: Set(create_time),
+            create_time: Set(now),
             salt: Set(salt),
         };
-        let users_status = pgdb::user_status::ActiveModel {
-            uid: Set(uid.to_owned()),
-            update_time: Set(create_time),
+
+        let burrows = pgdb::burrow::ActiveModel {
+            uid: Set(uid),
+            title: Set("Default".to_owned()),
+            description: Set("".to_owned()),
             ..Default::default()
         };
         // insert rows in database
         // <Fn, A, B> -> Result<A, B>
         match pg_con
-            .transaction::<_, (), DbErr>(|txn| {
+            .transaction::<_, i64, DbErr>(|txn| {
                 Box::pin(async move {
                     users.insert(txn).await?;
+                    let res = burrows.insert(txn).await?;
+                    let burrow_id = res.burrow_id.unwrap();
+                    let valid_burrows_str = burrow_id.to_string();
+                    let users_status = pgdb::user_status::ActiveModel {
+                        uid: Set(uid),
+                        update_time: Set(now),
+                        valid_burrow: Set(valid_burrows_str),
+                        ..Default::default()
+                    };
                     users_status.insert(txn).await?;
-                    Ok(())
+                    Ok(burrow_id)
                 })
             })
             .await
         {
-            Ok(_) => (Status::Ok, Json(UserResponse { errors })),
+            Ok(default_burrow) => (
+                Status::Ok,
+                Json(UserResponse {
+                    default_burrow,
+                    errors,
+                }),
+            ),
             Err(e) => {
                 error!("[SIGN-UP] Database error: {:?}", e);
                 (
                     Status::InternalServerError,
-                    Json(UserResponse { errors: Vec::new() }),
+                    Json(UserResponse {
+                        default_burrow: -1,
+                        errors: Vec::new(),
+                    }),
                 )
             }
         }

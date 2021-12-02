@@ -27,8 +27,9 @@ pub struct UserLoginInfo<'r> {
     pub password: &'r str,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct UserResponse {
+    pub default_burrow: i64,
     pub errors: Vec<String>,
 }
 
