@@ -5,7 +5,18 @@ import {
   MessageOutlined,
   StarOutlined,
 } from '@ant-design/icons';
-import { Button, Card, Col, Form, List, Row, Select, Tag } from 'antd';
+import {
+  Layout,
+  Button,
+  Card,
+  Col,
+  Form,
+  List,
+  Row,
+  Breadcrumb,
+  Select,
+  Tag,
+} from 'antd';
 import { FC, useEffect } from 'react';
 import React from 'react';
 import {
@@ -14,17 +25,18 @@ import {
   BurrowListItemDataType,
 } from '../req/search/data.d';
 import PBListContent from '../components/pbListContent/post-or-burrow-list';
-import StandardFormRow from '../components/standardFormRow/standard-form-row';
 import styles from '../styles/search.module.css';
 import GlobalHeader from '../components/header/header';
 import { Input } from 'antd';
 import axios from 'axios';
 import { useState } from 'react';
 
-const fakeDataUrl = `${process.env.NEXT_PUBLIC_BASEURL}/search`;
+//const fakeDataUrl = `${process.env.NEXT_PUBLIC_BASEURL}/search`;
+const fakeDataUrl = 'http://127.0.0.1:4523/mock2/435762/6973329';
 
 const { Option } = Select;
 const { Search } = Input;
+const { Content, Footer } = Layout;
 const FormItem = Form.Item;
 
 const SearchPage: FC = () => {
@@ -231,156 +243,162 @@ const SearchPage: FC = () => {
     }
   };
 
-  const formItemLayout = {
-    wrapperCol: {
-      xs: { span: 24 },
-      sm: { span: 24 },
-      md: { span: 12 },
-    },
-  };
   const selectarea = (
-    <Select placeholder={'搜索范围'} onChange={on_change_area}>
+    <Select
+      style={{ width: '70px' }}
+      placeholder={'范围'}
+      onChange={on_change_area}
+    >
       <Option value='burrow'>搜洞</Option>
       <Option value='post'>搜帖</Option>
     </Select>
   );
-
+  function showtag1(tag: string) {
+    return <Tag>{tag}</Tag>;
+  }
+  const showtag = (value: Array<string>) => {
+    return value.map(showtag1);
+  };
   return (
-    <>
+    <Layout className='layout'>
       <GlobalHeader />
+      <Content style={{ padding: '0 5%' }}>
+        <Breadcrumb style={{ margin: '16px 0' }}>
+          <Breadcrumb.Item>Home</Breadcrumb.Item>
+          <Breadcrumb.Item>List</Breadcrumb.Item>
+          <Breadcrumb.Item>App</Breadcrumb.Item>
+        </Breadcrumb>
 
-      <Card bordered={false} className={styles.container}>
         <div className={styles.controlbar} style={{ textAlign: 'center' }}>
           <Search
-            style={{ width: '400px' }}
+            style={{ width: '300px' }}
             addonBefore={selectarea}
-            placeholder={'搜索关键词 或 #洞、帖号, tag'}
+            placeholder={'关键词或#洞、帖号, tag'}
             allowClear
             onSearch={handleFormSubmit}
           />
         </div>
-      </Card>
-      <Card bordered={false}>
-        <p>找到{found_number}个结果</p>
-      </Card>
-      <Card
-        style={{ marginTop: 24 }}
-        bordered={false}
-        className={styles.container}
-        bodyStyle={{ padding: '32px 200px 32px 200px' }}
-      >
-        {state == 'post' ? (
-          <List<PostListItemDataType>
-            loading={loading}
-            loadMore={loadMoreDom}
-            itemLayout='vertical'
-            size='large'
-            dataSource={listData}
-            footer={
-              <div>
-                <b>THU Burrow</b>
-              </div>
-            }
-            renderItem={(item) => (
-              <List.Item
-                actions={[
-                  <IconText
-                    key='star'
-                    type='star-o'
-                    text={item.document.star}
-                  />,
-                  <IconText
-                    key='like'
-                    type='like-o'
-                    text={item.document.like}
-                  />,
-                  <IconText
-                    key='dislike'
-                    type='dislike-o'
-                    text={item.document.dislike}
-                  />,
-                  <IconText
-                    key='message'
-                    type='message'
-                    text={item.document.message}
-                  />,
-                ]}
-              >
-                <List.Item.Meta
-                  title={
-                    <a href={item.document.url}>帖{item.document.post_id}</a>
-                  }
-                  description={
-                    <span>
-                      <Tag>{item.document.description.tag1}</Tag>
-                      <Tag>{item.document.description.tag2}</Tag>
-                      <Tag>{item.document.description.tag3}</Tag>
-                    </span>
-                  }
-                />
-                {item.highlights !== undefined && (
-                  <div>{item.highlights[0].snippet}</div>
-                )}
-                <PBListContent data={item.document} />
-              </List.Item>
-            )}
-          />
-        ) : (
-          <List<BurrowListItemDataType>
-            loading={loading}
-            loadMore={loadMoreDom}
-            itemLayout='vertical'
-            size='large'
-            dataSource={listData}
-            footer={
-              <div>
-                <b>THU Burrow</b>
-              </div>
-            }
-            renderItem={(item) => (
-              <List.Item
-                actions={[
-                  <IconText
-                    key='star'
-                    type='star-o'
-                    text={item.document.star}
-                  />,
-                  <IconText
-                    key='message'
-                    type='message'
-                    text={item.document.post_number}
-                  />,
-                ]}
-              >
-                <List.Item.Meta
-                  title={
-                    <a href={item.document.url}>洞{item.document.burrow_id}</a>
-                  }
-                  description={
-                    item.document.status == false ? (
-                      <span>
-                        {item.document.title}
-                        <strong>
-                          <em> 已废弃</em>
-                        </strong>
-                      </span>
-                    ) : (
-                      <span>{item.document.title}</span>
-                    )
-                  }
-                />
-                {item.highlights !== undefined && (
-                  <div className={styles.description}>
-                    <p>{item.highlights[0].snippet}</p>
-                  </div>
-                )}
-                <PBListContent data={item.document} />
-              </List.Item>
-            )}
-          />
-        )}
-      </Card>
-    </>
+
+        <Card
+          style={{ marginTop: 24 }}
+          bordered={false}
+          bodyStyle={{ padding: '8px 32px 32px 32px' }}
+        >
+          <p>
+            找到<mark>{found_number}</mark>个结果
+          </p>
+          {state == 'post' ? (
+            <List<PostListItemDataType>
+              loading={loading}
+              loadMore={loadMoreDom}
+              itemLayout='vertical'
+              size='large'
+              dataSource={listData}
+              footer={
+                <div>
+                  <b>THU Burrow</b>
+                </div>
+              }
+              renderItem={(item) => (
+                <List.Item
+                  actions={[
+                    <IconText
+                      key='star'
+                      type='star-o'
+                      text={item.document.star}
+                    />,
+                    <IconText
+                      key='like'
+                      type='like-o'
+                      text={item.document.like}
+                    />,
+                    <IconText
+                      key='dislike'
+                      type='dislike-o'
+                      text={item.document.dislike}
+                    />,
+                    <IconText
+                      key='message'
+                      type='message'
+                      text={item.document.message}
+                    />,
+                  ]}
+                >
+                  <List.Item.Meta
+                    title={
+                      <a href={item.document.url}>帖{item.document.post_id}</a>
+                    }
+                    description={
+                      item.highlights !== undefined && (
+                        <div>{item.highlights[0].snippet}</div>
+                      )
+                    }
+                  />
+                  <PBListContent data={item.document} />
+                  {showtag(item.document.description)}
+                </List.Item>
+              )}
+            />
+          ) : (
+            <List<BurrowListItemDataType>
+              loading={loading}
+              loadMore={loadMoreDom}
+              itemLayout='vertical'
+              size='large'
+              dataSource={listData}
+              footer={
+                <div>
+                  <b>THU Burrow</b>
+                </div>
+              }
+              renderItem={(item) => (
+                <List.Item
+                  actions={[
+                    <IconText
+                      key='star'
+                      type='star-o'
+                      text={item.document.star}
+                    />,
+                    <IconText
+                      key='message'
+                      type='message'
+                      text={item.document.post_number}
+                    />,
+                  ]}
+                >
+                  <List.Item.Meta
+                    title={
+                      <a href={item.document.url}>
+                        洞{item.document.burrow_id}
+                      </a>
+                    }
+                    description={
+                      item.document.status == false ? (
+                        <span>
+                          {item.document.title}
+                          <strong>
+                            <em> 已废弃</em>
+                          </strong>
+                        </span>
+                      ) : (
+                        <span>{item.document.title}</span>
+                      )
+                    }
+                  />
+                  {item.highlights !== undefined && (
+                    <div className={styles.description}>
+                      <p>{item.highlights[0].snippet}</p>
+                    </div>
+                  )}
+                  <PBListContent data={item.document} />
+                </List.Item>
+              )}
+            />
+          )}
+        </Card>
+      </Content>
+      <Footer style={{ textAlign: 'center' }}>THUBurrow © 2021</Footer>
+    </Layout>
   );
 };
 

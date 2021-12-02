@@ -1,6 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
-import { List, Space } from 'antd';
+import { List, Space, Tag } from 'antd';
 import {
   MessageOutlined,
   LikeOutlined,
@@ -25,7 +25,12 @@ const IconText = ({ icon, text }: IconProps) => (
     {text}
   </Space>
 );
-
+function showtag1(tag: string) {
+  return <Tag>{tag}</Tag>;
+}
+const showtag = (value: Array<string>) => {
+  return value.map(showtag1);
+};
 export default function PostList({ listData, postNum, setPage }: Props) {
   return (
     <List
@@ -69,9 +74,10 @@ export default function PostList({ listData, postNum, setPage }: Props) {
         >
           <List.Item.Meta
             title={<Link href={`post/${item.post_id}`}>{item.title}</Link>}
-            description={item.author}
+            description={`#${item.burrow_id}洞`}
           />
           {item.content}
+          {showtag(item.tag)}
         </List.Item>
       )}
     />
