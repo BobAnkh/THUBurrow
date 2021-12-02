@@ -15,7 +15,7 @@ export interface PostListItemDataType {
     star: number;
     like: number;
     dislike: number;
-    description: { tag1?: string; tag2?: string; tag3?: string };
+    description: [];
     message: number;
     introduction: string;
   };

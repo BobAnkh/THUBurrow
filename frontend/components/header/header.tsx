@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
+import type { NextPage } from 'next';
 import { useRouter } from 'next/router';
 import {
   Layout,
@@ -19,7 +20,7 @@ import '../../node_modules/antd/dist/antd.css';
 const { Header, Content, Footer } = Layout;
 const { TextArea } = Input;
 
-const GlobalHeader: React.FC = () => {
+const GlobalHeader: NextPage = () => {
   const [menuMode, setMenuMode] = useState<'inline' | 'horizontal'>(
     'horizontal'
   );
