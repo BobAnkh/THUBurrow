@@ -21,13 +21,16 @@ class LoginForm extends Component<Iprops> {
       password: CryptoJS.MD5(values.password).toString(),
     };
     try {
-      const res = await fetch(`${Config.url_dev}/users/login`, {
-        method: 'POST',
-        body: JSON.stringify(data),
-        headers: new Headers({
-          'Content-Type': 'application/json',
-        }),
-      });
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_BASEURL}/users/login`,
+        {
+          method: 'POST',
+          body: JSON.stringify(data),
+          headers: new Headers({
+            'Content-Type': 'application/json',
+          }),
+        }
+      );
 
       if (res.status === 200) {
         message.success('登录成功,正在跳转到主页...');

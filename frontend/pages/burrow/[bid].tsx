@@ -72,10 +72,10 @@ const Burrow: NextPage = () => {
   const [page, setPage] = useState(1);
 
   const router = useRouter();
+  const { bid } = router.query;
 
   useEffect(() => {
     const fetchListData = async () => {
-      console.log(`ad: ${process.env.NEXT_PUBLIC_BASEURL}/burrows/1`);
       const res = await fetch(`${process.env.NEXT_PUBLIC_BASEURL}/burrows/1`, {
         method: 'GET',
       });
@@ -96,18 +96,18 @@ const Burrow: NextPage = () => {
     <Layout>
       <Header style={{ position: 'fixed', zIndex: 1, width: '100%' }}>
         <div className='logo' />
-        <Menu theme='dark' mode='horizontal' defaultSelectedKeys={['2']}>
+        <Menu theme='dark' mode='horizontal'>
           <Menu.Item key='home'>
-            <Link href='../home'>首页</Link>
+            <Link href='/home'>首页</Link>
           </Menu.Item>
           <Menu.Item key='message'>
-            <Link href='../message'>消息</Link>
+            <Link href='/message'>消息</Link>
           </Menu.Item>
-          <Menu.Item key='update'>
-            <Link href='../update'>动态</Link>
+          <Menu.Item key='trending'>
+            <Link href='/trending'>热榜</Link>
           </Menu.Item>
-          <Menu.Item key='setting'>
-            <Link href='../setting'>设置</Link>
+          <Menu.Item key='search'>
+            <Link href='/searchpage'>搜索</Link>
           </Menu.Item>
         </Menu>
       </Header>
@@ -127,7 +127,7 @@ const Burrow: NextPage = () => {
         >
           <Card>
             <div className={styles.intro}>
-              <h2># {burrowTitle}</h2>
+              <h2>{`#${bid} ${burrowTitle}`}</h2>
               <div className={styles.Descript}>
                 <h4>简介</h4>
                 <div style={{ paddingLeft: '35px' }}>{description}</div>
@@ -173,7 +173,7 @@ const Burrow: NextPage = () => {
                   ]}
                 >
                   <List.Item.Meta
-                    title={<a href={`post/${item.post_id}`}>{item.title}</a>}
+                    title={<a href={`/post/${item.post_id}`}>{item.title}</a>}
                   />
                   {item.content}
                 </List.Item>
