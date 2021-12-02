@@ -1,0 +1,64 @@
+.standardFormRow {
+    display: flex;
+    width: 100%;
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px dashed;
+  }
+  .standardFormRow :global .ant-form-item,
+  .standardFormRow :global .ant-legacy-form-item {
+    margin-right: 24px;
+  }
+  .standardFormRow :global .ant-form-item-label label,
+  .standardFormRow :global .ant-legacy-form-item-label label {
+    margin-right: 0;
+  }
+  .standardFormRow :global .ant-form-item-label,
+  .standardFormRow :global .ant-legacy-form-item-label,
+  .standardFormRow :global .ant-form-item-control,
+  .standardFormRow :global .ant-legacy-form-item-control {
+    padding: 0;
+    line-height: 32px;
+  }
+  .standardFormRow .label {
+    flex: 0 0 auto;
+    margin-right: 24px;
+    text-align: right;
+  }
+  .standardFormRow .label > span {
+    display: inline-block;
+    height: 32px;
+    line-height: 32px;
+  }
+  .standardFormRow .label > span::after {
+    content: '：';
+  }
+  .standardFormRow .content {
+    flex: 1 1 0;
+  }
+  .standardFormRow .content :global .ant-form-item:last-child,
+  .standardFormRow .content :global .ant-legacy-form-item:last-child {
+    display: block;
+    margin-right: 0;
+  }
+  .standardFormRowLast {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border: none;
+  }
+  .standardFormRowBlock :global .ant-form-item,
+  .standardFormRowBlock :global .ant-legacy-form-item,
+  .standardFormRowBlock :global div.ant-form-item-control-wrapper,
+  .standardFormRowBlock :global div.ant-legacy-form-item-control-wrapper {
+    display: block;
+  }
+  .standardFormRowGrid :global .ant-form-item,
+  .standardFormRowGrid :global .ant-legacy-form-item,
+  .standardFormRowGrid :global div.ant-form-item-control-wrapper,
+  .standardFormRowGrid :global div.ant-legacy-form-item-control-wrapper {
+    display: block;
+  }
+  .standardFormRowGrid :global .ant-form-item-label,
+  .standardFormRowGrid :global .ant-legacy-form-item-label {
+    float: left;
+  }
