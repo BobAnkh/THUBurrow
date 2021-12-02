@@ -47,7 +47,7 @@ const onFinish = async (values: any) => {
       { headers: { 'Content-Type': 'application/json' } }
     );
     const json = await res.data;
-    if (json.success === false) {
+    if (json.error) {
       message.error('发帖失败');
     } else {
       message.success('发帖成功');
@@ -55,6 +55,7 @@ const onFinish = async (values: any) => {
     }
   } catch (e) {
     message.error('发帖失败');
+    alert(e);
   }
 };
 

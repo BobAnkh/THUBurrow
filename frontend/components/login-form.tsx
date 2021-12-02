@@ -4,7 +4,11 @@ import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import 'antd/dist/antd.css';
 import styles from './register.module.css';
 import CryptoJS from 'crypto-js';
-import Config from '../config.json';
+import axios from 'axios';
+import { assertLiteral } from '@babel/types';
+
+axios.defaults.withCredentials = true;
+axios.defaults.headers.post['Content-Type'] = 'application/json';
 //加密
 interface Iprops {
   switchform: any;
@@ -21,27 +25,15 @@ class LoginForm extends Component<Iprops> {
       password: CryptoJS.MD5(values.password).toString(),
     };
     try {
-      const res = await fetch(
+      const res = await axios.post(
         `${process.env.NEXT_PUBLIC_BASEURL}/users/login`,
-        {
-          method: 'POST',
-          body: JSON.stringify(data),
-          headers: new Headers({
-            'Content-Type': 'application/json',
-          }),
-        }
+        data
       );
-
-      if (res.status === 200) {
-        message.success('登录成功,正在跳转到主页...');
-        window.location.href = '../home';
-      } else {
-        const json = await res.json();
-        message.error('登录失败');
-        alert(json.errors);
-      }
+      message.success('登录成功,正在跳转到主页...');
+      window.location.href = '../home';
     } catch (e) {
-      message.error('登录失败');
+      message.error('登陆失败');
+      alert(e);
     }
   };
 
