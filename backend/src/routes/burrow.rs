@@ -46,7 +46,7 @@ pub async fn create_burrow(
                 // TODO: change it when final release
                 if state
                     .update_time
-                    .checked_add_signed(Duration::seconds(10))
+                    .checked_add_signed(Duration::seconds(5))
                     .unwrap()
                     > now
                 {

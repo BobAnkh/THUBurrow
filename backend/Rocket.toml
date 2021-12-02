@@ -14,11 +14,17 @@ url = "redis://:keypassword@107.150.5.139:6300"
 [debug.databases.pulsar-mq]
 url = "pulsar://107.150.5.139:6650"
 
+[debug.databases.pulsar-mq]
+url = "pulsar://127.0.0.1:6650"
+
 [debug.databases.minio]
 url = "minio://minio:miniopassword@107.150.5.139:9000"
 
 [debug.databases.search]
 url = "http://107.150.5.139:8108@8Dz4jRrsBjYgdCD/VGP1bleph7oBThJr5IcF43l0U24="
+
+[debug.databases.search]
+url = "http://127.0.0.1:8108@8Dz4jRrsBjYgdCD/VGP1bleph7oBThJr5IcF43l0U24="
 
 [release]
 cli_colors = false

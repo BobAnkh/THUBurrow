@@ -84,7 +84,6 @@ pub struct ReplyUpdateInfo {
 }
 
 #[derive(Serialize, Deserialize)]
-
 pub struct PostDisplay {
     pub post: Post,
     pub like: bool,

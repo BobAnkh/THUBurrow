@@ -5,6 +5,7 @@ use rocket::http::{Cookie, CookieJar, SameSite};
 use rocket::serde::json::Json;
 use rocket::{Build, Rocket};
 use rocket_db_pools::Connection;
+use sea_orm::sea_query::{Expr, Query};
 use sea_orm::{entity::*, query::*};
 use sea_orm::{DbErr, QueryFilter};
 // , DatabaseConnection};
@@ -14,7 +15,7 @@ use crate::pgdb::prelude::*;
 use crate::pool::{PgDb, PulsarSearchProducerMq, RedisDb, RocketPulsarProducer};
 use crate::req::pulsar::*;
 use crate::req::{
-    burrow::BURROW_PER_PAGE,
+    burrow::{BurrowMetadata, BURROW_PER_PAGE},
     content::{Post, POST_PER_PAGE},
     user::*,
 };
@@ -24,6 +25,7 @@ use crate::utils::email;
 
 use crypto::digest::Digest;
 use crypto::sha3::Sha3;
+use std::collections::HashMap;
 use std::iter;
 
 use idgenerator::IdHelper;
@@ -97,6 +99,7 @@ pub async fn user_sign_up(
         return (
             Status::BadRequest,
             Json(UserResponse {
+                default_burrow: -1,
                 errors: vec!["Illegal Email Address".to_string()],
             }),
         );
@@ -115,7 +118,10 @@ pub async fn user_sign_up(
         _ => {
             return (
                 Status::InternalServerError,
-                Json(UserResponse { errors: Vec::new() }),
+                Json(UserResponse {
+                    default_burrow: -1,
+                    errors: Vec::new(),
+                }),
             )
         }
     }
@@ -133,13 +139,22 @@ pub async fn user_sign_up(
         _ => {
             return (
                 Status::InternalServerError,
-                Json(UserResponse { errors: Vec::new() }),
+                Json(UserResponse {
+                    default_burrow: -1,
+                    errors: Vec::new(),
+                }),
             )
         }
     }
     // if error exists, refuse to add user
     if !errors.is_empty() {
-        (Status::BadRequest, Json(UserResponse { errors }))
+        (
+            Status::BadRequest,
+            Json(UserResponse {
+                default_burrow: -1,
+                errors,
+            }),
+        )
     } else {
         // generate salt
         let salt = gen_salt().await;
@@ -150,38 +165,58 @@ pub async fn user_sign_up(
         // generate uid
         let uid: i64 = IdHelper::next_id();
         // fill the row of table 'user' and 'user_status'
-        let create_time = Utc::now().with_timezone(&FixedOffset::east(8 * 3600));
+        let now = Utc::now().with_timezone(&FixedOffset::east(8 * 3600));
         let users = pgdb::user::ActiveModel {
-            uid: Set(uid.to_owned()),
+            uid: Set(uid),
             username: Set(user.username.to_string()),
             password: Set(password),
             email: Set(user.email.to_string()),
-            create_time: Set(create_time),
+            create_time: Set(now),
             salt: Set(salt),
         };
-        let users_status = pgdb::user_status::ActiveModel {
-            uid: Set(uid.to_owned()),
-            update_time: Set(create_time),
+
+        let burrows = pgdb::burrow::ActiveModel {
+            uid: Set(uid),
+            title: Set("Default".to_owned()),
+            description: Set("".to_owned()),
             ..Default::default()
         };
         // insert rows in database
         // <Fn, A, B> -> Result<A, B>
         match pg_con
-            .transaction::<_, (), DbErr>(|txn| {
+            .transaction::<_, i64, DbErr>(|txn| {
                 Box::pin(async move {
                     users.insert(txn).await?;
+                    let res = burrows.insert(txn).await?;
+                    let burrow_id = res.burrow_id.unwrap();
+                    let valid_burrows_str = burrow_id.to_string();
+                    let users_status = pgdb::user_status::ActiveModel {
+                        uid: Set(uid),
+                        update_time: Set(now),
+                        valid_burrow: Set(valid_burrows_str),
+                        ..Default::default()
+                    };
                     users_status.insert(txn).await?;
-                    Ok(())
+                    Ok(burrow_id)
                 })
             })
             .await
         {
-            Ok(_) => (Status::Ok, Json(UserResponse { errors })),
+            Ok(default_burrow) => (
+                Status::Ok,
+                Json(UserResponse {
+                    default_burrow,
+                    errors,
+                }),
+            ),
             Err(e) => {
                 error!("[SIGN-UP] Database error: {:?}", e);
                 (
                     Status::InternalServerError,
-                    Json(UserResponse { errors: Vec::new() }),
+                    Json(UserResponse {
+                        default_burrow: -1,
+                        errors: Vec::new(),
+                    }),
                 )
             }
         }
@@ -345,10 +380,7 @@ pub async fn user_log_in(
 }
 
 #[get("/burrow")]
-pub async fn get_burrow(
-    db: Connection<PgDb>,
-    auth: Auth,
-) -> (Status, Json<Vec<UserGetBurrowResponse>>) {
+pub async fn get_burrow(db: Connection<PgDb>, auth: Auth) -> (Status, Json<Vec<BurrowMetadata>>) {
     // Ok(burrows) => {
     //     // let mut posts_num = Vec::new();
     //     let r: Vec<i64> = future::try_join_all(burrows.iter().map(move |burrow| {
@@ -366,42 +398,30 @@ pub async fn get_burrow(
             Some(state) => {
                 let valid_burrows = get_burrow_list(&state.valid_burrow);
                 let banned_burrows = get_burrow_list(&state.banned_burrow);
-                let burrows_id = [valid_burrows, banned_burrows].concat();
-                let mut response = Vec::new();
-                for burrow_id in burrows_id {
-                    match pgdb::burrow::Entity::find_by_id(burrow_id)
-                        .one(&pg_con)
-                        .await
-                    {
-                        Ok(opt_burrow) => match opt_burrow {
-                            Some(burrow) => {
-                                response.push(UserGetBurrowResponse {
-                                    id: burrow.burrow_id,
-                                    title: burrow.title.clone(),
-                                    description: burrow.description.clone(),
-                                    post_num: burrow.post_num,
-                                });
-                            }
-                            None => {
-                                error!("[GET-BURROW] Cannot find burrow by burrow_id.");
-                                return (Status::InternalServerError, Json(Vec::new()));
-                            }
-                        },
-                        Err(e) => {
-                            error!("[GET-BURROW] Database Error: {:?}", e.to_string());
-                            return (Status::InternalServerError, Json(Vec::new()));
-                        }
-                    };
+                let burrow_ids = [valid_burrows, banned_burrows].concat();
+                match Burrow::find()
+                    .filter(Condition::any().add(pgdb::burrow::Column::BurrowId.is_in(burrow_ids)))
+                    .order_by_desc(pgdb::burrow::Column::BurrowId)
+                    .all(&pg_con)
+                    .await
+                {
+                    Ok(burrows) => (
+                        Status::Ok,
+                        Json(burrows.iter().map(|burrow| burrow.into()).collect()),
+                    ),
+                    Err(e) => {
+                        error!("[GET_BURROW] failed to get burrow list: {:?}", e);
+                        (Status::InternalServerError, Json(Vec::new()))
+                    }
                 }
-                (Status::Ok, Json(response))
             }
             None => {
-                error!("[GET BURROW] Cannot find user_status by uid.");
+                error!("[GET-BURROW] Cannot find user_status by uid.");
                 (Status::InternalServerError, Json(Vec::new()))
             }
         },
         Err(e) => {
-            error!("[GET BURROW] Database Error: {:?}", e.to_string());
+            error!("[GET-BURROW] Database Error: {:?}", e);
             (Status::InternalServerError, Json(Vec::new()))
         }
     }
@@ -411,47 +431,38 @@ pub async fn get_burrow(
 pub async fn get_collection(
     db: Connection<PgDb>,
     auth: Auth,
-    page: Option<usize>,
+    page: Option<u64>,
 ) -> (Status, Json<Vec<Post>>) {
     let pg_con = db.into_inner();
     let page = page.unwrap_or(0);
-    match pgdb::user_collection::Entity::find()
-        .filter(pgdb::user_collection::Column::Uid.eq(auth.id))
-        .order_by_desc(pgdb::user_collection::Column::PostId)
-        .paginate(&pg_con, POST_PER_PAGE)
-        .fetch_page(page)
+    match ContentPost::find()
+        .filter(
+            Condition::any().add(
+                pgdb::content_post::Column::PostId.in_subquery(
+                    Query::select()
+                        .column(pgdb::user_collection::Column::PostId)
+                        .from(UserCollection)
+                        .and_where(Expr::col(pgdb::user_collection::Column::Uid).eq(auth.id))
+                        .order_by_columns(vec![(
+                            pgdb::user_collection::Column::PostId,
+                            Order::Desc,
+                        )])
+                        .limit(POST_PER_PAGE as u64)
+                        .offset(page * POST_PER_PAGE as u64)
+                        .to_owned(),
+                ),
+            ),
+        )
+        .order_by_desc(pgdb::content_post::Column::PostId)
+        .all(&pg_con)
         .await
     {
-        Ok(results) => {
-            let mut posts = Vec::new();
-            for result in &results {
-                match pgdb::content_post::Entity::find()
-                    .filter(pgdb::content_post::Column::PostId.eq(result.post_id))
-                    .one(&pg_con)
-                    .await
-                {
-                    Ok(opt_post) => match opt_post {
-                        Some(post) => {
-                            posts.push(post);
-                        }
-                        None => {
-                            error!("[GET-FAV] Database Error: cannot find post in table content_post by post_id from table user_like");
-                            return (Status::InternalServerError, Json(Vec::new()));
-                        }
-                    },
-                    Err(e) => {
-                        error!("[GET-FAV] DataBase Error: {:?}", e.to_string());
-                        return (Status::InternalServerError, Json(Vec::new()));
-                    }
-                };
-            }
-            (
-                Status::Ok,
-                Json(posts.iter().map(|post| post.into()).collect()),
-            )
-        }
+        Ok(posts) => (
+            Status::Ok,
+            Json(posts.iter().map(|post| post.into()).collect()),
+        ),
         Err(e) => {
-            error!("[GET-FAV] Database Error: {:?}", e.to_string());
+            error!("[GET-FAV] Database Error: {:?}", e);
             (Status::InternalServerError, Json(Vec::new()))
         }
     }
@@ -473,44 +484,56 @@ pub async fn get_follow(
         .await
     {
         Ok(results) => {
-            let mut burrows = Vec::new();
-            for result in &results {
-                match pgdb::burrow::Entity::find()
-                    .filter(pgdb::burrow::Column::BurrowId.eq(result.burrow_id))
-                    .one(&pg_con)
-                    .await
-                {
-                    Ok(opt_burrow) => match opt_burrow {
-                        Some(burrow) => {
-                            burrows.push(burrow);
-                        }
-                        None => {
-                            error!("[GET-FOLLOW] Database Error: cannot find burrow.");
-                            return (Status::InternalServerError, Json(Vec::new()));
-                        }
-                    },
-                    Err(e) => {
-                        error!("[GET-FOLLOW] DataBase Error: {:?}", e.to_string());
-                        return (Status::InternalServerError, Json(Vec::new()));
+            let burrow_ids = results.iter().map(|r| r.burrow_id).collect::<Vec<i64>>();
+            match pgdb::burrow::Entity::find()
+                .filter(pgdb::burrow::Column::BurrowId.is_in(burrow_ids))
+                .order_by_desc(pgdb::burrow::Column::BurrowId)
+                .all(&pg_con)
+                .await
+            {
+                Ok(burrows) => {
+                    if burrows.len() == results.len() {
+                        (
+                            Status::Ok,
+                            Json(
+                                burrows
+                                    .iter()
+                                    .map(|burrow| {
+                                        let meta: BurrowMetadata = burrow.into();
+                                        meta
+                                    })
+                                    .zip(results.iter().map(|r| r.is_update))
+                                    .map(|(burrow, is_update)| UserGetFollowResponse {
+                                        burrow,
+                                        is_update,
+                                    })
+                                    .collect(),
+                            ),
+                        )
+                    } else {
+                        let hm: HashMap<i64, bool> =
+                            results.iter().map(|r| (r.burrow_id, r.is_update)).collect();
+                        (
+                            Status::Ok,
+                            Json(
+                                burrows
+                                    .iter()
+                                    .map(|meta| {
+                                        let burrow: BurrowMetadata = meta.into();
+                                        let is_update =
+                                            *hm.get(&burrow.burrow_id).unwrap_or(&false);
+                                        UserGetFollowResponse { burrow, is_update }
+                                    })
+                                    .collect(),
+                            ),
+                        )
                     }
-                };
+                }
+                Err(e) => {
+                    error!("[GET-FOLLOW] DataBase Error: {:?}", e.to_string());
+                    (Status::InternalServerError, Json(Vec::new()))
+                }
             }
-            (
-                Status::Ok,
-                Json(
-                    burrows
-                        .iter()
-                        .map(|burrow| UserGetFollowResponse {
-                            id: burrow.burrow_id,
-                            title: burrow.title.clone(),
-                            description: burrow.description.clone(),
-                            post_num: burrow.post_num,
-                            // TODO
-                            update: false,
-                        })
-                        .collect(),
-                ),
-            )
         }
         Err(e) => {
             error!("[GET-FOLLOW] Database Error: {:?}", e.to_string());
