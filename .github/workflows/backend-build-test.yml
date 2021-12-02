@@ -151,6 +151,6 @@ jobs:
           working-directory: backend
 
       - name: cargo test
-        run: cargo test -- nocapture
+        run: cargo test -- --no-fail-fast --nocapture
         
 
