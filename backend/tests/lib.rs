@@ -114,6 +114,7 @@ fn test_burrow() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     println!("{}", response.into_string().unwrap());
+
     // create burrow: perform a wrong action
     let response = client
         .post("/burrows")
@@ -176,6 +177,7 @@ fn test_burrow() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     println!("{}", response.into_string().unwrap());
+
     // update burrow
     let response = client
         .put(format!("/burrows/{}", burrow_id))
@@ -186,6 +188,7 @@ fn test_burrow() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     println!("{:?}", response.into_string());
+
     // get burrow
     let response = client
         .get(format!("/burrows/{}", burrow_id))
