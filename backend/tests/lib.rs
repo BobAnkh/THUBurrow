@@ -35,11 +35,7 @@ fn test_signup() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    // println!("{}", response.into_string().unwrap());
-    assert_eq!(
-        response.into_string().unwrap(),
-        json!({"errors":[]}).to_string()
-    );
+    println!("{}", response.into_string().unwrap());
     let response = client
         .post("/users/sign-up")
         .json(&json!({
@@ -70,11 +66,7 @@ fn test_login_signup() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    // println!("{}", response.into_string().unwrap());
-    assert_eq!(
-        response.into_string().unwrap(),
-        json!({"errors":[]}).to_string()
-    );
+    println!("{}", response.into_string().unwrap());
     let response = client
         .post("/users/login")
         .json(&json!({
@@ -97,6 +89,7 @@ fn test_burrow() {
         .map(char::from)
         .take(16)
         .collect();
+
     // sign up a user
     let response = client
         .post("/users/sign-up")
@@ -107,11 +100,11 @@ fn test_burrow() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    // println!("{}", response.into_string().unwrap());
-    assert_eq!(
-        response.into_string().unwrap(),
-        json!({"errors":[]}).to_string()
-    );
+    let res = response
+        .into_json::<backend::req::user::UserResponse>()
+        .unwrap();
+    let burrow_id = res.default_burrow;
+
     // user login
     let response = client
         .post("/users/login")
@@ -122,6 +115,7 @@ fn test_burrow() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     println!("{}", response.into_string().unwrap());
+
     // create burrow: perform a wrong action
     let response = client
         .post("/burrows")
@@ -130,15 +124,34 @@ fn test_burrow() {
             "title": "Burrow 1"}))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
+    println!("{}", response.into_string().unwrap());
+    let response = client
+        .post("/burrows")
+        .json(&json!({
+            "description": format!("Second burrow of {}", name),
+            "title": "Burrow 2"}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
     assert_eq!(response.status(), Status::Forbidden);
     println!("{}", response.into_string().unwrap());
-    std::thread::sleep(std::time::Duration::from_secs(10));
+
+    std::thread::sleep(std::time::Duration::from_secs(5));
+
+    // follow the burrow
+    let response = client
+        .post("/users/relation")
+        .json(&json!({ "ActivateFollow": burrow_id }))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    println!("{:?}", response.into_string());
+
     // create burrow: perform a correct action
     let response = client
         .post("/burrows")
         .json(&json!({
-            "description": format!("First burrow of {}", name),
-            "title": "Burrow 1"}))
+            "description": format!("Third burrow of {}", name),
+            "title": "Burrow 3"}))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
@@ -148,23 +161,16 @@ fn test_burrow() {
         .unwrap();
     let burrow_id = res.burrow_id;
     println!("Burrow Id: {}", burrow_id);
-    // get burrow
+
+    // follow the burrow
     let response = client
-        .get(format!("/burrows/{}", burrow_id))
-        .remote("127.0.0.1:8000".parse().unwrap())
-        .dispatch();
-    assert_eq!(response.status(), Status::Ok);
-    println!("{}", response.into_string().unwrap());
-    // update burrow
-    let response = client
-        .put(format!("/burrows/{}", burrow_id))
-        .json(&json!({
-            "description": format!("New First burrow of {}", name),
-            "title": "New Burrow 1"}))
+        .post("/users/relation")
+        .json(&json!({ "ActivateFollow": burrow_id }))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     println!("{:?}", response.into_string());
+
     // get burrow
     let response = client
         .get(format!("/burrows/{}", burrow_id))
@@ -172,6 +178,42 @@ fn test_burrow() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     println!("{}", response.into_string().unwrap());
+
+    // update burrow
+    let response = client
+        .put(format!("/burrows/{}", burrow_id))
+        .json(&json!({
+            "description": format!("New Third burrow of {}", name),
+            "title": "New Burrow 3"}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    println!("{:?}", response.into_string());
+
+    // get burrow
+    let response = client
+        .get(format!("/burrows/{}", burrow_id))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    println!("{}", response.into_string().unwrap());
+
+    // get burrow of a user
+    let response = client
+        .get("/users/burrow")
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    println!("{}", response.into_string().unwrap());
+
+    // get following burrows of a user
+    let response = client
+        .get("/users/follow")
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    println!("{}", response.into_string().unwrap());
+
     // delete burrow
     let response = client
         .delete(format!("/burrows/{}", burrow_id))
