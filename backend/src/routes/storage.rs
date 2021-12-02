@@ -14,7 +14,7 @@ use crate::req::storage::{ReferrerCheck, SaveImage};
 
 use chrono::{FixedOffset, Utc};
 
-use crate::utils::sso::SsoAuth;
+use crate::utils::auth::Auth;
 
 pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
     rocket.mount(
@@ -25,7 +25,7 @@ pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
 
 #[post("/images", data = "<image>")]
 async fn upload_image(
-    auth: SsoAuth,
+    auth: Auth,
     db: Connection<PgDb>,
     bucket: Connection<MinioImageStorage>,
     image: SaveImage,
@@ -73,7 +73,7 @@ async fn upload_image(
 
 #[get("/image/<filename>")]
 async fn download_image(
-    auth: SsoAuth,
+    auth: Auth,
     _ref: ReferrerCheck,
     db: Connection<PgDb>,
     bucket: Connection<MinioImageStorage>,
@@ -99,10 +99,7 @@ async fn download_image(
 }
 
 #[get("/images")]
-async fn get_images(
-    auth: SsoAuth,
-    bucket: Connection<MinioImageStorage>,
-) -> Json<Vec<(String, u64)>> {
+async fn get_images(auth: Auth, bucket: Connection<MinioImageStorage>) -> Json<Vec<(String, u64)>> {
     // list files
     info!("[IMAGE] User {} id fetching image list.", auth.id);
     let bucket_list = bucket

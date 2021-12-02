@@ -16,7 +16,7 @@ FROM chef AS builder
 COPY --from=planner /app/recipe.json recipe.json
 RUN cargo chef cook --release --recipe-path recipe.json
 COPY . .
-RUN cargo build --release --bin backend
+RUN cargo build --release
 
 # FINAL
 FROM debian:buster-slim
@@ -25,9 +25,13 @@ RUN apt update -qq && \
     apt install --no-install-recommends libssl-dev -y && \
     rm -rf /var/lib/apt/lists/*
 COPY --from=builder /app/target/release/backend /usr/local/bin/backend
+COPY --from=builder /app/target/release/consumer /usr/local/bin/consumer
 COPY --from=builder /app/Rocket.toml /etc/backend/Rocket.toml
 COPY --from=builder /app/conf/log4rs.yml /etc/backend/conf/log4rs-default.yml
+COPY --from=builder /app/docker-entrypoint.sh /
+
+RUN  chmod +x /docker-entrypoint.sh
 
 ENV ROCKET_CONFIG /etc/backend/Rocket.toml
 
-ENTRYPOINT [ "backend" ]
+ENTRYPOINT [ "/docker-entrypoint.sh" ]
