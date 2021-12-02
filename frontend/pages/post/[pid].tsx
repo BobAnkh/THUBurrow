@@ -15,7 +15,13 @@ import {
   message,
   Card,
 } from 'antd';
-import { UserOutlined } from '@ant-design/icons';
+import {
+  UserOutlined,
+  LikeOutlined,
+  LikeTwoTone,
+  StarOutlined,
+  StarTwoTone,
+} from '@ant-design/icons';
 import ReplyList from '../../components/reply-list';
 import '../../node_modules/antd/dist/antd.css';
 import axios, { AxiosError } from 'axios';
@@ -25,15 +31,21 @@ const { TextArea } = Input;
 
 const PostDetial: NextPage = () => {
   const router = useRouter();
-  const { pid } = router.query;
   const [menuMode, setMenuMode] = useState<'inline' | 'horizontal'>(
     'horizontal'
   );
   const [page, setPage] = useState(1);
   const [bid, setBid] = useState(1);
+  const [pid, setPid] = useState(1);
   const [replyList, setReplyList] = useState();
   const [postLen, setPostLen] = useState(0);
   const [title, setTitle] = useState('test');
+  const [like, setLike] = useState(false);
+  const [collection, setCollection] = useState(false);
+  const initialchange1 = false;
+  const initialchange2 = false;
+  const [changeLike, setChangeLike] = useState(initialchange1);
+  const [changeCol, setChangeCol] = useState(initialchange2);
   useEffect(() => {
     const fetchReplyList = async () => {
       try {
@@ -45,8 +57,11 @@ const PostDetial: NextPage = () => {
         );
         const replylist = res.data.post_page.reply_page;
         setBid(res.data.post_page.post_desc.burrow_id);
+        setPid(res.data.post_page.post_desc.post_id);
         setPostLen(res.data.post_page.post_desc.post_len);
         setTitle(res.data.post_page.post_desc.title);
+        setLike(res.data.post_page.like);
+        setCollection(res.data.post_page.collection);
         setReplyList(replylist);
       } catch (error) {
         const err = error as AxiosError;
@@ -58,7 +73,51 @@ const PostDetial: NextPage = () => {
       }
     };
     fetchReplyList();
-  }, [pid, router]);
+  }, []);
+
+  const clickCol = async (pid: number, activate: Boolean) => {
+    const newChangeCol: boolean = !changeCol;
+    setChangeCol(newChangeCol);
+    try {
+      if (activate) {
+        const res = await axios.post(
+          `${process.env.NEXT_PUBLIC_BASEURL}/users/relation`,
+          { ActivateCollection: pid },
+          { headers: { 'Content-Type': 'application/json' } }
+        );
+      } else {
+        const res = await axios.post(
+          `${process.env.NEXT_PUBLIC_BASEURL}/users/relation`,
+          { DeactivateCollection: pid },
+          { headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+    } catch (e) {
+      message.error('收藏失败');
+    }
+  };
+
+  const clickLike = async (pid: number, activate: Boolean) => {
+    const newChangeLike: boolean = !changeLike;
+    setChangeLike(newChangeLike);
+    try {
+      if (activate) {
+        const res = await axios.post(
+          `${process.env.NEXT_PUBLIC_BASEURL}/users/relation`,
+          { ActivateLike: pid },
+          { headers: { 'Content-Type': 'application/json' } }
+        );
+      } else {
+        const res = await axios.post(
+          `${process.env.NEXT_PUBLIC_BASEURL}/users/relation`,
+          { deactivateLike: pid },
+          { headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+    } catch (e) {
+      message.error('点赞失败');
+    }
+  };
 
   const onFinish = async (values: any) => {
     const data = {
@@ -106,7 +165,7 @@ const PostDetial: NextPage = () => {
         <Link href='/trending'>热榜</Link>
       </Menu.Item>
       <Menu.Item key='search'>
-        <Link href='/search/searchpage'>搜索</Link>
+        <Link href='/searchpage'>搜索</Link>
       </Menu.Item>
     </Menu>
   );
@@ -147,6 +206,37 @@ const PostDetial: NextPage = () => {
           <Breadcrumb.Item>App</Breadcrumb.Item>
         </Breadcrumb>
         <Card title={title}>
+          <Button
+            icon={
+              (!like && changeLike) || (like && !changeLike) ? (
+                <LikeTwoTone twoToneColor='#8A2BE2' />
+              ) : (
+                <LikeOutlined />
+              )
+            }
+            onClick={() => {
+              clickLike(pid, (like && changeLike) || (!like && !changeLike));
+            }}
+          >
+            {' ' + '点赞' + ' '}
+          </Button>
+          <Button
+            icon={
+              (!collection && changeCol) || (collection && !changeCol) ? (
+                <StarTwoTone twoToneColor='#FFD700' />
+              ) : (
+                <StarOutlined />
+              )
+            }
+            onClick={() => {
+              clickCol(
+                pid,
+                (!collection && changeCol) || (collection && !changeCol)
+              );
+            }}
+          >
+            {' ' + '收藏' + ' '}
+          </Button>
           <ReplyList listData={replyList} postLen={postLen} setPage={setPage} />
           <Form
             labelCol={{ span: 5 }}

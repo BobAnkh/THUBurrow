@@ -16,8 +16,6 @@ const Hello: NextPage = () => {
         <p className={styles.description}>
           <Link href='/login'>即刻登录 </Link>
         </p>
-
-        <div className={styles.grid}></div>
       </main>
 
       <footer className={styles.footer}>

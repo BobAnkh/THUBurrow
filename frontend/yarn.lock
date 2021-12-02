@@ -278,6 +278,13 @@
   resolved "https://registry.npmmirror.com/@rushstack/eslint-patch/download/@rushstack/eslint-patch-1.0.9.tgz#1168db664faab4c3bb82c76124b393970e80bf89"
   integrity sha1-EWjbZk+qtMO7gsdhJLOTlw6Av4k=
 
+"@types/classnames@^2.3.1":
+  version "2.3.1"
+  resolved "https://registry.nlark.com/@types/classnames/download/@types/classnames-2.3.1.tgz#3c2467aa0f1a93f1f021e3b9bcf938bd5dfdc0dd"
+  integrity sha1-PCRnqg8ak/HwIeO5vPk4vV39wN0=
+  dependencies:
+    classnames "*"
+
 "@types/crypto-js@^4.0.2":
   version "4.0.2"
   resolved "https://registry.nlark.com/@types/crypto-js/download/@types/crypto-js-4.0.2.tgz#4524325a175bf819fec6e42560c389ce1fb92c97"
@@ -797,15 +804,15 @@ cipher-base@^1.0.0, cipher-base@^1.0.1, cipher-base@^1.0.3:
     inherits "^2.0.1"
     safe-buffer "^5.0.1"
 
+classnames@*, classnames@2.x, classnames@^2.2.1, classnames@^2.2.3, classnames@^2.2.5, classnames@^2.2.6:
+  version "2.3.1"
+  resolved "https://registry.npm.taobao.org/classnames/download/classnames-2.3.1.tgz#dfcfa3891e306ec1dad105d0e88f4417b8535e8e"
+  integrity sha1-38+jiR4wbsHa0QXQ6I9EF7hTXo4=
+
 classnames@2.2.6:
   version "2.2.6"
   resolved "https://registry.npm.taobao.org/classnames/download/classnames-2.2.6.tgz#43935bffdd291f326dad0a205309b38d00f650ce"
   integrity sha1-Q5Nb/90pHzJtrQogUwmzjQD2UM4=
-
-classnames@2.x, classnames@^2.2.1, classnames@^2.2.3, classnames@^2.2.5, classnames@^2.2.6:
-  version "2.3.1"
-  resolved "https://registry.npm.taobao.org/classnames/download/classnames-2.3.1.tgz#dfcfa3891e306ec1dad105d0e88f4417b8535e8e"
-  integrity sha1-38+jiR4wbsHa0QXQ6I9EF7hTXo4=
 
 color-convert@^1.9.0:
   version "1.9.3"
@@ -2923,6 +2930,11 @@ rc-virtual-list@^3.0.1, rc-virtual-list@^3.2.0:
     rc-resize-observer "^1.0.0"
     rc-util "^5.0.7"
 
+react-axios@^2.0.5:
+  version "2.0.5"
+  resolved "https://registry.nlark.com/react-axios/download/react-axios-2.0.5.tgz#ad24cfc9927a03f607b530a02b86af3da62b997a"
+  integrity sha1-rSTPyZJ6A/YHtTCgK4avPaYrmXo=
+
 react-dom@^17.0.2:
   version "17.0.2"
   resolved "https://registry.npmmirror.com/react-dom/download/react-dom-17.0.2.tgz?cache=0&sync_timestamp=1635956490485&other_urls=https%3A%2F%2Fregistry.npmmirror.com%2Freact-dom%2Fdownload%2Freact-dom-17.0.2.tgz#ecffb6845e3ad8dbfcdc498f0d0a939736502c23"
@@ -3431,10 +3443,10 @@ type-fest@^0.7.1:
   resolved "https://registry.npmmirror.com/type-fest/download/type-fest-0.7.1.tgz#8dda65feaf03ed78f0a3f9678f1869147f7c5c48"
   integrity sha1-jdpl/q8D7Xjwo/lnjxhpFH98XEg=
 
-typescript@4.4.4:
-  version "4.4.4"
-  resolved "https://registry.npmmirror.com/typescript/download/typescript-4.4.4.tgz#2cd01a1a1f160704d3101fd5a58ff0f9fcb8030c"
-  integrity sha1-LNAaGh8WBwTTEB/VpY/w+fy4Aww=
+typescript@^4.5.2:
+  version "4.5.2"
+  resolved "https://registry.npmmirror.com/typescript/download/typescript-4.5.2.tgz#8ac1fba9f52256fdb06fb89e4122fa6a346c2998"
+  integrity sha512-5BlMof9H1yGt0P8/WF+wPNw6GfctgGjXp5hkblpyT+8rkASSmkUKMXrxR0Xg8ThVCi/JnHQiKXeBaEwCeQwMFw==
 
 unbox-primitive@^1.0.1:
   version "1.0.1"
