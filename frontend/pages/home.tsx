@@ -24,6 +24,9 @@ import axios, { AxiosError } from 'axios';
 const { Header, Content, Footer } = Layout;
 const { TextArea } = Input;
 
+axios.defaults.withCredentials = true;
+axios.defaults.headers.post['Content-Type'] = 'application/json';
+
 const onFinish = async (values: any) => {
   const time = moment().format('YYYY-MM-DD HH:mm:ss');
   const data = {
