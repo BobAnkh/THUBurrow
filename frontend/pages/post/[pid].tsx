@@ -81,15 +81,13 @@ const PostDetial: NextPage = () => {
     try {
       if (activate) {
         const res = await axios.post(
-          //`${process.env.NEXT_PUBLIC_BASEURL}/users/relation`,
-          'http://127.0.0.1:4523/mock2/435762/7606807',
+          `${process.env.NEXT_PUBLIC_BASEURL}/users/relation`,
           { ActivateCollection: pid },
           { headers: { 'Content-Type': 'application/json' } }
         );
       } else {
         const res = await axios.post(
-          //`${process.env.NEXT_PUBLIC_BASEURL}/users/relation`,
-          'http://127.0.0.1:4523/mock2/435762/7606807',
+          `${process.env.NEXT_PUBLIC_BASEURL}/users/relation`,
           { DeactivateCollection: pid },
           { headers: { 'Content-Type': 'application/json' } }
         );
@@ -105,15 +103,13 @@ const PostDetial: NextPage = () => {
     try {
       if (activate) {
         const res = await axios.post(
-          //`${process.env.NEXT_PUBLIC_BASEURL}/users/relation`,
-          'http://127.0.0.1:4523/mock2/435762/7606786',
+          `${process.env.NEXT_PUBLIC_BASEURL}/users/relation`,
           { ActivateLike: pid },
           { headers: { 'Content-Type': 'application/json' } }
         );
       } else {
         const res = await axios.post(
-          //`${process.env.NEXT_PUBLIC_BASEURL}/users/relation`,
-          'http://127.0.0.1:4523/mock2/435762/7606786',
+          `${process.env.NEXT_PUBLIC_BASEURL}/users/relation`,
           { deactivateLike: pid },
           { headers: { 'Content-Type': 'application/json' } }
         );
