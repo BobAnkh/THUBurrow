@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import axios from 'axios';
-import { Button, List, message, Space } from 'antd';
+import { Button, List, message, Space, Tag } from 'antd';
 import {
   MessageOutlined,
   LikeOutlined,
@@ -27,7 +27,12 @@ const IconText = ({ icon, text }: IconProps) => (
     {text}
   </Space>
 );
-
+function showtag1(tag: string) {
+  return <Tag>{tag}</Tag>;
+}
+const showtag = (value: Array<string>) => {
+  return value.map(showtag1);
+};
 export default function PostList({ listData, postNum, setPage }: Props) {
   const initialchange1 = new Array(10).fill(false);
   const initialchange2 = new Array(10).fill(false);
@@ -173,6 +178,7 @@ export default function PostList({ listData, postNum, setPage }: Props) {
             description={`#${item.burrow_id} 洞主`}
           />
           {item.content}
+          {showtag(item.tag)}
         </List.Item>
       )}
     />
