@@ -19,6 +19,10 @@ import { useRouter } from 'next/router';
 import moment from 'moment';
 import 'antd/dist/antd.css';
 import { TYPES } from '@babel/types';
+import axios, { AxiosError } from 'axios';
+
+axios.defaults.withCredentials = true;
+axios.defaults.headers.post['Content-Type'] = 'application/json';
 
 const { Header, Content, Footer } = Layout;
 const { TextArea } = Input;
@@ -44,12 +48,13 @@ const onFinish = async (values: any) => {
     tag3: 'le',
   };
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_BASEURL}/content/post`, {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-    const json = await res.json();
-    if (json.success === false) {
+    const res = await axios.post(
+      `${process.env.NEXT_PUBLIC_BASEURL}/content/post`,
+      { ...data },
+      { headers: { 'Content-Type': 'application/json' } }
+    );
+    const json = await res.data;
+    if (json.error) {
       message.error('发帖失败');
     } else {
       message.success('发帖成功');
@@ -57,6 +62,7 @@ const onFinish = async (values: any) => {
     }
   } catch (e) {
     message.error('发帖失败');
+    alert(e);
   }
 };
 
@@ -73,23 +79,27 @@ const Burrow: NextPage = () => {
 
   const router = useRouter();
   const { bid } = router.query;
-
   useEffect(() => {
-    const fetchListData = async () => {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_BASEURL}/burrows/1`, {
-        method: 'GET',
-      });
-      if (res.status === 401) {
-        message.info('请先登录！');
-        router.push('/login');
-      } else {
-        const postlist = await res.json();
+    try {
+      const fetchListData = async () => {
+        const res = await axios.get(
+          `${process.env.NEXT_PUBLIC_BASEURL}/burrows/${bid}`
+        );
+        const postlist = res.data;
         setListData(postlist.posts);
         setDescription(postlist.description);
         setBurrowTitle(postlist.title);
+      };
+      fetchListData();
+    } catch (e) {
+      const err = e as AxiosError;
+      if (err.response?.status === 401) {
+        message.info('请先登录！');
+        router.push('/login');
+      } else {
+        message.error('未知错误');
       }
-    };
-    fetchListData();
+    }
   }, [router, page]);
 
   return (

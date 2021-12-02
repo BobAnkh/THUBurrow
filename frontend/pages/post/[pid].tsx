@@ -26,6 +26,9 @@ import ReplyList from '../../components/reply-list';
 import '../../node_modules/antd/dist/antd.css';
 import axios, { AxiosError } from 'axios';
 
+axios.defaults.withCredentials = true;
+axios.defaults.headers.post['Content-Type'] = 'application/json';
+
 const { Header, Content, Footer } = Layout;
 const { TextArea } = Input;
 
@@ -93,7 +96,11 @@ const PostDetial: NextPage = () => {
         );
       }
     } catch (e) {
-      message.error('收藏失败');
+      if (activate) {
+        message.error('收藏失败');
+      } else {
+        message.error('取消收藏失败');
+      }
     }
   };
 
@@ -115,7 +122,11 @@ const PostDetial: NextPage = () => {
         );
       }
     } catch (e) {
-      message.error('点赞失败');
+      if (activate) {
+        message.error('点赞失败');
+      } else {
+        message.error('取消点赞失败');
+      }
     }
   };
 
