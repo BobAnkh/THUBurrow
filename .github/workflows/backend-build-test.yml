@@ -150,7 +150,7 @@ jobs:
       - name: Add containers
         run: docker-compose -f docker-compose-dev.yml up -d
       - name: run backend consumer
-        run: cargo run --bin consumer
+        run: cargo build && cargo run --bin consumer &
       - name: cargo test
         run: cargo test --no-fail-fast -- --nocapture
       - name: remove containers
