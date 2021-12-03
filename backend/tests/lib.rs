@@ -89,6 +89,7 @@ fn test_burrow() {
         .map(char::from)
         .take(16)
         .collect();
+
     // sign up a user
     let response = client
         .post("/users/sign-up")
