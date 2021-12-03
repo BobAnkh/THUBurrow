@@ -6,19 +6,19 @@ address = "0.0.0.0"
 
 [debug.databases.pgdb]
 # postgres://username:password@host:port/dbname
-url = "postgres://postgres:postgres@107.150.5.139:5432/pgdb"
+url = "postgres://postgres:postgres@127.0.0.1:5432/pgdb"
 
 [debug.databases.keydb]
-url = "redis://:keypassword@107.150.5.139:6300"
+url = "redis://:keypassword@127.0.0.1:6300"
 
 [debug.databases.pulsar-mq]
-url = "pulsar://107.150.5.139:6650"
+url = "pulsar://127.0.0.1:6650"
 
 [debug.databases.minio]
-url = "minio://minio:miniopassword@107.150.5.139:9000"
+url = "minio://minio:miniopassword@127.0.0.1:9000"
 
 [debug.databases.search]
-url = "http://107.150.5.139:8108@8Dz4jRrsBjYgdCD/VGP1bleph7oBThJr5IcF43l0U24="
+url = "http://127.0.0.1:8108@8Dz4jRrsBjYgdCD/VGP1bleph7oBThJr5IcF43l0U24="
 
 [release]
 cli_colors = false

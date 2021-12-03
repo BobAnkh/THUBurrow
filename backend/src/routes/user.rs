@@ -421,7 +421,7 @@ pub async fn get_burrow(db: Connection<PgDb>, auth: Auth) -> (Status, Json<Vec<B
             }
         },
         Err(e) => {
-            error!("[GET-BURROW] Database Error: {:?}", e.to_string());
+            error!("[GET-BURROW] Database Error: {:?}", e);
             (Status::InternalServerError, Json(Vec::new()))
         }
     }
