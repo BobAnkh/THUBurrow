@@ -1,31 +1,28 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import type { NextPage } from 'next';
 import { useRouter } from 'next/router';
-import {
-  Layout,
-  Menu,
-  Breadcrumb,
-  Form,
-  Button,
-  Row,
-  Col,
-  Dropdown,
-  Input,
-  message,
-  Card,
-} from 'antd';
-import { UserOutlined, SearchOutlined } from '@ant-design/icons';
+import { Layout, Menu, Button, Row, Col, Dropdown, Space, Popover } from 'antd';
+import { UserOutlined, MenuOutlined } from '@ant-design/icons';
 import '../../node_modules/antd/dist/antd.css';
-const { Header, Content, Footer } = Layout;
-const { TextArea } = Input;
 
-const GlobalHeader: NextPage = () => {
+import useWindowDimensions from '../../hooks/useWindowDimensions';
+
+const Header: React.FC = () => {
+  const { width: windowWidth } = useWindowDimensions();
   const [menuMode, setMenuMode] = useState<'inline' | 'horizontal'>(
     'horizontal'
   );
   const router = useRouter();
   const site = router.pathname.split('/')[1];
+
+  useEffect(() => {
+    if (windowWidth! < 767) {
+      setMenuMode('inline');
+    } else {
+      setMenuMode('horizontal');
+    }
+  }, [windowWidth]);
+
   const menu = (
     <Menu
       id='nav'
@@ -50,7 +47,7 @@ const GlobalHeader: NextPage = () => {
     </Menu>
   );
 
-  const UserMenu = (
+  const userMenu = (
     <Menu>
       <Menu.Item>
         <Link href='/profile'>个人信息</Link>
@@ -58,7 +55,6 @@ const GlobalHeader: NextPage = () => {
       <Menu.Divider />
       <Menu.Item
         onClick={() => {
-          localStorage.removeItem('token');
           window.location.reload();
         }}
       >
@@ -68,18 +64,28 @@ const GlobalHeader: NextPage = () => {
   );
 
   return (
-    <Header>
-      <Row>
-        <div className='logo' />
-        <Col offset={2}>{menu}</Col>
-        <Col offset={16} span={1}>
-          <Dropdown overlay={UserMenu} placement='bottomCenter'>
+    <Layout.Header>
+      <Row justify='space-between'>
+        <Col xxl={4} xl={4} lg={7} md={7} sm={19} xs={19}>
+          <Space size='large'>{/* TODO: logo */}</Space>
+        </Col>
+        <Col xxl={19} xl={19} lg={16} md={16} sm={4} xs={4}>
+          {menuMode === 'inline' ? (
+            <Popover placement='bottomRight' content={menu} trigger='click'>
+              <Button icon={<MenuOutlined />} size='large' type='text' />
+            </Popover>
+          ) : (
+            menu
+          )}
+        </Col>
+        <Col span={1}>
+          <Dropdown overlay={userMenu} placement='bottomCenter'>
             <Button icon={<UserOutlined />} />
           </Dropdown>
         </Col>
       </Row>
-    </Header>
+    </Layout.Header>
   );
 };
 
-export default GlobalHeader;
+export default Header;
