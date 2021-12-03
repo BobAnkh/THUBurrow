@@ -1,5 +1,5 @@
 import React from 'react';
-import styles from './register.module.css';
+import styles from '../styles/register.module.css';
 import 'antd/dist/antd.css';
 import CryptoJS from 'crypto-js';
 import Config from '../config.json';
