@@ -43,6 +43,7 @@ pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
             get_collection,
             get_burrow,
             user_relation,
+            get_user_valid_burrow,
         ],
     )
 }
@@ -537,6 +538,27 @@ pub async fn get_follow(
         }
         Err(e) => {
             error!("[GET-FOLLOW] Database Error: {:?}", e.to_string());
+            (Status::InternalServerError, Json(Vec::new()))
+        }
+    }
+}
+
+#[get("/valid-burrow")]
+pub async fn get_user_valid_burrow(auth: Auth, db: Connection<PgDb>) -> (Status, Json<Vec<i64>>) {
+    let pg_con = db.into_inner();
+    match pgdb::user_status::Entity::find_by_id(auth.id)
+        .one(&pg_con)
+        .await
+    {
+        Ok(opt_state) => match opt_state {
+            Some(state) => (Status::Ok, Json(get_burrow_list(&state.valid_burrow))),
+            None => {
+                error!("[GET-VALID-BURROW] Cannot find user_status by uid.");
+                (Status::InternalServerError, Json(Vec::new()))
+            }
+        },
+        Err(e) => {
+            error!("[GET-VALID-BURROW] Database Error: {:?}", e);
             (Status::InternalServerError, Json(Vec::new()))
         }
     }
