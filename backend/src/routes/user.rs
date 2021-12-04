@@ -116,14 +116,15 @@ pub async fn user_sign_up(
                 errors.push("Duplicated Email Address".to_string());
             }
         }
-        _ => {
+        Err(e) => {
+            log::error!("[SIGN-UP] Database Error: {:?}", e);
             return (
                 Status::InternalServerError,
                 Json(UserResponse {
                     default_burrow: -1,
                     errors: Vec::new(),
                 }),
-            )
+            );
         }
     }
     // check if username is duplicated, add corresponding error if so
@@ -137,14 +138,15 @@ pub async fn user_sign_up(
                 errors.push("Duplicated Username".to_string());
             }
         }
-        _ => {
+        Err(e) => {
+            log::error!("[SIGN-UP] Database Error: {:?}", e);
             return (
                 Status::InternalServerError,
                 Json(UserResponse {
                     default_burrow: -1,
                     errors: Vec::new(),
                 }),
-            )
+            );
         }
     }
     // if error exists, refuse to add user
@@ -296,6 +298,7 @@ pub async fn user_log_in(
                         }
                     };
                     // get old token and set new token by getset id -> token
+                    // TODO: add time limit to the key?
                     let old_token_get: Result<Option<String>, redis::RedisError> =
                         redis::cmd("GETSET")
                             .arg(matched_user.uid)
@@ -376,7 +379,10 @@ pub async fn user_log_in(
                 (Status::BadRequest, "Wrong username or password".to_string())
             }
         },
-        _ => (Status::InternalServerError, "".to_string()),
+        Err(e) => {
+            error!("[LOGIN] Database error: {:?}", e);
+            (Status::InternalServerError, "".to_string())
+        }
     }
 }
 
