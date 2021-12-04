@@ -46,10 +46,10 @@ jobs:
       - name: Generate code coverage
         if: ${{ success() }}
         run: |
-          cargo tarpaulin --verbose --all-features --timeout 300 --out Xml
+          cargo tarpaulin --verbose --timeout 300 --out Xml
+      - name: remove containers
+        run: docker-compose -f docker-compose-dev.yml down && sudo rm -rf data    
       - name: Upload to codecov.io
         uses: codecov/codecov-action@v2
         if: ${{ success() }}
-      - name: remove containers
-        run: docker-compose -f docker-compose-dev.yml down && sudo rm -rf data
         
