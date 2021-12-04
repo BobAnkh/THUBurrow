@@ -33,7 +33,8 @@ async fn test_signup() {
             "password": "testpassword",
             "email": format!("{}@mails.tsinghua.edu.cn", name)}))
         .remote("127.0.0.1:8000".parse().unwrap())
-        .dispatch().await;
+        .dispatch()
+        .await;
     assert_eq!(response.status(), Status::Ok);
     println!("{}", response.into_string().await.unwrap());
     let response = client
@@ -43,7 +44,8 @@ async fn test_signup() {
             "password": "testpassword",
             "email": format!("{}@mails.tsinghua.edu.cn", name)}))
         .remote("127.0.0.1:8000".parse().unwrap())
-        .dispatch().await;
+        .dispatch()
+        .await;
     assert_eq!(response.status(), Status::BadRequest);
     println!("{}", response.into_string().await.unwrap());
 }
@@ -63,7 +65,8 @@ async fn test_login_signup() {
             "password": "testpassword",
             "email": format!("{}@mails.tsinghua.edu.cn", name)}))
         .remote("127.0.0.1:8000".parse().unwrap())
-        .dispatch().await;
+        .dispatch()
+        .await;
     assert_eq!(response.status(), Status::Ok);
     println!("{}", response.into_string().await.unwrap());
     let response = client
@@ -72,7 +75,8 @@ async fn test_login_signup() {
             "username": format!("{}", name),
             "password": "testpassword"}))
         .remote("127.0.0.1:8000".parse().unwrap())
-        .dispatch().await;
+        .dispatch()
+        .await;
     assert_eq!(response.status(), Status::Ok);
     println!("{}", response.into_string().await.unwrap());
 }
@@ -96,10 +100,12 @@ async fn test_burrow() {
             "password": "testpassword",
             "email": format!("{}@mails.tsinghua.edu.cn", name)}))
         .remote("127.0.0.1:8000".parse().unwrap())
-        .dispatch().await;
+        .dispatch()
+        .await;
     assert_eq!(response.status(), Status::Ok);
     let res = response
-        .into_json::<backend::req::user::UserResponse>().await
+        .into_json::<backend::req::user::UserResponse>()
+        .await
         .unwrap();
     let burrow_id = res.default_burrow;
 
@@ -110,7 +116,8 @@ async fn test_burrow() {
             "username": format!("{}", name),
             "password": "testpassword"}))
         .remote("127.0.0.1:8000".parse().unwrap())
-        .dispatch().await;
+        .dispatch()
+        .await;
     assert_eq!(response.status(), Status::Ok);
     println!("{}", response.into_string().await.unwrap());
 
@@ -121,7 +128,8 @@ async fn test_burrow() {
             "description": format!("First burrow of {}", name),
             "title": "Burrow 1"}))
         .remote("127.0.0.1:8000".parse().unwrap())
-        .dispatch().await;
+        .dispatch()
+        .await;
     println!("{}", response.into_string().await.unwrap());
     let response = client
         .post("/burrows")
@@ -129,7 +137,8 @@ async fn test_burrow() {
             "description": format!("Second burrow of {}", name),
             "title": "Burrow 2"}))
         .remote("127.0.0.1:8000".parse().unwrap())
-        .dispatch().await;
+        .dispatch()
+        .await;
     assert_eq!(response.status(), Status::Forbidden);
     println!("{}", response.into_string().await.unwrap());
 
@@ -140,7 +149,8 @@ async fn test_burrow() {
         .post("/users/relation")
         .json(&json!({ "ActivateFollow": burrow_id }))
         .remote("127.0.0.1:8000".parse().unwrap())
-        .dispatch().await;
+        .dispatch()
+        .await;
     assert_eq!(response.status(), Status::Ok);
     println!("{:?}", response.into_string().await);
 
@@ -151,11 +161,13 @@ async fn test_burrow() {
             "description": format!("Third burrow of {}", name),
             "title": "Burrow 3"}))
         .remote("127.0.0.1:8000".parse().unwrap())
-        .dispatch().await;
+        .dispatch()
+        .await;
     assert_eq!(response.status(), Status::Ok);
     // println!("{}", response.into_string().unwrap());
     let res = response
-        .into_json::<backend::req::burrow::BurrowCreateResponse>().await
+        .into_json::<backend::req::burrow::BurrowCreateResponse>()
+        .await
         .unwrap();
     let burrow_id = res.burrow_id;
     println!("Burrow Id: {}", burrow_id);
@@ -165,7 +177,8 @@ async fn test_burrow() {
         .post("/users/relation")
         .json(&json!({ "ActivateFollow": burrow_id }))
         .remote("127.0.0.1:8000".parse().unwrap())
-        .dispatch().await;
+        .dispatch()
+        .await;
     assert_eq!(response.status(), Status::Ok);
     println!("{:?}", response.into_string().await);
 
@@ -173,7 +186,8 @@ async fn test_burrow() {
     let response = client
         .get(format!("/burrows/{}", burrow_id))
         .remote("127.0.0.1:8000".parse().unwrap())
-        .dispatch().await;
+        .dispatch()
+        .await;
     assert_eq!(response.status(), Status::Ok);
     println!("{}", response.into_string().await.unwrap());
 
@@ -184,7 +198,8 @@ async fn test_burrow() {
             "description": format!("New Third burrow of {}", name),
             "title": "New Burrow 3"}))
         .remote("127.0.0.1:8000".parse().unwrap())
-        .dispatch().await;
+        .dispatch()
+        .await;
     assert_eq!(response.status(), Status::Ok);
     println!("{:?}", response.into_string().await);
 
@@ -192,7 +207,8 @@ async fn test_burrow() {
     let response = client
         .get(format!("/burrows/{}", burrow_id))
         .remote("127.0.0.1:8000".parse().unwrap())
-        .dispatch().await;
+        .dispatch()
+        .await;
     assert_eq!(response.status(), Status::Ok);
     println!("{}", response.into_string().await.unwrap());
 
@@ -200,7 +216,8 @@ async fn test_burrow() {
     let response = client
         .get("/users/burrow")
         .remote("127.0.0.1:8000".parse().unwrap())
-        .dispatch().await;
+        .dispatch()
+        .await;
     assert_eq!(response.status(), Status::Ok);
     println!("{}", response.into_string().await.unwrap());
 
@@ -208,7 +225,8 @@ async fn test_burrow() {
     let response = client
         .get("/users/follow")
         .remote("127.0.0.1:8000".parse().unwrap())
-        .dispatch().await;
+        .dispatch()
+        .await;
     assert_eq!(response.status(), Status::Ok);
     println!("{}", response.into_string().await.unwrap());
 
@@ -216,7 +234,8 @@ async fn test_burrow() {
     let response = client
         .delete(format!("/burrows/{}", burrow_id))
         .remote("127.0.0.1:8000".parse().unwrap())
-        .dispatch().await;
+        .dispatch()
+        .await;
     assert_eq!(response.status(), Status::Ok);
     println!("{:?}", response.into_string().await);
 }
