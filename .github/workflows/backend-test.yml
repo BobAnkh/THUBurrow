@@ -1,0 +1,55 @@
+name: Cargo Test
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+      - backend
+  pull_request:
+      types: [ready_for_review, opened, synchronize, reopened]
+  workflow_dispatch:
+
+jobs:
+  cargo-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Install latest nightly
+        uses: actions-rs/toolchain@v1
+        with:
+            toolchain: nightly-2021-11-18
+            override: true
+            components: rustfmt, clippy
+
+      # `cargo check` command here will use installed `nightly`
+      # as it is set as an "override" for current directory
+      - name: deal with rust cache
+        uses: Swatinem/rust-cache@v1
+        with:
+          working-directory: backend
+      - name: Add containers
+        run: docker-compose -f docker-compose-dev.yml up -d
+      - name: run backend consumer
+        run: |
+          cargo install tarpaulin
+          cargo build
+          cargo run --bin consumer &
+      - name: cargo test
+        run: cargo test --no-fail-fast --verbose -- --nocapture
+      - name: Generate code coverage
+        if: ${{ success() }}
+        run: |
+          cargo tarpaulin --verbose --all-features --timeout 300 --out Xml
+      - name: Upload to codecov.io
+        uses: codecov/codecov-action@v2
+        if: ${{ success() }}
+      - name: remove containers
+        run: docker-compose -f docker-compose-dev.yml down && sudo rm -rf data
+        
