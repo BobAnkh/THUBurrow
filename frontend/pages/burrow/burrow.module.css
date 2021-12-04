@@ -1,6 +1,29 @@
 .Descript{
     box-shadow:2px 2px 10px rgb(178, 213, 216);
-    padding: 25px 25px 25px 25px;
+    padding: 25px 25px 60px 25px;
+    margin-top: 0.5cm;
     margin-bottom: 1cm;
     background-color: rgb(209, 245, 252);
+}
+
+.BriefIntro{
+    font-weight: bold;
+}
+
+.Cancel{
+    margin-top: 10px;
+    float: right;
+    margin-left: 50px;
+}
+
+.Confirm{
+    margin-top: 10px;
+    float: right;
+    margin-left: 50px;
+}
+
+.EditText{
+    border-radius: 15px;
+    width: 80%;
+    border: 2px solid rgb(47, 115, 204);
 }

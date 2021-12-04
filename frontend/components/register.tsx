@@ -1,8 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import styles from '../styles/register.module.css';
 import 'antd/dist/antd.css';
-import CryptoJS from 'crypto-js';
-import Config from '../config.json';
 import {
   Form,
   Input,
@@ -46,34 +44,55 @@ const tailFormItemLayout = {
   },
 };
 
-interface Iprops {
+type Iprops = {
   switchform: any;
-}
-const validate_password = /^(?![0-9]+$)(?![a-zA-Z]+$)[0-9A-Za-z-_]{6,20}$/;
+};
 
-class Register extends React.Component<Iprops, any> {
-  constructor(props: any) {
-    super(props);
-    this.state = {
-      usrname: null,
-      password: null,
-      email: null,
-      btnText: '发送验证码',
-      btnBool: false,
-      suffix: '@mails.tsinghua.edu.cn',
-    };
-    this.sendCode = this.sendCode.bind(this);
-    this.onFinish = this.onFinish.bind(this);
+export default function Register({ switchform }: Iprops) {
+  const [userName, setUserName] = useState('');
+  const [passWord, setPassWord] = useState('');
+  const [email, setEmail] = useState('');
+  const [suffix, setSuffix] = useState('@mails.tsinghua.edu.cn');
+  const [count, setCount] = useState(1);
+  const [counting, setCounting] = useState(false);
+
+  useEffect(() => {
+    if (count === 1) {
+      clearInterval(timer);
+      setCounting(false);
+    } else {
+      console.log('you enter countDown', count);
+      setCounting(true);
+    }
+  });
+
+  useEffect(() => {
+    clearInterval(timer);
+    return () => clearInterval(timer);
+  });
+
+  let timer = setInterval(() => setCount((t) => --t), 1000);
+
+  function sendCode() {
+    console.log('This is :', userName, passWord, email + suffix);
+    setCounting(!counting);
+    setCount(5);
+    console.log('test :', counting, count);
+    updateTimer();
   }
 
-  handleSuffix = (value: any) => {
-    this.setState(() => ({ suffix: value }));
-  };
+  function updateTimer() {
+    timer = setInterval(() => setCount((t) => --t), 1000);
+  }
 
-  selectAfter = (
+  function handleSuffix(value: any) {
+    setSuffix(value);
+  }
+
+  const selectAfter = (
     <Select
       defaultValue='@mails.tsinghua.edu.cn'
-      onChange={this.handleSuffix}
+      onChange={handleSuffix}
       className={styles.select_after}
     >
       <Option value='@pku.edu.cn'>@pku.edu.cn</Option>
@@ -81,229 +100,194 @@ class Register extends React.Component<Iprops, any> {
     </Select>
   );
 
-  public toggleForm = () => {
-    this.props.switchform('login');
-  };
-
-  handleUsrName = (event: any) => {
+  function handleUsrName(event: any) {
     if (event && event.target && event.target.value) {
       let value = event.target.value;
-      this.setState(() => ({ usrname: value }));
+      setUserName(value);
     }
-  };
-
-  handlePassWord = (event: any) => {
-    if (event && event.target && event.target.value) {
-      let value = event.target.value;
-      this.setState(() => ({ password: value }));
-    }
-  };
-
-  handleEmail = (event: any) => {
-    if (event && event.target && event.target.value) {
-      let value = event.target.value;
-      this.setState(() => ({ email: value }));
-    }
-  };
-
-  SendCode() {
-    let maxTime = 60;
-    const timer = setInterval(() => {
-      if (maxTime > 0) {
-        --maxTime;
-        this.setState({
-          btnText: '重新获取' + maxTime,
-          btnBool: true,
-        });
-      } else {
-        this.setState({
-          btnText: '发送验证码',
-          btnBool: false,
-        });
-      }
-    }, 1000);
   }
 
-  onFinish = async (values: any) => {
+  function handlePassWord(event: any) {
+    if (event && event.target && event.target.value) {
+      let value = event.target.value;
+      setPassWord(value);
+    }
+  }
+
+  function handleEmail(event: any) {
+    if (event && event.target && event.target.value) {
+      let value = event.target.value;
+      setEmail(value);
+    }
+  }
+
+  async function onFinish() {
     const data = {
-      username: values.username,
-      password: CryptoJS.MD5(values.password).toString(),
-      email: `${values.email}@mails.tsinghua.edu.cn`,
-      code: values.code,
+      username: userName,
+      password: passWord,
+      email: email,
+      verification_code: 1234,
     };
     try {
-      const res = await axios.post(`${Config.url1}/users/sign-up`, data);
+      const res = await axios.post(
+        `${process.env.NEXT_PUBLIC_BASEURL}/6381347`,
+        data
+      );
       message.success('注册成功');
-      window.location.href = './home';
+      window.location.href = '../login';
     } catch (e) {
-      message.error('注册失败');
+      message.error('登陆失败');
+      alert(e);
     }
-  };
+  }
 
-  sendCode = () => {};
-
-  render() {
-    return (
-      <div className={styles.background}>
-        <div className={styles.container}>
-          <div className={styles.header}>
-            <h4 className={styles.column}>注册</h4>
-          </div>
-          <div className={styles.content}>
-            <Form name='register' onFinish={this.onFinish}>
-              <Form.Item
-                name='username'
-                rules={[{ required: true, message: '请输入你的用户名!' }]}
-                className={styles.formStyle}
+  return (
+    <div className={styles.background}>
+      <div className={styles.container}>
+        <div className={styles.header}>
+          <h4 className={styles.column}>注册</h4>
+        </div>
+        <div className={styles.content}>
+          <Form name='register' onFinish={onFinish}>
+            <Form.Item
+              name='username'
+              rules={[
+                { required: true, message: 'Please input your Username!' },
+              ]}
+              className={styles.formStyle}
+            >
+              <Row>
+                <Col span={6}>用户名：</Col>
+                <Col span={18}>
+                  <Input
+                    placeholder='Username'
+                    onChange={(event) => handleUsrName(event)}
+                    className={styles.inputBox}
+                  />
+                </Col>
+              </Row>
+            </Form.Item>
+            <Form.Item
+              name='password'
+              rules={[
+                { required: true, message: 'Please input your password!' },
+                ({ getFieldValue }) => ({
+                  validator(role, value) {
+                    let password_value = getFieldValue('password_confirm');
+                    if (password_value && value !== password_value)
+                      return Promise.reject('两次输入的密码不一致');
+                    return Promise.resolve();
+                  },
+                }),
+              ]}
+              className={styles.formStyle}
+            >
+              <Row>
+                <Col span={6}>密码:</Col>
+                <Col span={18}>
+                  <Input.Password
+                    placeholder='password'
+                    onChange={(event) => handlePassWord(event)}
+                    className={styles.inputBox}
+                  />
+                </Col>
+              </Row>
+            </Form.Item>
+            <Form.Item
+              name='password_confirm'
+              rules={[
+                { required: true, message: 'Please input your password!' },
+              ]}
+              className={styles.formStyle}
+            >
+              <Row>
+                <Col span={6}>确认密码:</Col>
+                <Col span={18}>
+                  <Input.Password
+                    placeholder='password'
+                    className={styles.inputBox}
+                  />
+                </Col>
+              </Row>
+            </Form.Item>
+            <Form.Item
+              name='email'
+              rules={[
+                {
+                  required: true,
+                  message: 'Please input a valid email address!',
+                },
+                {
+                  pattern: /^[0-9a-z-A-Z-]{1,}$/,
+                  message:
+                    "the address should only contains letters, numbers and '-'",
+                },
+              ]}
+              className={styles.formStyle}
+            >
+              <Row>
+                <Col span={6}>邮箱:</Col>
+                <Col span={18}>
+                  <Input
+                    addonAfter={selectAfter}
+                    onChange={(event) => handleEmail(event)}
+                    className={styles.inputBox}
+                  />
+                </Col>
+              </Row>
+            </Form.Item>
+            <Form.Item>
+              <Row>
+                <Col span={6}>邮箱验证码:</Col>
+                <Col span={12}>
+                  <Input />
+                </Col>
+                <Col span={6}>
+                  <Button
+                    type='primary'
+                    className={styles.send}
+                    disabled={counting ? true : false}
+                    block
+                    onClick={sendCode}
+                  >
+                    {counting ? count + '秒后重发' : '获取验证码'}
+                  </Button>
+                </Col>
+              </Row>
+            </Form.Item>
+            <Form.Item
+              name='agreement'
+              valuePropName='checked'
+              rules={[
+                {
+                  validator: (_, value) =>
+                    value
+                      ? Promise.resolve()
+                      : Promise.reject(new Error('Should accept agreement')),
+                },
+              ]}
+              {...tailFormItemLayout}
+            >
+              <Checkbox>
+                注册即代表同意 <a href=''>服务条款</a>
+              </Checkbox>
+            </Form.Item>
+            <Form.Item>
+              <Button
+                type='primary'
+                htmlType='submit'
+                className='login-form-button'
+                block
               >
-                <Row>
-                  <Col span={6}>用户名：</Col>
-                  <Col span={18}>
-                    <Input
-                      placeholder='Username'
-                      onChange={(event) => this.handleUsrName(event)}
-                      className={styles.inputBox}
-                    />
-                  </Col>
-                </Row>
-              </Form.Item>
-              <Form.Item
-                name='password'
-                rules={[
-                  {
-                    required: true,
-                    message: '请在此输入你的密码!',
-                  },
-                  {
-                    pattern: validate_password,
-                    message: '请输入字母和数字的6到20位组合',
-                  },
-                ]}
-                hasFeedback
-                className={styles.formStyle}
-              >
-                <Row>
-                  <Col span={6}>密码:</Col>
-                  <Col span={18}>
-                    <Input.Password
-                      placeholder='password'
-                      onChange={(event) => this.handlePassWord(event)}
-                      className={styles.inputBox}
-                    />
-                  </Col>
-                </Row>
-              </Form.Item>
-              <Form.Item
-                name='password_confirm'
-                hasFeedback
-                rules={[
-                  {
-                    required: true,
-                    message: '请再次确认你的密码',
-                  },
-                  ({ getFieldValue }) => ({
-                    validator(_, value) {
-                      if (!value || getFieldValue('password') === value) {
-                        return Promise.resolve();
-                      }
-
-                      return Promise.reject(new Error('两次密码不一致'));
-                    },
-                  }),
-                ]}
-                className={styles.formStyle}
-              >
-                <Row>
-                  <Col span={6}>确认密码:</Col>
-                  <Col span={18}>
-                    <Input.Password
-                      placeholder='password'
-                      className={styles.inputBox}
-                    />
-                  </Col>
-                </Row>
-              </Form.Item>
-
-              <Form.Item
-                name='email'
-                rules={[
-                  {
-                    required: true,
-                    message: '请输入有效的邮箱',
-                  },
-                  {
-                    pattern: /^[0-9a-z-A-Z-]{1,}$/,
-                    message: '只包含字母，数组和-',
-                  },
-                ]}
-                className={styles.formStyle}
-              >
-                <Row>
-                  <Col span={6}>邮箱:</Col>
-                  <Col span={18}>
-                    <Input
-                      addonAfter={this.selectAfter}
-                      onChange={(event) => this.handleEmail(event)}
-                      className={styles.inputBox}
-                    />
-                  </Col>
-                </Row>
-              </Form.Item>
-              <Form.Item name='code'>
-                <Row>
-                  <Col span={6}>邮箱验证码:</Col>
-                  <Col span={12}>
-                    <Input />
-                  </Col>
-                  <Col span={6}>
-                    <Button
-                      type='primary'
-                      onClick={this.SendCode.bind(this)}
-                      disabled={this.state.btnBool}
-                    >
-                      {this.state.btnText}
-                    </Button>
-                  </Col>
-                </Row>
-              </Form.Item>
-
-              <Form.Item
-                name='agreement'
-                valuePropName='checked'
-                rules={[
-                  {
-                    validator: (_, value) =>
-                      value
-                        ? Promise.resolve()
-                        : Promise.reject(new Error('请同意服务条款')),
-                  },
-                ]}
-                {...tailFormItemLayout}
-              >
-                <Checkbox>
-                  注册即代表同意 <a href=''>服务条款</a>
-                </Checkbox>
-              </Form.Item>
-
-              <Form.Item>
-                <Button
-                  type='primary'
-                  htmlType='submit'
-                  className='login-form-button'
-                  block
-                >
-                  Register
-                </Button>
-              </Form.Item>
-              <h4>
-                或即刻 <a onClick={this.toggleForm}> 登录</a>
-              </h4>
-            </Form>
-          </div>
+                Register
+              </Button>
+            </Form.Item>
+          </Form>
         </div>
       </div>
-    );
-  }
+      <div className={styles.tailer}>
+        已有帐号？<a href=''>现在登录</a>
+      </div>
+    </div>
+  );
 }
-
-export default Register;
