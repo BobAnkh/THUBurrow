@@ -6,7 +6,7 @@ use futures::TryStreamExt;
 use lazy_static::lazy_static;
 use pulsar::{Consumer, Pulsar, SubType, TokioExecutor};
 use sea_orm::sea_query::Expr;
-use sea_orm::{entity::*, PaginatorTrait, QueryOrder};
+use sea_orm::{entity::*, ConnectionTrait, DbErr, PaginatorTrait, QueryOrder};
 use sea_orm::{Database, DatabaseConnection, QueryFilter};
 use serde_json::json;
 use std::collections::HashMap;
@@ -421,18 +421,27 @@ async fn pulsar_relation() -> Result<(), pulsar::Error> {
                     uid: Set(uid),
                     post_id: Set(post_id),
                 };
-                match like.insert(&db).await {
-                    Ok(_) => {
-                        println!("insert like success");
-                        let _ = ContentPost::update_many()
-                            .col_expr(
-                                content_post::Column::LikeNum,
-                                Expr::col(content_post::Column::LikeNum).add(1),
-                            )
-                            .filter(content_post::Column::PostId.eq(post_id))
-                            .exec(&db)
-                            .await;
-                    }
+                match db
+                    .transaction::<_, (), DbErr>(|txn| {
+                        Box::pin(async move {
+                            like.insert(txn).await?;
+                            let update_res = ContentPost::update_many()
+                                .col_expr(
+                                    content_post::Column::LikeNum,
+                                    Expr::col(content_post::Column::LikeNum).add(1),
+                                )
+                                .filter(content_post::Column::PostId.eq(post_id))
+                                .exec(txn)
+                                .await?;
+                            if update_res.rows_affected != 1 {
+                                return Err(DbErr::RecordNotFound("post not found".to_string()));
+                            }
+                            Ok(())
+                        })
+                    })
+                    .await
+                {
+                    Ok(_) => println!("insert like success"),
                     Err(e) => println!("insert like failed {:?}", e),
                 }
             }
@@ -464,18 +473,27 @@ async fn pulsar_relation() -> Result<(), pulsar::Error> {
                     post_id: Set(post_id),
                     ..Default::default()
                 };
-                match collection.insert(&db).await {
-                    Ok(_) => {
-                        println!("insert collection success");
-                        let _ = ContentPost::update_many()
-                            .col_expr(
-                                content_post::Column::CollectionNum,
-                                Expr::col(content_post::Column::CollectionNum).add(1),
-                            )
-                            .filter(content_post::Column::PostId.eq(post_id))
-                            .exec(&db)
-                            .await;
-                    }
+                match db
+                    .transaction::<_, (), DbErr>(|txn| {
+                        Box::pin(async move {
+                            collection.insert(txn).await?;
+                            let update_res = ContentPost::update_many()
+                                .col_expr(
+                                    content_post::Column::CollectionNum,
+                                    Expr::col(content_post::Column::CollectionNum).add(1),
+                                )
+                                .filter(content_post::Column::PostId.eq(post_id))
+                                .exec(txn)
+                                .await?;
+                            if update_res.rows_affected != 1 {
+                                return Err(DbErr::RecordNotFound("post not found".to_string()));
+                            }
+                            Ok(())
+                        })
+                    })
+                    .await
+                {
+                    Ok(_) => println!("insert collection success"),
                     Err(e) => println!("insert collection failed {:?}", e),
                 }
             }
@@ -508,10 +526,20 @@ async fn pulsar_relation() -> Result<(), pulsar::Error> {
                     burrow_id: Set(burrow_id),
                     ..Default::default()
                 };
-                match follow.insert(&db).await {
-                    Ok(_) => {
-                        println!("insert follow success");
-                    }
+                match db
+                    .transaction::<_, (), DbErr>(|txn| {
+                        Box::pin(async move {
+                            follow.insert(txn).await?;
+                            let res = Burrow::find_by_id(burrow_id).one(txn).await?;
+                            match res {
+                                Some(_) => Ok(()),
+                                None => Err(DbErr::RecordNotFound("burrow not found".to_string())),
+                            }
+                        })
+                    })
+                    .await
+                {
+                    Ok(_) => println!("insert follow success"),
                     Err(e) => println!("insert follow failed {:?}", e),
                 }
             }
