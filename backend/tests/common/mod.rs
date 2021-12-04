@@ -1,5 +1,5 @@
-use rocket::local::blocking::Client;
 use once_cell::sync::OnceCell;
+use rocket::local::blocking::Client;
 use std::sync::Mutex;
 
 pub fn get_client() -> &'static Mutex<Client> {

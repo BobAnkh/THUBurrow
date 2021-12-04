@@ -129,7 +129,7 @@ fn test_burrow() {
             "title": "Burrow 2"}))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
-    assert_eq!(response.status() == Status::Forbidden|| status_1, true);
+    assert_eq!(response.status() == Status::Forbidden || status_1, true);
     println!("{}", response.into_string().unwrap());
 
     std::thread::sleep(std::time::Duration::from_secs(5));
