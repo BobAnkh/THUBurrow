@@ -1,5 +1,5 @@
-use tokio::time::Duration;
 use backend::utils::mq::*;
+use tokio::time::Duration;
 
 #[tokio::main]
 async fn main() {
@@ -13,4 +13,3 @@ async fn main() {
     futures::future::join_all(scheduler).await;
     std::thread::sleep(Duration::from_millis(1000));
 }
-
