@@ -4,23 +4,23 @@ use rand::{thread_rng, Rng};
 use rocket::http::Status;
 use serde_json::json;
 
-#[test]
-fn test_connected() {
-    let client = common::get_client();
-    let client = client.lock().unwrap();
+#[rocket::async_test]
+async fn test_connected() {
+    let client = common::get_client().await;
+    // let client = client.lock().unwrap();
     let response = client
         .get("/health")
         .remote("127.0.0.1:8000".parse().unwrap())
-        .dispatch();
+        .dispatch()
+        .await;
     assert_eq!(response.status(), Status::Ok);
     // println!("{}", response.into_string().unwrap());
-    assert_eq!(response.into_string().unwrap(), "Ok");
+    assert_eq!(response.into_string().await.unwrap(), "Ok");
 }
 
-#[test]
-fn test_signup() {
-    let client = common::get_client();
-    let client = client.lock().unwrap();
+#[rocket::async_test]
+async fn test_signup() {
+    let client = common::get_client().await;
     let name: String = std::iter::repeat(())
         .map(|()| thread_rng().sample(Alphanumeric))
         .map(char::from)
@@ -33,9 +33,9 @@ fn test_signup() {
             "password": "testpassword",
             "email": format!("{}@mails.tsinghua.edu.cn", name)}))
         .remote("127.0.0.1:8000".parse().unwrap())
-        .dispatch();
+        .dispatch().await;
     assert_eq!(response.status(), Status::Ok);
-    println!("{}", response.into_string().unwrap());
+    println!("{}", response.into_string().await.unwrap());
     let response = client
         .post("/users/sign-up")
         .json(&json!({
@@ -43,15 +43,14 @@ fn test_signup() {
             "password": "testpassword",
             "email": format!("{}@mails.tsinghua.edu.cn", name)}))
         .remote("127.0.0.1:8000".parse().unwrap())
-        .dispatch();
+        .dispatch().await;
     assert_eq!(response.status(), Status::BadRequest);
-    println!("{}", response.into_string().unwrap());
+    println!("{}", response.into_string().await.unwrap());
 }
 
-#[test]
-fn test_login_signup() {
-    let client = common::get_client();
-    let client = client.lock().unwrap();
+#[rocket::async_test]
+async fn test_login_signup() {
+    let client = common::get_client().await;
     let name: String = std::iter::repeat(())
         .map(|()| thread_rng().sample(Alphanumeric))
         .map(char::from)
@@ -64,25 +63,24 @@ fn test_login_signup() {
             "password": "testpassword",
             "email": format!("{}@mails.tsinghua.edu.cn", name)}))
         .remote("127.0.0.1:8000".parse().unwrap())
-        .dispatch();
+        .dispatch().await;
     assert_eq!(response.status(), Status::Ok);
-    println!("{}", response.into_string().unwrap());
+    println!("{}", response.into_string().await.unwrap());
     let response = client
         .post("/users/login")
         .json(&json!({
             "username": format!("{}", name),
             "password": "testpassword"}))
         .remote("127.0.0.1:8000".parse().unwrap())
-        .dispatch();
+        .dispatch().await;
     assert_eq!(response.status(), Status::Ok);
-    println!("{}", response.into_string().unwrap());
+    println!("{}", response.into_string().await.unwrap());
 }
 
-#[test]
-fn test_burrow() {
+#[rocket::async_test]
+async fn test_burrow() {
     // get the client
-    let client = common::get_client();
-    let client = client.lock().unwrap();
+    let client = common::get_client().await;
     // generate a random name
     let name: String = std::iter::repeat(())
         .map(|()| thread_rng().sample(Alphanumeric))
@@ -98,10 +96,10 @@ fn test_burrow() {
             "password": "testpassword",
             "email": format!("{}@mails.tsinghua.edu.cn", name)}))
         .remote("127.0.0.1:8000".parse().unwrap())
-        .dispatch();
+        .dispatch().await;
     assert_eq!(response.status(), Status::Ok);
     let res = response
-        .into_json::<backend::req::user::UserResponse>()
+        .into_json::<backend::req::user::UserResponse>().await
         .unwrap();
     let burrow_id = res.default_burrow;
 
@@ -112,7 +110,7 @@ fn test_burrow() {
             "username": format!("{}", name),
             "password": "testpassword"}))
         .remote("127.0.0.1:8000".parse().unwrap())
-        .dispatch();
+        .dispatch().await;
     assert_eq!(response.status(), Status::Ok);
     // println!("{}", response.into_string().unwrap());
 
@@ -132,9 +130,9 @@ fn test_burrow() {
             "description": format!("Second burrow of {}", name),
             "title": "Burrow 2"}))
         .remote("127.0.0.1:8000".parse().unwrap())
-        .dispatch();
+        .dispatch().await;
     assert_eq!(response.status(), Status::Forbidden);
-    println!("{}", response.into_string().unwrap());
+    println!("{}", response.into_string().await.unwrap());
 
     std::thread::sleep(std::time::Duration::from_secs(5));
 
@@ -143,9 +141,9 @@ fn test_burrow() {
         .post("/users/relation")
         .json(&json!({ "ActivateFollow": burrow_id }))
         .remote("127.0.0.1:8000".parse().unwrap())
-        .dispatch();
+        .dispatch().await;
     assert_eq!(response.status(), Status::Ok);
-    println!("{:?}", response.into_string());
+    println!("{:?}", response.into_string().await);
 
     // create burrow: perform a correct action
     let response = client
@@ -154,11 +152,11 @@ fn test_burrow() {
             "description": format!("Third burrow of {}", name),
             "title": "Burrow 3"}))
         .remote("127.0.0.1:8000".parse().unwrap())
-        .dispatch();
+        .dispatch().await;
     assert_eq!(response.status(), Status::Ok);
     // println!("{}", response.into_string().unwrap());
     let res = response
-        .into_json::<backend::req::burrow::BurrowCreateResponse>()
+        .into_json::<backend::req::burrow::BurrowCreateResponse>().await
         .unwrap();
     let burrow_id = res.burrow_id;
     println!("Burrow Id: {}", burrow_id);
@@ -168,15 +166,15 @@ fn test_burrow() {
         .post("/users/relation")
         .json(&json!({ "ActivateFollow": burrow_id }))
         .remote("127.0.0.1:8000".parse().unwrap())
-        .dispatch();
+        .dispatch().await;
     assert_eq!(response.status(), Status::Ok);
-    println!("{:?}", response.into_string());
+    println!("{:?}", response.into_string().await);
 
     // show burrow
     let response = client
         .get(format!("/burrows/{}", burrow_id))
         .remote("127.0.0.1:8000".parse().unwrap())
-        .dispatch();
+        .dispatch().await;
     assert_eq!(response.status(), Status::Ok);
     println!("{}", response.into_string().unwrap());
     // show burrow: perform a wrong action
@@ -194,7 +192,7 @@ fn test_burrow() {
             "description": format!("New Third burrow of {}", name),
             "title": "New Burrow 3"}))
         .remote("127.0.0.1:8000".parse().unwrap())
-        .dispatch();
+        .dispatch().await;
     assert_eq!(response.status(), Status::Ok);
     // update burrow: perform a wrong action (missing burrow title)
     let response = client
@@ -210,31 +208,31 @@ fn test_burrow() {
     let response = client
         .get(format!("/burrows/{}", burrow_id))
         .remote("127.0.0.1:8000".parse().unwrap())
-        .dispatch();
+        .dispatch().await;
     assert_eq!(response.status(), Status::Ok);
-    println!("{}", response.into_string().unwrap());
+    println!("{}", response.into_string().await.unwrap());
 
     // get burrow of a user
     let response = client
         .get("/users/burrow")
         .remote("127.0.0.1:8000".parse().unwrap())
-        .dispatch();
+        .dispatch().await;
     assert_eq!(response.status(), Status::Ok);
-    println!("{}", response.into_string().unwrap());
+    println!("{}", response.into_string().await.unwrap());
 
     // get following burrows of a user
     let response = client
         .get("/users/follow")
         .remote("127.0.0.1:8000".parse().unwrap())
-        .dispatch();
+        .dispatch().await;
     assert_eq!(response.status(), Status::Ok);
-    println!("{}", response.into_string().unwrap());
+    println!("{}", response.into_string().await.unwrap());
 
     // delete burrow
     let response = client
         .delete(format!("/burrows/{}", burrow_id))
         .remote("127.0.0.1:8000".parse().unwrap())
-        .dispatch();
+        .dispatch().await;
     assert_eq!(response.status(), Status::Ok);
     println!("{:?}", response.into_string());
 
