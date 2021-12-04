@@ -53,36 +53,30 @@ export default function Register({ switchform }: Iprops) {
   const [passWord, setPassWord] = useState('');
   const [email, setEmail] = useState('');
   const [suffix, setSuffix] = useState('@mails.tsinghua.edu.cn');
-  const [count, setCount] = useState(1);
+  const [count, setCount] = useState(5);
   const [counting, setCounting] = useState(false);
 
-  useEffect(() => {
-    if (count === 1) {
-      clearInterval(timer);
-      setCounting(false);
-    } else {
-      console.log('you enter countDown', count);
-      setCounting(true);
-    }
-  });
+  //   useEffect(() => {
+  //     if (count === 1) {
+  //       clearInterval(timer);
+  //       setCounting(false);
+  //     } else {
+  //       console.log('you enter countDown', count);
+  //       setCounting(true);
+  //     }
+  //   });
 
-  useEffect(() => {
-    clearInterval(timer);
-    return () => clearInterval(timer);
-  });
+  //   useEffect(() => {
+  //     clearInterval(timer);
+  //     return () => clearInterval(timer);
+  //   });
 
-  let timer = setInterval(() => setCount((t) => --t), 1000);
+  //   let timer = setInterval(() => setCount((t) => --t), 1000);
 
-  function sendCode() {
-    console.log('This is :', userName, passWord, email + suffix);
-    setCounting(!counting);
-    setCount(5);
-    console.log('test :', counting, count);
-    updateTimer();
-  }
+  function sendCode() {}
 
   function updateTimer() {
-    timer = setInterval(() => setCount((t) => --t), 1000);
+    // timer = setInterval(() => setCount((t) => --t), 1000);
   }
 
   function handleSuffix(value: any) {
