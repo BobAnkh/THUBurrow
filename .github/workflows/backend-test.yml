@@ -38,7 +38,7 @@ jobs:
         run: docker-compose -f docker-compose-dev.yml up -d
       - name: run backend consumer
         run: |
-          cargo install tarpaulin
+          cargo install cargo-tarpaulin
           cargo build
           cargo run --bin consumer &
       - name: cargo test
