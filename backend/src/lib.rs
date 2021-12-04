@@ -32,6 +32,11 @@ pub fn rocket_init() -> Rocket<Build> {
     log_init();
     utils::id_gen::init(1);
     let cors_handler = utils::cors::init();
+    let _ = vec![tokio::spawn(utils::mq::generate_trending())];
+    let _ = vec![
+        tokio::spawn(utils::mq::pulsar_relation()),
+        tokio::spawn(utils::mq::pulsar_typesense()),
+    ];
     rocket::build()
         .attach(cors_handler)
         .attach(pool::PgDb::init())

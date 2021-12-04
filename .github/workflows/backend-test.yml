@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./backend
+        working-directory: backend
 
     steps:
       - name: Checkout
@@ -27,9 +27,33 @@ jobs:
             toolchain: nightly-2021-11-18
             override: true
             components: rustfmt, clippy
+      - name: deal with rust cache
+        uses: Swatinem/rust-cache@v1
+        with:
+          working-directory: backend
+      - name: Add containers
+        run: docker-compose -f docker-compose-dev.yml up -d
+      - name: cargo test
+        run: cargo test --no-fail-fast --verbose -- --nocapture
+      - name: remove containers
+        run: docker-compose -f docker-compose-dev.yml down && sudo rm -rf data    
 
-      # `cargo check` command here will use installed `nightly`
-      # as it is set as an "override" for current directory
+  coverage-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Install latest nightly
+        uses: actions-rs/toolchain@v1
+        with:
+            toolchain: nightly-2021-11-18
+            override: true
+            components: rustfmt, clippy
       - name: deal with rust cache
         uses: Swatinem/rust-cache@v1
         with:
@@ -39,17 +63,14 @@ jobs:
       - name: run backend consumer
         run: |
           cargo install cargo-tarpaulin
-          cargo build
-          cargo run --bin consumer &
-      - name: cargo test
-        run: cargo test --no-fail-fast --verbose -- --nocapture
       - name: Generate code coverage
-        if: ${{ success() }}
         run: |
-          cargo tarpaulin --verbose --timeout 300 --out Xml
+          cargo install cargo-tarpaulin
+          cargo tarpaulin --all-features --no-fail-fast --skip-clean --verbose --timeout 300 --out Xml
       - name: remove containers
         run: docker-compose -f docker-compose-dev.yml down && sudo rm -rf data    
       - name: Upload to codecov.io
         uses: codecov/codecov-action@v2
         if: ${{ success() }}
-        
+        with:
+          directory: backend
