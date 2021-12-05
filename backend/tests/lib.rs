@@ -248,7 +248,7 @@ fn test_burrow() {
             "title": "Burrow 6"}))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
-    assert_eq!(response.status(), Status::BadRequest);
+    assert_eq!(response.status(), Status::Forbidden);
     println!("Burrow Id: {}", response.into_string().unwrap());
 
     // show burrow
@@ -329,7 +329,7 @@ fn test_burrow() {
         .delete(format!("/burrows/{}", burrow_id))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
-    assert_eq!(response.status(), Status::BadRequest);
+    assert_eq!(response.status(), Status::Forbidden);
     println!("{}", response.into_string().unwrap());
 
     // update burrow: perform a wrong action (invalid burrow)
@@ -346,8 +346,7 @@ fn test_burrow() {
 #[test]
 fn test_content() {
     // get the client
-    let client = common::get_client();
-    let client = client.lock().unwrap();
+    let client = common::get_client().lock().unwrap();
     // generate a random name
     let name: String = std::iter::repeat(())
         .map(|()| thread_rng().sample(Alphanumeric))
@@ -417,7 +416,7 @@ fn test_content() {
         .json(&json!({
             "title": format!("Third post of {}", name),
             "burrow_id": burrow_id,
-            "section": [""],
+            "section": [],
             "tag": ["NoTag"],
             "content": "This is a test post no.3"}))
         .remote("127.0.0.1:8000".parse().unwrap())
@@ -449,7 +448,7 @@ fn test_content() {
     println!("{}", response.into_string().unwrap());
     // get post: perform a wrong action (post not exsit)
     let response = client
-        .get(format!("/content/post/{}", post_id))
+        .get(format!("/content/post/{}", post_id + 10))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::BadRequest);
@@ -464,3 +463,37 @@ fn test_content() {
     println!("{}", response.into_string().unwrap());
 
 }
+
+// #[test]
+// fn test_trending() {
+//     // get the client
+//     let client = common::get_client().lock().unwrap();
+//     // generate a random name
+//     let name: String = std::iter::repeat(())
+//         .map(|()| thread_rng().sample(Alphanumeric))
+//         .map(char::from)
+//         .take(16)
+//         .collect();
+
+//     // sign up a user
+//     let response = client
+//         .post("/users/sign-up")
+//         .json(&json!({
+//             "username": format!("{}", name),
+//             "password": "testpassword",
+//             "email": format!("{}@mails.tsinghua.edu.cn", name)}))
+//         .remote("127.0.0.1:8000".parse().unwrap())
+//         .dispatch();
+//     assert_eq!(response.status(), Status::Ok);
+
+//     // user login
+//     let response = client
+//         .post("/users/login")
+//         .json(&json!({
+//             "username": format!("{}", name),
+//             "password": "testpassword"}))
+//         .remote("127.0.0.1:8000".parse().unwrap())
+//         .dispatch();
+//     assert_eq!(response.status(), Status::Ok);
+//     // println!("{}", response.into_string().unwrap());
+// }
