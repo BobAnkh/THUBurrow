@@ -32,6 +32,8 @@ import axios from 'axios';
 import { useState } from 'react';
 
 const fakeDataUrl = `${process.env.NEXT_PUBLIC_BASEURL}/search`;
+axios.defaults.withCredentials = true;
+axios.defaults.headers.post['Content-Type'] = 'application/json';
 
 const { Option } = Select;
 const { Search } = Input;

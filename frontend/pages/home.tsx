@@ -24,6 +24,9 @@ import axios, { AxiosError } from 'axios';
 const { Header, Content, Footer } = Layout;
 const { TextArea } = Input;
 
+axios.defaults.withCredentials = true;
+axios.defaults.headers.post['Content-Type'] = 'application/json';
+
 const onFinish = async (values: any) => {
   const time = moment().format('YYYY-MM-DD HH:mm:ss');
   const data = {
@@ -44,7 +47,7 @@ const onFinish = async (values: any) => {
       { headers: { 'Content-Type': 'application/json' } }
     );
     const json = await res.data;
-    if (json.success === false) {
+    if (json.error) {
       message.error('发帖失败');
     } else {
       message.success('发帖成功');
@@ -52,6 +55,7 @@ const onFinish = async (values: any) => {
     }
   } catch (e) {
     message.error('发帖失败');
+    alert(e);
   }
 };
 
