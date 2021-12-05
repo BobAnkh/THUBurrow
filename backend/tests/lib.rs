@@ -6,7 +6,7 @@ use serde_json::json;
 
 #[test]
 fn test_connected() {
-    let client = common::get_client().lock().unwrap();
+    let client = common::get_client().lock();
     let response = client
         .get("/health")
         .remote("127.0.0.1:8000".parse().unwrap())
@@ -18,7 +18,7 @@ fn test_connected() {
 
 #[test]
 fn test_signup() {
-    let client = common::get_client().lock().unwrap();
+    let client = common::get_client().lock();
     let name: String = std::iter::repeat(())
         .map(|()| thread_rng().sample(Alphanumeric))
         .map(char::from)
@@ -72,7 +72,7 @@ fn test_signup() {
 
 #[test]
 fn test_login_signup() {
-    let client = common::get_client().lock().unwrap();
+    let client = common::get_client().lock();
     let name: String = std::iter::repeat(())
         .map(|()| thread_rng().sample(Alphanumeric))
         .map(char::from)
@@ -124,7 +124,7 @@ fn test_login_signup() {
 #[test]
 fn test_burrow() {
     // get the client
-    let client = common::get_client().lock().unwrap();
+    let client = common::get_client().lock();
     // generate a random name
     let name: String = std::iter::repeat(())
         .map(|()| thread_rng().sample(Alphanumeric))
@@ -346,8 +346,7 @@ fn test_burrow() {
 #[test]
 fn test_content() {
     // get the client
-    let client = common::get_client();
-    let client = client.lock().unwrap();
+    let client = common::get_client().lock();
     // generate a random name
     let name: String = std::iter::repeat(())
         .map(|()| thread_rng().sample(Alphanumeric))

@@ -446,6 +446,7 @@ dependencies = [
  "log",
  "log4rs",
  "once_cell",
+ "parking_lot",
  "pulsar",
  "rand 0.8.4",
  "redis",

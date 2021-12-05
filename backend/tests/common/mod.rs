@@ -1,6 +1,6 @@
 use once_cell::sync::OnceCell;
+use parking_lot::Mutex;
 use rocket::local::blocking::Client;
-use std::sync::Mutex;
 
 pub fn get_client() -> &'static Mutex<Client> {
     static INSTANCE: OnceCell<Mutex<Client>> = OnceCell::new();
