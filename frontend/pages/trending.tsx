@@ -114,7 +114,7 @@ const Trending: NextPage = () => {
           <Breadcrumb.Item>App</Breadcrumb.Item>
         </Breadcrumb>
         <Card>
-          <PostList listData={postList} postNum={50} setPage={setPage} />
+          <PostList listData={postList} setPage={setPage} />
         </Card>
       </Content>
       <Footer style={{ textAlign: 'center' }}>THUBurrow © 2021</Footer>

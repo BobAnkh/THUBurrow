@@ -41,7 +41,6 @@ const PostDetial: NextPage = () => {
   const [bid, setBid] = useState(1);
   const [pid, setPid] = useState(1);
   const [replyList, setReplyList] = useState();
-  const [postLen, setPostLen] = useState(0);
   const [title, setTitle] = useState('test');
   const [like, setLike] = useState(false);
   const [collection, setCollection] = useState(false);
@@ -53,7 +52,7 @@ const PostDetial: NextPage = () => {
     const fetchReplyList = async () => {
       try {
         const res = await axios.get(
-          `${process.env.NEXT_PUBLIC_BASEURL}/content/${pid}?page=${page}`,
+          `${process.env.NEXT_PUBLIC_BASEURL}/content/${pid}?page=${page - 1}`,
           {
             headers: { 'Content-Type': 'application/json' },
           }
@@ -61,7 +60,6 @@ const PostDetial: NextPage = () => {
         const replylist = res.data.post_page.reply_page;
         setBid(res.data.post_page.post_desc.burrow_id);
         setPid(res.data.post_page.post_desc.post_id);
-        setPostLen(res.data.post_page.post_desc.post_len);
         setTitle(res.data.post_page.post_desc.title);
         setLike(res.data.post_page.like);
         setCollection(res.data.post_page.collection);
@@ -248,7 +246,7 @@ const PostDetial: NextPage = () => {
           >
             {' ' + '收藏' + ' '}
           </Button>
-          <ReplyList listData={replyList} postLen={postLen} setPage={setPage} />
+          <ReplyList listData={replyList} setPage={setPage} />
           <Form
             labelCol={{ span: 5 }}
             wrapperCol={{ span: 14 }}
