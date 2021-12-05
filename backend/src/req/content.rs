@@ -8,7 +8,7 @@ pub static REPLY_PER_PAGE: usize = 20;
 
 #[derive(Serialize)]
 pub struct PostCreateResponse {
-    pub errors: Vec<String>,
+    pub errors: String,
     pub post_id: i64,
 }
 
@@ -30,12 +30,6 @@ pub struct ReplyUpdateResponse {
     pub errors: Vec<String>,
     pub post_id: i64,
     pub reply_id: i32,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct PostReadResponse {
-    pub errors: String,
-    pub post_page: Option<PostPage>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -152,6 +146,7 @@ pub struct Reply {
     pub reply_state: i32,
 }
 
+// TODO: According to post_state to determine whether the post is visible
 impl From<content_post::Model> for Post {
     fn from(post_info: content_post::Model) -> Post {
         Post {

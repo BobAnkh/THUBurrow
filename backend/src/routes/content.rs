@@ -5,7 +5,7 @@ use rocket::{Build, Rocket};
 use rocket_db_pools::Connection;
 
 use sea_orm::sea_query::Expr;
-use sea_orm::{entity::*, ActiveModelTrait, DbErr, QueryOrder};
+use sea_orm::{entity::*, ActiveModelTrait, ConnectionTrait, DbErr, QueryOrder};
 use sea_orm::{PaginatorTrait, QueryFilter};
 
 // use crate::db::user::Model;
@@ -14,6 +14,7 @@ use crate::pgdb::prelude::*;
 use crate::pool::PgDb;
 use crate::req::content::*;
 use crate::utils::auth::Auth;
+use crate::utils::burrow_valid::is_valid_burrow;
 
 use chrono::prelude::*;
 
@@ -38,122 +39,141 @@ pub async fn create_post(
     post_info: Json<PostInfo>,
 ) -> (Status, Json<PostCreateResponse>) {
     let pg_con = db.into_inner();
-    // create a response errors
-    let mut errors: Vec<String> = Vec::new();
     // get content info from request
     let content = post_info.into_inner();
     // check if title, author and section is empty
     if content.title.is_empty() {
-        errors.push("Empty Title".to_string());
-    }
-    if content.section.is_empty() {
-        errors.push("Empty Section".to_string());
-    }
-    match Burrow::find_by_id(content.burrow_id)
-        .one(&pg_con)
-        .await
-        .expect("cannot fetch content from pgdb")
-    {
-        None => {
-            errors.push("Burrow not exsits".to_string());
-        }
-        Some(burrow_info) => {
-            // check if this burrow_id belongs to the user
-            if burrow_info.uid != auth.id {
-                errors.push("Wrong user".to_string());
-            }
-            // check if burrow has been banned
-            if burrow_info.burrow_state == 1 {
-                errors.push("Burrow banned".to_string());
-            }
-            // check if the burrow_id is still valid
-            if burrow_info.burrow_state == 2 {
-                errors.push("Burrow discarded".to_string());
-            }
-        }
-    };
-    // check if user has been banned
-    match UserStatus::find_by_id(auth.id)
-        .one(&pg_con)
-        .await
-        .expect("cannot fetch content from pgdb")
-    {
-        None => {
-            errors.push("User not exsits".to_string());
-        }
-        Some(user_state_info) => {
-            if user_state_info.user_state == 1 {
-                errors.push("User banned".to_string());
-            }
-        }
-    };
-    if !errors.is_empty() {
-        (
+        return (
             Status::BadRequest,
             Json(PostCreateResponse {
-                errors,
+                errors: "Empty Title".to_string(),
                 post_id: -1,
             }),
-        )
-    } else {
-        // get timestamp
-        let now = Utc::now().with_timezone(&FixedOffset::east(8 * 3600));
-        // get tag string
-        let section = content.section.join(",");
-        let tag = content.tag.join(",");
-        // fill the row in content_subject
-        let content_post = pgdb::content_post::ActiveModel {
-            title: Set(content.title.to_string()),
-            burrow_id: Set(content.burrow_id),
-            create_time: Set(now.to_owned()),
-            update_time: Set(now.to_owned()),
-            section: Set(section),
-            tag: Set(tag),
-            ..Default::default()
-        };
-        // insert the row in database
-        let res1 = match content_post.insert(&pg_con).await {
-            Ok(res1) => res1,
-            Err(e) => {
-                errors.push(e.to_string());
-                return (
-                    Status::InternalServerError,
-                    Json(PostCreateResponse {
-                        errors,
-                        post_id: -1,
-                    }),
-                );
+        );
+    }
+    if content.section.is_empty() {
+        return (
+            Status::BadRequest,
+            Json(PostCreateResponse {
+                errors: "Empty Section".to_string(),
+                post_id: -1,
+            }),
+        );
+    }
+    // TODO: split section and check if it is valid
+    // check if user has been banned
+    match UserStatus::find_by_id(auth.id).one(&pg_con).await {
+        Ok(ust) => match ust {
+            None => (
+                Status::BadRequest,
+                Json(PostCreateResponse {
+                    errors: "User not exists".to_string(),
+                    post_id: -1,
+                }),
+            ),
+            Some(user_state_info) => {
+                if user_state_info.user_state != 0 {
+                    (
+                        Status::Forbidden,
+                        Json(PostCreateResponse {
+                            errors: "User invalid".to_string(),
+                            post_id: -1,
+                        }),
+                    )
+                } else if is_valid_burrow(&user_state_info.valid_burrow, &content.burrow_id) {
+                    match pg_con
+                        .transaction::<_, i64, DbErr>(|txn| {
+                            Box::pin(async move {
+                                // get timestamp
+                                let now = Utc::now().with_timezone(&FixedOffset::east(8 * 3600));
+                                // get tag string
+                                let section = content.section.join(",");
+                                let tag = content.tag.join(",");
+                                let content_post = pgdb::content_post::ActiveModel {
+                                    title: Set(content.title),
+                                    burrow_id: Set(content.burrow_id),
+                                    create_time: Set(now.to_owned()),
+                                    update_time: Set(now.to_owned()),
+                                    section: Set(section),
+                                    tag: Set(tag),
+                                    ..Default::default()
+                                };
+                                // insert the row in database
+                                let post_res = content_post.insert(txn).await?;
+                                let post_id = post_res.post_id.unwrap();
+                                log::info!("[CREATE-POST] create post: {}", post_id);
+                                // fill the row in content_reply
+                                let content_reply = pgdb::content_reply::ActiveModel {
+                                    post_id: Set(post_id),
+                                    reply_id: Set(0),
+                                    burrow_id: Set(content.burrow_id),
+                                    create_time: Set(now.to_owned()),
+                                    update_time: Set(now),
+                                    content: Set(content.content.to_string()),
+                                    ..Default::default()
+                                };
+                                let reply_res = content_reply.insert(txn).await?;
+                                log::info!(
+                                    "[CREATE-POST] add reply {}",
+                                    reply_res.reply_id.unwrap()
+                                );
+                                let update_res = Burrow::update_many()
+                                    .col_expr(
+                                        pgdb::burrow::Column::PostNum,
+                                        Expr::col(pgdb::burrow::Column::PostNum).add(1),
+                                    )
+                                    .filter(pgdb::burrow::Column::BurrowId.eq(content.burrow_id))
+                                    .exec(txn)
+                                    .await?;
+                                if update_res.rows_affected != 1 {
+                                    return Err(DbErr::RecordNotFound(
+                                        "burrow not found".to_string(),
+                                    ));
+                                }
+                                Ok(post_id)
+                            })
+                        })
+                        .await
+                    {
+                        Ok(post_id) => (
+                            Status::Ok,
+                            Json(PostCreateResponse {
+                                errors: String::new(),
+                                post_id,
+                            }),
+                        ),
+                        Err(e) => {
+                            log::error!("[CREATE-POST] Database error: {:?}", e);
+                            (
+                                Status::InternalServerError,
+                                Json(PostCreateResponse {
+                                    errors: String::new(),
+                                    post_id: -1,
+                                }),
+                            )
+                        }
+                    }
+                } else {
+                    (
+                        Status::Forbidden,
+                        Json(PostCreateResponse {
+                            errors: "Burrow invalid".to_string(),
+                            post_id: -1,
+                        }),
+                    )
+                }
             }
-        };
-        let post_id = res1.post_id.unwrap();
-        log::info!("create post: {}", post_id);
-        // fill the row in content_reply
-        let content_reply = pgdb::content_reply::ActiveModel {
-            post_id: Set(post_id),
-            reply_id: Set(0),
-            burrow_id: Set(content.burrow_id),
-            create_time: Set(now.to_owned()),
-            update_time: Set(now),
-            content: Set(content.content.to_string()),
-            ..Default::default()
-        };
-        // insert the row into database
-        let res2 = match content_reply.insert(&pg_con).await {
-            Ok(res2) => res2,
-            Err(e) => {
-                errors.push(e.to_string());
-                return (
-                    Status::InternalServerError,
-                    Json(PostCreateResponse {
-                        errors,
-                        post_id: -1,
-                    }),
-                );
-            }
-        };
-        log::info!("add reply {}", res2.reply_id.unwrap());
-        // return the response
-        (Status::Ok, Json(PostCreateResponse { errors, post_id }))
+        },
+        Err(e) => {
+            log::error!("[CREATE-POST] Database error: {:?}", e);
+            (
+                Status::InternalServerError,
+                Json(PostCreateResponse {
+                    errors: String::new(),
+                    post_id: -1,
+                }),
+            )
+        }
     }
 }
 
@@ -163,91 +183,68 @@ pub async fn read_post(
     db: Connection<PgDb>,
     post_id: i64,
     page: Option<usize>,
-) -> (Status, Json<PostReadResponse>) {
+) -> (Status, Result<Json<PostPage>, String>) {
     let pg_con = db.into_inner();
     let page = page.unwrap_or(0);
     // check if the post not exsits, add corresponding error if so
-    match ContentPost::find_by_id(post_id)
-        .one(&pg_con)
-        .await
-        .expect("cannot fetch content from pgdb")
-    {
-        None => (
-            Status::BadRequest,
-            Json(PostReadResponse {
-                errors: "Post not exsits".to_string(),
-                post_page: None,
-            }),
-        ),
-        Some(post_info) => {
-            let reply_pages = ContentReply::find()
-                .filter(pgdb::content_reply::Column::PostId.eq(post_id))
-                .order_by_asc(pgdb::content_reply::Column::ReplyId)
-                .paginate(&pg_con, REPLY_PER_PAGE);
-            let reply_info = match reply_pages.fetch_page(page).await {
-                Ok(reply_info) => reply_info,
-                Err(e) => {
-                    return (
-                        Status::InternalServerError,
-                        Json(PostReadResponse {
-                            errors: format!("{}", e),
-                            post_page: None,
-                        }),
-                    );
-                }
-            };
-            // get post metadata
-            let post_desc: Post = post_info.into();
-            let reply_page: Vec<Reply> = reply_info.iter().map(|r| r.into()).collect();
-            let collection;
-            // check if the user collect the post, if so, update the state is_update
-            let record = pgdb::user_collection::ActiveModel {
-                uid: Set(auth.id),
-                post_id: Set(post_id),
-                is_update: Set(false),
-            };
-            match record.update(&pg_con).await {
-                Ok(_) => {
-                    collection = true;
-                }
-                Err(e) => match e {
-                    DbErr::RecordNotFound(_) => {
-                        collection = false;
+    match ContentPost::find_by_id(post_id).one(&pg_con).await {
+        Ok(r) => match r {
+            None => (Status::BadRequest, Err("Post not exists".to_string())),
+            Some(post_info) => {
+                let reply_pages = ContentReply::find()
+                    .filter(pgdb::content_reply::Column::PostId.eq(post_id))
+                    .order_by_asc(pgdb::content_reply::Column::ReplyId)
+                    .paginate(&pg_con, REPLY_PER_PAGE);
+                let reply_info = match reply_pages.fetch_page(page).await {
+                    Ok(reply_info) => reply_info,
+                    Err(e) => {
+                        log::error!("[READ-POST] Database error: {:?}", e);
+                        return (Status::InternalServerError, Err(String::new()));
                     }
-                    _ => {
-                        return (
-                            Status::InternalServerError,
-                            Json(PostReadResponse {
-                                errors: format!("{}", e),
-                                post_page: None,
-                            }),
-                        );
+                };
+                // get post metadata
+                let post_desc: Post = post_info.into();
+                let reply_page: Vec<Reply> = reply_info.iter().map(|r| r.into()).collect();
+                // check if the user collect the post, if so, update the state is_update
+                let record = pgdb::user_collection::ActiveModel {
+                    uid: Set(auth.id),
+                    post_id: Set(post_id),
+                    is_update: Set(false),
+                };
+                let collection = match record.update(&pg_con).await {
+                    Ok(_) => true,
+                    Err(e) => match e {
+                        DbErr::RecordNotFound(_) => false,
+                        _ => {
+                            log::error!("[READ-POST] Database error: {:?}", e);
+                            return (Status::InternalServerError, Err(String::new()));
+                        }
+                    },
+                };
+                // check if the user like the post
+                let like = match UserLike::find_by_id((auth.id, post_id)).one(&pg_con).await {
+                    Ok(user_like) => user_like.is_some(),
+                    Err(e) => {
+                        error!("[READ-POST] Database Error: {:?}", e.to_string());
+                        false
                     }
-                },
-            };
-            // check if the user like the post
-            let like = match UserLike::find_by_id((auth.id, post_id)).one(&pg_con).await {
-                Ok(user_like) => user_like.is_some(),
-                Err(e) => {
-                    error!("[GET-BURROW] Database Error: {:?}", e.to_string());
-                    false
-                }
-            };
-            let post_page = PostPage {
-                post_desc,
-                reply_page,
-                page,
-                like,
-                collection,
-            };
-            // return the response
-            (
-                Status::Ok,
-                Json(PostReadResponse {
-                    errors: "".to_string(),
-                    post_page: Some(post_page),
-                }),
-            )
+                };
+                // return the response
+                (
+                    Status::Ok,
+                    Ok(Json(PostPage {
+                        post_desc,
+                        reply_page,
+                        page,
+                        like,
+                        collection,
+                    })),
+                )
+            }
+        },
+        Err(e) => {
+            log::error!("[READ-POST] Database error: {:?}", e);
+            (Status::InternalServerError, Err(String::new()))
         }
     }
 }

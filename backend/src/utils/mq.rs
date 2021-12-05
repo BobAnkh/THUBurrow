@@ -134,26 +134,6 @@ lazy_static! {
     };
 }
 
-// fn log_init() {
-//     match log4rs::init_file("conf/log4rs.yml", Default::default()) {
-//         Ok(_) => (),
-//         Err(e) => panic!("Error initial logger: {}", e),
-//     }
-// }
-
-// #[tokio::main]
-// async fn main() {
-//     // log_init();
-//     let scheduler = vec![tokio::spawn(generate_trending())];
-//     let handles = vec![
-//         tokio::spawn(pulsar_relation()),
-//         tokio::spawn(pulsar_typesense()),
-//     ];
-//     futures::future::join_all(handles).await;
-//     futures::future::join_all(scheduler).await;
-//     std::thread::sleep(Duration::from_millis(1000));
-// }
-
 pub async fn create_typesense_collections() -> Result<(), reqwest::Error> {
     //create typesense collections
     let collection_burrows = json!({
