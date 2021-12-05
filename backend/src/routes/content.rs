@@ -60,7 +60,7 @@ pub async fn create_post(
             }),
         );
     }
-    // TODO: split section and check if it is valid
+    // TODO: check if section is valid
     // check if user has been banned
     match UserStatus::find_by_id(auth.id).one(&pg_con).await {
         Ok(ust) => match ust {
