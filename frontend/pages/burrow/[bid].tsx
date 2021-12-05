@@ -20,8 +20,7 @@ import { MessageOutlined, LikeOutlined, StarOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/router';
 import moment from 'moment';
 import 'antd/dist/antd.css';
-import { TYPES } from '@babel/types';
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 
 const { Header, Content, Footer } = Layout;
 const { TextArea } = Input;
@@ -47,12 +46,15 @@ const onFinish = async (values: any) => {
     tag3: 'le',
   };
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_BASEURL}/content/post`, {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-    const json = await res.json();
-    if (json.success === false) {
+    const res = await axios.post(
+      `${process.env.NEXT_PUBLIC_BASEURL}/content/post`,
+      {
+        ...data,
+      },
+      { headers: { 'Content-Type': 'application/json' } }
+    );
+    const json = await res.data;
+    if (json.error) {
       message.error('发帖失败');
     } else {
       message.success('发帖成功');
@@ -85,22 +87,28 @@ const Burrow: NextPage = () => {
   const site = router.pathname.split('/')[1];
 
   useEffect(() => {
-    const fetchListData = async () => {
-      const res = await axios.get(
-        `${process.env.NEXT_PUBLIC_BASEURL}/${bid}?page=${page - 1}`
-      );
-      if (res.status === 401) {
-        message.info('请先登录！');
-        router.push('/login');
-      } else {
+    try {
+      const fetchListData = async () => {
+        const res = await axios.get(
+          `${process.env.NEXT_PUBLIC_BASEURL}/${bid}?page=${page - 1}`
+        );
         const postlist = await res.data;
         setListData(postlist.posts);
         setDescription(postlist.description);
         setBurrowTitle(postlist.title);
         setIsHost(postlist.isHost);
-      }
-    };
-    fetchListData();
+      };
+      fetchListData();
+    } catch (e) {
+      const err = e as AxiosError;
+      if (err.response?.status === 400) {
+        message.info('请先登录！');
+        router.push('/login');
+      } else if (err.response?.status === 500) {
+        message.info('服务器错误！');
+        router.push('/404');
+    }
+    }
   }, [router, page]);
 
   const EditIntro = () => {
