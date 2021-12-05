@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { NextPage, GetStaticProps } from 'next';
-import { HeartTwoTone, LikeTwoTone } from '@ant-design/icons';
+import { StarTwoTone, LikeTwoTone } from '@ant-design/icons';
 import styles from './burrow.module.css';
 
 import {
@@ -21,6 +21,7 @@ import { useRouter } from 'next/router';
 import moment from 'moment';
 import 'antd/dist/antd.css';
 import axios, { AxiosError } from 'axios';
+import { TYPES } from '@babel/types';
 
 const { Header, Content, Footer } = Layout;
 const { TextArea } = Input;
@@ -71,6 +72,11 @@ const onFinishFailed = (errorInfo: any) => {
 };
 
 const Burrow: NextPage = () => {
+  const initialchange1 = new Array(10).fill(false);
+  const initialchange2 = new Array(10).fill(false);
+  const initialnum1 = new Array(10).fill(0);
+  const initialnum2 = new Array(10).fill(0);
+
   const [listData, setListData] = useState([]);
   const [description, setDescription] = useState('Welcome!');
   const [burrowTitle, setBurrowTitle] = useState(0);
@@ -81,6 +87,10 @@ const Burrow: NextPage = () => {
   const [menuMode, setMenuMode] = useState<'inline' | 'horizontal'>(
     'horizontal'
   );
+  const [changeLike, setChangeLike] = useState(initialchange1);
+  const [changeCol, setChangeCol] = useState(initialchange2);
+  const [likeNum, setLikeNum] = useState(initialnum1);
+  const [colNum, setColNum] = useState(initialnum2);
 
   const router = useRouter();
   const { bid } = router.query;
@@ -107,7 +117,7 @@ const Burrow: NextPage = () => {
       } else if (err.response?.status === 500) {
         message.info('服务器错误！');
         router.push('/404');
-    }
+      }
     }
   }, [router, page]);
 
@@ -129,6 +139,70 @@ const Burrow: NextPage = () => {
     if (event && event.target && event.target.value) {
       let value = event.target.value;
       setDescriptionTemp(value);
+    }
+  };
+
+  const clickCol = async (pid: number, activate: Boolean, index: number) => {
+    let newChangeCol: boolean[] = changeCol;
+    newChangeCol[index] = !changeCol[index];
+    setChangeCol([...newChangeCol]);
+    const newColNum = colNum;
+    try {
+      if (activate) {
+        newColNum[index] = colNum[index] + 1;
+        setColNum([...newColNum]);
+        const res = await axios.post(
+          `${process.env.NEXT_PUBLIC_BASEURL}/users/relation`,
+          { ActivateCollection: pid },
+          { headers: { 'Content-Type': 'application/json' } }
+        );
+      } else {
+        newColNum[index] = colNum[index] - 1;
+        setColNum([...newColNum]);
+        const res = await axios.post(
+          `${process.env.NEXT_PUBLIC_BASEURL}/users/relation`,
+          { DeactivateCollection: pid },
+          { headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+    } catch (e) {
+      if (activate) {
+        message.error('收藏失败');
+      } else {
+        message.error('取消收藏失败');
+      }
+    }
+  };
+
+  const clickLike = async (pid: number, activate: Boolean, index: number) => {
+    let newChangeLike: boolean[] = changeLike;
+    newChangeLike[index] = !changeLike[index];
+    setChangeLike([...newChangeLike]);
+    const newLikeNum = likeNum;
+    try {
+      if (activate) {
+        newLikeNum[index] = likeNum[index] + 1;
+        setLikeNum([...newLikeNum]);
+        const res = await axios.post(
+          `${process.env.NEXT_PUBLIC_BASEURL}/users/relation`,
+          { ActivateLike: pid },
+          { headers: { 'Content-Type': 'application/json' } }
+        );
+      } else {
+        newLikeNum[index] = likeNum[index] - 1;
+        setLikeNum([...newLikeNum]);
+        const res = await axios.post(
+          `${process.env.NEXT_PUBLIC_BASEURL}/users/relation`,
+          { deactivateLike: pid },
+          { headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+    } catch (e) {
+      if (activate) {
+        message.error('点赞失败');
+      } else {
+        message.error('取消点赞失败');
+      }
     }
   };
 
@@ -247,20 +321,59 @@ const Burrow: NextPage = () => {
                   }}
                   key={item.title}
                   actions={[
-                    <IconText
-                      icon={StarOutlined}
-                      text={item.collection_num}
-                      key='list-vertical-star-o'
-                    />,
-                    <IconText
-                      icon={LikeOutlined}
-                      text={item.like_num}
+                    <Button
+                      type='text'
+                      icon={
+                        (changeLike[index] && item.like) ||
+                        (!changeLike[index] && !item.like) ? (
+                          <LikeTwoTone twoToneColor='#8A2BE2' />
+                        ) : (
+                          <LikeOutlined />
+                        )
+                      }
                       key='list-vertical-like-o'
-                    />,
+                      onClick={() => {
+                        clickLike(
+                          item.post_id,
+                          (!changeLike[index] && item.like) ||
+                            (changeLike[index] && !item.like),
+                          index
+                        );
+                      }}
+                      className={styles.ButtonLayout}
+                    >
+                      {' '}
+                      {item.like_num + likeNum[index]}
+                    </Button>,
+                    <Button
+                      type='text'
+                      icon={
+                        (!changeCol[index] && item.collection) ||
+                        (changeCol[index] && !item.collection) ? (
+                          <StarTwoTone twoToneColor='#FFD700' />
+                        ) : (
+                          <StarOutlined />
+                        )
+                      }
+                      key='list-vertical-star-o'
+                      onClick={() => {
+                        clickCol(
+                          item.post_id,
+                          (changeCol[index] && item.collection) ||
+                            (!changeCol[index] && !item.collection),
+                          index
+                        );
+                      }}
+                      className={styles.ButtonLayout}
+                    >
+                      {' '}
+                      {item.collection_num + colNum[index]}
+                    </Button>,
                     <IconText
                       icon={MessageOutlined}
                       text={item.post_len}
                       key='list-vertical-message'
+                      className={styles.ButtonLayout}
                     />,
                   ]}
                 >

@@ -56,28 +56,7 @@ export default function Register({ switchform }: Iprops) {
   const [count, setCount] = useState(5);
   const [counting, setCounting] = useState(false);
 
-  //   useEffect(() => {
-  //     if (count === 1) {
-  //       clearInterval(timer);
-  //       setCounting(false);
-  //     } else {
-  //       console.log('you enter countDown', count);
-  //       setCounting(true);
-  //     }
-  //   });
-
-  //   useEffect(() => {
-  //     clearInterval(timer);
-  //     return () => clearInterval(timer);
-  //   });
-
-  //   let timer = setInterval(() => setCount((t) => --t), 1000);
-
   function sendCode() {}
-
-  function updateTimer() {
-    // timer = setInterval(() => setCount((t) => --t), 1000);
-  }
 
   function handleSuffix(value: any) {
     setSuffix(value);
