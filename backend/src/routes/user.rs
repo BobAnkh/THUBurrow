@@ -432,8 +432,8 @@ pub async fn get_burrow(db: Connection<PgDb>, auth: Auth) -> (Status, Json<Vec<B
                 }
             }
             None => {
-                error!("[GET-BURROW] Cannot find user_status by uid.");
-                (Status::InternalServerError, Json(Vec::new()))
+                info!("[GET-BURROW] Cannot find user_status by uid.");
+                (Status::Forbidden, Json(Vec::new()))
             }
         },
         Err(e) => {
@@ -568,8 +568,8 @@ pub async fn get_user_valid_burrow(auth: Auth, db: Connection<PgDb>) -> (Status,
         Ok(opt_state) => match opt_state {
             Some(state) => (Status::Ok, Json(get_burrow_list(&state.valid_burrow))),
             None => {
-                error!("[GET-VALID-BURROW] Cannot find user_status by uid.");
-                (Status::InternalServerError, Json(Vec::new()))
+                info!("[GET-VALID-BURROW] Cannot find user_status by uid.");
+                (Status::Forbidden, Json(Vec::new()))
             }
         },
         Err(e) => {
