@@ -1,5 +1,5 @@
 import React from 'react';
-import styles from './register.module.css';
+import styles from '../styles/register.module.css';
 import 'antd/dist/antd.css';
 import CryptoJS from 'crypto-js';
 import Config from '../config.json';
@@ -26,6 +26,7 @@ import {
   AudioOutlined,
 } from '@ant-design/icons';
 import { thisExpression } from '@babel/types';
+import axios from 'axios';
 
 const { Search } = Input;
 
@@ -131,21 +132,9 @@ class Register extends React.Component<Iprops, any> {
       code: values.code,
     };
     try {
-      const res = await fetch(`${Config.url1}/users/sign-up`, {
-        method: 'POST',
-        body: JSON.stringify(data),
-        headers: new Headers({
-          'Content-Type': 'application/json',
-        }),
-      });
-      if (res.status === 200) {
-        message.success('注册成功');
-        window.location.href = './home';
-      } else {
-        const json = await res.json();
-        message.error('注册失败');
-        alert(json.errors);
-      }
+      const res = await axios.post(`${Config.url1}/users/sign-up`, data);
+      message.success('注册成功');
+      window.location.href = './home';
     } catch (e) {
       message.error('注册失败');
     }
