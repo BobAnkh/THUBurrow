@@ -57,7 +57,7 @@ const SearchPage: FC = () => {
 
   async function sendkeyword(Keyword: string, page: number) {
     if (area === 'post') {
-      const SearchPostKeyword = { keyword: Keyword, page: 1 + page };
+      const SearchPostKeyword = { keyword: Keyword, page: page - 1 };
       setloading(true);
       axios
         .post(fakeDataUrl, { SearchPostKeyword: SearchPostKeyword })
@@ -71,7 +71,7 @@ const SearchPage: FC = () => {
         });
       setloading(false);
     } else {
-      const SearchBurrowKeyword = { keyword: Keyword, page: 1 + page };
+      const SearchBurrowKeyword = { keyword: Keyword, page: page - 1 };
       setloading(true);
       axios
         .post(fakeDataUrl, { SearchBurrowKeyword: SearchBurrowKeyword })
@@ -87,9 +87,9 @@ const SearchPage: FC = () => {
     }
   }
 
-  async function sendid(id: number, page: number) {
+  async function sendid(id: number) {
     if (area == 'post') {
-      const RetrievePost = { post_id: id, page: 1 + page };
+      const RetrievePost = { post_id: id };
       setloading(true);
       axios
         .post(fakeDataUrl, { RetrievePost: RetrievePost })
@@ -97,13 +97,12 @@ const SearchPage: FC = () => {
           setdata(() => {
             setstate('post');
             setfound_number(res.data.found);
-            if (page == 1) return res.data.hits;
-            else return listData.concat(res.data.hits);
+            return res.data.hits;
           });
         });
       setloading(false);
     } else {
-      const RetrieveBurrow = { burrow_id: id, page: 1 + page };
+      const RetrieveBurrow = { burrow_id: id };
       setloading(true);
       axios
         .post(fakeDataUrl, { RetrieveBurrow: RetrieveBurrow })
@@ -111,8 +110,7 @@ const SearchPage: FC = () => {
           setdata(() => {
             setstate('burrow');
             setfound_number(res.data.found);
-            if (page == 1) return res.data.hits;
-            else return listData.concat(res.data.hits);
+            return res.data.hits;
           });
         });
       setloading(false);
@@ -120,7 +118,7 @@ const SearchPage: FC = () => {
   }
 
   async function sendtag(tag: string, page: number) {
-    const SearchPostTag = { tag: tag, page: 1 + page };
+    const SearchPostTag = { tag: tag, page: page - 1 };
     setloading(true);
     axios
       .post(fakeDataUrl, { SearchPostTag: SearchPostTag })
@@ -154,7 +152,7 @@ const SearchPage: FC = () => {
       sendtag(params.tag, params.page);
     }
     if (params.id != 0) {
-      sendid(params.id, params.page);
+      sendid(params.id);
     }
   }, [search_text, page]);
 
