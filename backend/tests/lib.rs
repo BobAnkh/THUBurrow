@@ -118,21 +118,21 @@ async fn test_burrow() {
     let response = client
         .post("/burrows")
         .json(&json!({
-            "description": format!("First burrow of {}", name),
-            "title": "Burrow 1"}))
+            "description": format!("Test burrow of {}", name),
+            "title": "Burrow test"}))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Forbidden);
     println!("{}", response.into_string().unwrap());
-    let response = client
-        .post("/burrows")
-        .json(&json!({
-            "description": format!("Second burrow of {}", name),
-            "title": "Burrow 2"}))
-        .remote("127.0.0.1:8000".parse().unwrap())
-        .dispatch().await;
-    assert_eq!(response.status(), Status::Forbidden);
-    println!("{}", response.into_string().await.unwrap());
+    // let response = client
+    //     .post("/burrows")
+    //     .json(&json!({
+    //         "description": format!("First burrow of {}", name),
+    //         "title": "Burrow 1"}))
+    //     .remote("127.0.0.1:8000".parse().unwrap())
+    //     .dispatch().await;
+    // assert_eq!(response.status(), Status::Forbidden);
+    // println!("{}", response.into_string().await.unwrap());
 
     std::thread::sleep(std::time::Duration::from_secs(5));
 
@@ -149,8 +149,8 @@ async fn test_burrow() {
     let response = client
         .post("/burrows")
         .json(&json!({
-            "description": format!("Third burrow of {}", name),
-            "title": "Burrow 3"}))
+            "description": format!("Second burrow of {}", name),
+            "title": "Burrow 2"}))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch().await;
     assert_eq!(response.status(), Status::Ok);
@@ -160,6 +160,52 @@ async fn test_burrow() {
         .unwrap();
     let burrow_id = res.burrow_id;
     println!("Burrow Id: {}", burrow_id);
+
+    // create burrow: perform a wrong action (amount up to limit)
+    std::thread::sleep(std::time::Duration::from_secs(5));
+    // create burrow (3rd)
+    let response = client
+        .post("/burrows")
+        .json(&json!({
+            "description": format!("Third burrow of {}", name),
+            "title": "Burrow 3"}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch().await;
+    assert_eq!(response.status(), Status::Ok);
+    println!("Burrow Id: {}", response.into_string().unwrap());
+    std::thread::sleep(std::time::Duration::from_secs(5));
+    // create burrow (4th)
+    let response = client
+        .post("/burrows")
+        .json(&json!({
+            "description": format!("Forth burrow of {}", name),
+            "title": "Burrow 4"}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch().await;
+    assert_eq!(response.status(), Status::Ok);
+    println!("Burrow Id: {}", response.into_string().unwrap());
+    std::thread::sleep(std::time::Duration::from_secs(5));
+    // create burrow (5th)
+    let response = client
+        .post("/burrows")
+        .json(&json!({
+            "description": format!("Fifth burrow of {}", name),
+            "title": "Burrow 5"}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch().await;
+    assert_eq!(response.status(), Status::Ok);
+    println!("Burrow Id: {}", response.into_string().unwrap());
+    std::thread::sleep(std::time::Duration::from_secs(5));
+    // create burrow: perform a wrong action (6th)
+    let response = client
+        .post("/burrows")
+        .json(&json!({
+            "description": format!("Sixth burrow of {}", name),
+            "title": "Burrow 6"}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch().await;
+    assert_eq!(response.status(), Status::BadRequest);
+    println!("Burrow Id: {}", response.into_string().unwrap());
 
     // follow the burrow
     let response = client
@@ -177,9 +223,9 @@ async fn test_burrow() {
         .dispatch().await;
     assert_eq!(response.status(), Status::Ok);
     println!("{}", response.into_string().unwrap());
-    // show burrow: perform a wrong action
+    // show burrow: perform a wrong action (cannot find the burrow)
     let response = client
-        .get(format!("/burrows/{}", burrow_id + 1))
+        .get(format!("/burrows/{}", burrow_id + 10))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::BadRequest);
@@ -204,7 +250,7 @@ async fn test_burrow() {
         .dispatch();
     assert_eq!(response.status(), Status::BadRequest);
 
-    // get burrow
+    // show burrow (after update)
     let response = client
         .get(format!("/burrows/{}", burrow_id))
         .remote("127.0.0.1:8000".parse().unwrap())
@@ -235,6 +281,13 @@ async fn test_burrow() {
         .dispatch().await;
     assert_eq!(response.status(), Status::Ok);
     println!("{:?}", response.into_string());
+    // delete burrow: perform a wrong action (already delete)
+    let response = client
+        .delete(format!("/burrows/{}", burrow_id))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch().await;
+    assert_eq!(response.status(), Status::BadRequest);
+    println!("{}", response.into_string().await.unwrap());
 
     // update burrow: perform a wrong action (invalid burrow)
     let response = client
