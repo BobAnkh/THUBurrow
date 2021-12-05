@@ -43,7 +43,6 @@ const FormItem = Form.Item;
 const SearchPage: FC = () => {
   const [search_text, settext] = useState({ keyword: '', id: 0, tag: '' });
   const [page, setpage] = useState(1);
-  //  const [order, setorder] = useState('time');
   const [area, setarea] = useState('post');
 
   const [form] = Form.useForm();
