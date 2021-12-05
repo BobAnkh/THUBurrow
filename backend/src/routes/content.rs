@@ -16,7 +16,7 @@ use crate::req::content::*;
 use crate::utils::auth::Auth;
 use crate::utils::burrow_valid::is_valid_burrow;
 
-use chrono::prelude::*;
+use chrono::{prelude::*, Duration};
 
 pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
     rocket.mount(
@@ -259,7 +259,7 @@ pub async fn read_post_list(
     let page = page.unwrap_or(0);
     let post_pages = ContentPost::find()
         .order_by_desc(pgdb::content_post::Column::PostId)
-        .paginate(&pg_con, REPLY_PER_PAGE);
+        .paginate(&pg_con, POST_PER_PAGE);
     let post_info = match post_pages.fetch_page(page).await {
         Ok(post_info) => post_info,
         Err(e) => {
@@ -630,46 +630,79 @@ pub async fn update_reply(
 }
 
 #[delete("/post/<post_id>")]
-pub async fn delete_post(
-    _auth: Auth,
-    db: Connection<PgDb>,
-    post_id: i64,
-) -> (Status, Json<PostDeleteResponse>) {
+pub async fn delete_post(auth: Auth, db: Connection<PgDb>, post_id: i64) -> (Status, String) {
     let pg_con = db.into_inner();
-    let mut errors: Vec<String> = Vec::new();
+    let now = Utc::now().with_timezone(&FixedOffset::east(8 * 3600));
     // check if the post not exsits, add corresponding error if so
-    match ContentPost::find_by_id(post_id)
-        .one(&pg_con)
-        .await
-        .expect("cannot fetch content from pgdb")
-    {
-        None => {
-            errors.push("Post not exsits".to_string());
-            (
-                Status::BadRequest,
-                Json(PostDeleteResponse {
-                    errors,
-                    post_id: -1,
-                }),
-            )
-        }
-        Some(post_info) => {
-            // TODO: check if this user create the post
-            // TODO: check if time is within limit, if so, allow user to delete
-            // delete data in content_subject
-            let delete_post: pgdb::content_post::ActiveModel = post_info.into();
-            delete_post
-                .delete(&pg_con)
-                .await
-                .expect("cannot delete content from content_subject");
-            // delete data in content_reply
-            ContentReply::delete_many()
-                .filter(pgdb::content_reply::Column::PostId.eq(post_id))
-                .exec(&pg_con)
-                .await
-                .expect("cannot delete content from content_reply");
-            // return the response
-            (Status::Ok, Json(PostDeleteResponse { errors, post_id }))
+    match ContentPost::find_by_id(post_id).one(&pg_con).await {
+        Ok(r) => match r {
+            None => (Status::BadRequest, "Post not exsits".to_string()),
+            Some(post_info) => {
+                // TODO: check if this user create the post
+                // TODO: check if time is within limit, if so, allow user to delete
+                if post_info
+                    .create_time
+                    .checked_add_signed(Duration::seconds(135))
+                    .unwrap()
+                    < now
+                {
+                    return (
+                        Status::Forbidden,
+                        "Can only delete post in 2 minutes".to_string(),
+                    );
+                }
+                match pgdb::user_status::Entity::find_by_id(auth.id)
+                    .one(&pg_con)
+                    .await
+                {
+                    Ok(opt_state) => match opt_state {
+                        Some(state) => {
+                            if is_valid_burrow(&state.valid_burrow, &post_info.burrow_id) {
+                                // delete data in content_subject
+                                let delete_post: pgdb::content_post::ActiveModel = post_info.into();
+                                match pg_con
+                                    .transaction::<_, (), DbErr>(|txn| {
+                                        Box::pin(async move {
+                                            delete_post.delete(txn).await?;
+                                            ContentReply::delete_many()
+                                                .filter(
+                                                    pgdb::content_reply::Column::PostId.eq(post_id),
+                                                )
+                                                .exec(txn)
+                                                .await?;
+                                            Ok(())
+                                        })
+                                    })
+                                    .await
+                                {
+                                    Ok(_) => (Status::Ok, "Success".to_string()),
+                                    Err(e) => {
+                                        log::error!("[DELETE-POST] Database error: {:?}", e);
+                                        (Status::InternalServerError, String::new())
+                                    }
+                                }
+                            } else {
+                                (
+                                    Status::Forbidden,
+                                    "Not allowed to delete this post".to_string(),
+                                )
+                            }
+                        }
+                        None => {
+                            log::info!("[DELETE-POST] Cannot find user_status by uid.");
+                            (Status::Forbidden, "".to_string())
+                        }
+                    },
+                    Err(e) => {
+                        log::error!("[DELETE-POST] Database error: {:?}", e);
+                        (Status::InternalServerError, String::new())
+                    }
+                }
+            }
+        },
+        Err(e) => {
+            log::error!("[DELETE-POST] Database error: {:?}", e);
+            (Status::InternalServerError, String::new())
         }
     }
 }

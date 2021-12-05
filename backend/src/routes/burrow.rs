@@ -116,14 +116,14 @@ pub async fn create_burrow(
                 } else {
                     info!("[CREATE-BURROW] Owned burrow amount reaches threshold.");
                     (
-                        Status::BadRequest,
+                        Status::Forbidden,
                         Err("Owned burrow amount is up to limit.".to_string()),
                     )
                 }
             }
             None => {
-                error!("[CREATE BURROW] Cannot find user_status by uid.");
-                (Status::InternalServerError, Err(String::new()))
+                info!("[CREATE BURROW] Cannot find user_status by uid.");
+                (Status::Forbidden, Err(String::new()))
             }
         },
         Err(e) => {
@@ -134,11 +134,7 @@ pub async fn create_burrow(
 }
 
 #[delete("/<burrow_id>")]
-pub async fn discard_burrow(
-    db: Connection<PgDb>,
-    burrow_id: i64,
-    auth: Auth,
-) -> (Status, Result<(), String>) {
+pub async fn discard_burrow(db: Connection<PgDb>, burrow_id: i64, auth: Auth) -> (Status, String) {
     let pg_con = db.into_inner();
     match pgdb::user_status::Entity::find_by_id(auth.id)
         .one(&pg_con)
@@ -177,10 +173,10 @@ pub async fn discard_burrow(
                         })
                         .await
                     {
-                        Ok(_) => (Status::Ok, Ok(())),
+                        Ok(_) => (Status::Ok, "Success".to_string()),
                         Err(e) => {
                             error!("Database error: {:?}", e);
-                            (Status::InternalServerError, Err(String::new()))
+                            (Status::InternalServerError, String::new())
                         }
                     }
                 } else if banned_burrows.contains(&burrow_id) {
@@ -209,10 +205,10 @@ pub async fn discard_burrow(
                         })
                         .await
                     {
-                        Ok(_) => (Status::Ok, Ok(())),
+                        Ok(_) => (Status::Ok, "Success".to_string()),
                         Err(e) => {
                             error!("Database error: {:?}", e);
-                            (Status::InternalServerError, Err(String::new()))
+                            (Status::InternalServerError, String::new())
                         }
                     }
                 } else {
@@ -220,22 +216,19 @@ pub async fn discard_burrow(
                         "[DEL-BURROW] Cannot delete burrow: Burrow doesn't belong to current user."
                     );
                     (
-                        Status::BadRequest,
-                        Err(
-                            "Burrow doesn't belong to current user or already discarded."
-                                .to_string(),
-                        ),
+                        Status::Forbidden,
+                        "Burrow doesn't belong to current user or already discarded.".to_string(),
                     )
                 }
             }
             None => {
-                error!("[DEL-BURROW] Cannot find user_status by uid.");
-                (Status::InternalServerError, Err(String::new()))
+                info!("[DEL-BURROW] Cannot find user_status by uid.");
+                (Status::Forbidden, "User not exsits.".to_string())
             }
         },
         Err(e) => {
             error!("[DEL-BURROW] Database Error: {:?}", e);
-            (Status::InternalServerError, Err(String::new()))
+            (Status::InternalServerError, String::new())
         }
     }
 }
@@ -281,7 +274,7 @@ pub async fn show_burrow(
                 }
             }
             None => {
-                error!("[SHOW-BURROW] Cannot find burrow {}", burrow_id);
+                info!("[SHOW-BURROW] Cannot find burrow {}", burrow_id);
                 (Status::BadRequest, Err(String::new()))
             }
         },
@@ -331,12 +324,12 @@ pub async fn update_burrow(
                     info!(
                         "[UPDATE-BURROW] Cannot update burrow: Burrow doesn't belong to current user."
                     );
-                    Status::BadRequest
+                    Status::Forbidden
                 }
             }
             None => {
-                error!("[UPDATE-BURROW] Cannot find user_status by uid.");
-                Status::InternalServerError
+                info!("[UPDATE-BURROW] Cannot find user_status by uid.");
+                Status::Forbidden
             }
         },
         Err(e) => {
