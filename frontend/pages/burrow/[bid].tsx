@@ -76,13 +76,19 @@ const Burrow: NextPage = () => {
   const [isHost, setIsHost] = useState(true);
   const [editing, setEditing] = useState(false);
   const [descriptionTemp, setDescriptionTemp] = useState('');
+  const [menuMode, setMenuMode] = useState<'inline' | 'horizontal'>(
+    'horizontal'
+  );
 
   const router = useRouter();
-  const { pid } = router.query;
+  const { bid } = router.query;
+  const site = router.pathname.split('/')[1];
 
   useEffect(() => {
     const fetchListData = async () => {
-      const res = await axios.get(`${process.env.NEXT_PUBLIC_BASEURL}/${pid}`);
+      const res = await axios.get(
+        `${process.env.NEXT_PUBLIC_BASEURL}/${bid}?page=${page - 1}`
+      );
       if (res.status === 401) {
         message.info('请先登录！');
         router.push('/login');
@@ -122,18 +128,23 @@ const Burrow: NextPage = () => {
     <Layout>
       <Header style={{ position: 'fixed', zIndex: 1, width: '100%' }}>
         <div className='logo' />
-        <Menu theme='dark' mode='horizontal' defaultSelectedKeys={['2']}>
+        <Menu
+          theme='dark'
+          mode={menuMode}
+          defaultSelectedKeys={['home']}
+          selectedKeys={[site]}
+        >
           <Menu.Item key='home'>
-            <Link href='../home'>首页</Link>
+            <Link href='/home'>首页</Link>
           </Menu.Item>
           <Menu.Item key='message'>
-            <Link href='../message'>消息</Link>
+            <Link href='/message'>消息</Link>
           </Menu.Item>
-          <Menu.Item key='update'>
-            <Link href='../update'>动态</Link>
+          <Menu.Item key='trending'>
+            <Link href='/trending'>热榜</Link>
           </Menu.Item>
-          <Menu.Item key='setting'>
-            <Link href='../setting'>设置</Link>
+          <Menu.Item key='search'>
+            <Link href='/searchpage'>搜索</Link>
           </Menu.Item>
         </Menu>
       </Header>
@@ -154,7 +165,7 @@ const Burrow: NextPage = () => {
           <Card>
             <div>
               <h2>
-                # {pid}&emsp;{burrowTitle}
+                # {bid}&emsp;{burrowTitle}
               </h2>
               <div className={styles.Descript}>
                 <h3 className={styles.BriefIntro}>简介:</h3>
