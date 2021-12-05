@@ -461,7 +461,6 @@ fn test_content() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     println!("{}", response.into_string().unwrap());
-
 }
 
 // #[test]

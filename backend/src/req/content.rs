@@ -1,6 +1,6 @@
-use crate::pgdb::{self, content_post, content_reply};
+use crate::pgdb::{content_post, content_reply};
 use rocket::serde::{Deserialize, Serialize};
-use sea_orm::{prelude::DateTimeWithTimeZone, DatabaseConnection, EntityTrait};
+use sea_orm::prelude::DateTimeWithTimeZone;
 use std::convert::From;
 
 pub static POST_PER_PAGE: usize = 20;
@@ -8,34 +8,13 @@ pub static REPLY_PER_PAGE: usize = 20;
 
 #[derive(Serialize, Deserialize)]
 pub struct PostCreateResponse {
-    pub errors: String,
-    pub post_id: i64,
-}
-
-#[derive(Serialize)]
-pub struct PostDeleteResponse {
-    pub errors: Vec<String>,
     pub post_id: i64,
 }
 
 #[derive(Serialize)]
 pub struct ReplyCreateResponse {
-    pub errors: Vec<String>,
     pub post_id: i64,
     pub reply_id: i32,
-}
-
-#[derive(Serialize)]
-pub struct ReplyUpdateResponse {
-    pub errors: Vec<String>,
-    pub post_id: i64,
-    pub reply_id: i32,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct ListReadResponse {
-    pub errors: String,
-    pub list_page: Option<ListPage>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -51,7 +30,6 @@ pub struct PostPage {
 pub struct ListPage {
     pub post_page: Vec<PostDisplay>,
     pub page: usize,
-    pub post_num: i64,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -82,42 +60,44 @@ pub struct PostDisplay {
     pub post: Post,
     pub like: bool,
     pub collection: bool,
+    pub is_update: bool,
 }
 
-pub struct GetPostList {}
-impl GetPostList {
-    pub async fn get_post_display(
-        post: &pgdb::content_post::Model,
-        inner_conn: DatabaseConnection,
-        uid: i64,
-    ) -> Result<PostDisplay, Box<dyn std::error::Error>> {
-        let like: bool = match pgdb::user_like::Entity::find_by_id((uid, post.post_id))
-            .one(&inner_conn)
-            .await
-        {
-            Ok(user_like) => user_like.is_some(),
-            Err(e) => {
-                error!("[GET-BURROW] Database Error: {:?}", e.to_string());
-                false
-            }
-        };
-        let collection: bool = match pgdb::user_collection::Entity::find_by_id((uid, post.post_id))
-            .one(&inner_conn)
-            .await
-        {
-            Ok(user_collection) => user_collection.is_some(),
-            Err(e) => {
-                error!("[GET-BURROW] Database Error: {:?}", e.to_string());
-                false
-            }
-        };
-        Ok(PostDisplay {
-            post: post.into(),
-            like,
-            collection,
-        })
-    }
-}
+// pub struct GetPostList {}
+// impl GetPostList {
+//     pub async fn get_post_display(
+//         post: &pgdb::content_post::Model,
+//         inner_conn: DatabaseConnection,
+//         uid: i64,
+//     ) -> Result<PostDisplay, Box<dyn std::error::Error>> {
+//         let like: bool = match pgdb::user_like::Entity::find_by_id((uid, post.post_id))
+//             .one(&inner_conn)
+//             .await
+//         {
+//             Ok(user_like) => user_like.is_some(),
+//             Err(e) => {
+//                 error!("[GET-BURROW] Database Error: {:?}", e.to_string());
+//                 false
+//             }
+//         };
+//         let collection: bool = match pgdb::user_collection::Entity::find_by_id((uid, post.post_id))
+//             .one(&inner_conn)
+//             .await
+//         {
+//             Ok(user_collection) => user_collection.is_some(),
+//             Err(e) => {
+//                 error!("[GET-BURROW] Database Error: {:?}", e.to_string());
+//                 false
+//             }
+//         };
+//         Ok(PostDisplay {
+//             post: post.into(),
+//             like,
+//             collection,
+//             is_update: false,
+//         })
+//     }
+// }
 
 #[derive(Serialize, Deserialize)]
 pub struct Post {
