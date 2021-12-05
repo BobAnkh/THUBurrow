@@ -83,6 +83,10 @@ export default function Register({ switchform }: Iprops) {
     setSuffix(value);
   }
 
+  const ToggleForm = () => {
+    switchform('login');
+  };
+
   const selectAfter = (
     <Select
       defaultValue='@mails.tsinghua.edu.cn'
@@ -280,7 +284,7 @@ export default function Register({ switchform }: Iprops) {
         </div>
       </div>
       <div className={styles.tailer}>
-        已有帐号？<a href=''>现在登录</a>
+        已有帐号？<a onClick={ToggleForm}>现在登录</a>
       </div>
     </div>
   );
