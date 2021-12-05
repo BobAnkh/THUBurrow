@@ -129,7 +129,7 @@ const UserPage: NextPage = () => {
     const fetchBurrowList = async () => {
       try {
         const res = await axios.get(
-          `${process.env.NEXT_PUBLIC_BASEURL}/users/burrom`
+          `${process.env.NEXT_PUBLIC_BASEURL}/users/burrow`
         );
         const burrowlist = res.data;
         setBurrowList(burrowlist);
@@ -178,11 +178,11 @@ const UserPage: NextPage = () => {
       <Menu.Item key='message'>
         <Link href='/message'>消息</Link>
       </Menu.Item>
-      <Menu.Item key='update'>
-        <Link href='/update'>动态</Link>
+      <Menu.Item key='trending'>
+        <Link href='/trending'>热榜</Link>
       </Menu.Item>
-      <Menu.Item key='setting'>
-        <Link href='/setting'>设置</Link>
+      <Menu.Item key='search'>
+        <Link href='/searchpage'>搜索</Link>
       </Menu.Item>
     </Menu>
   );
