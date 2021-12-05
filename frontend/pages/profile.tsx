@@ -95,16 +95,17 @@ const UserPage: NextPage = () => {
   const [burrowList, setBurrowList] = useState([]);
   const [followedList, setFollowedList] = useState([]);
   const [page, setPage] = useState(1);
-  const [postNum, setPostNum] = useState(0);
+  const [postNum, setPostNum] = useState(1);
   const [postList, setPostList] = useState([]);
   const [menuMode, setMenuMode] = useState<'inline' | 'horizontal'>(
     'horizontal'
   );
+  // 获取关注的帖子
   useEffect(() => {
     const fetchPostList = async () => {
       try {
         const res = await axios.get(
-          `${process.env.NEXT_PUBLIC_BASEURL}/content/list?page=${page}`,
+          `${process.env.NEXT_PUBLIC_BASEURL}/content/list?page=${page - 1}`,
           {
             headers: { 'Content-Type': 'application/json' },
           }
@@ -123,11 +124,12 @@ const UserPage: NextPage = () => {
     };
     fetchPostList();
   }, [page, router]);
+  // 获取我的地洞
   useEffect(() => {
     const fetchBurrowList = async () => {
       try {
         const res = await axios.get(
-          'http://127.0.0.1:4523/mock/435762/users/burrow'
+          `${process.env.NEXT_PUBLIC_BASEURL}/users/burrom`
         );
         const burrowlist = res.data;
         setBurrowList(burrowlist);
@@ -141,11 +143,12 @@ const UserPage: NextPage = () => {
     };
     fetchBurrowList();
   }, [router]);
+  // 获取收藏的洞
   useEffect(() => {
-    const fetchPostList = async () => {
+    const fetchFollowedList = async () => {
       try {
         const res = await axios.get(
-          'http://127.0.0.1:4523/mock2/435762/6973421'
+          `${process.env.NEXT_PUBLIC_BASEURL}/users/follow`
         );
         const followedlist = res.data;
         setFollowedList(followedlist);
@@ -157,7 +160,7 @@ const UserPage: NextPage = () => {
         }
       }
     };
-    fetchPostList();
+    fetchFollowedList();
   }, [router]);
   const site = router.pathname.split('/')[1];
   const menu = (
