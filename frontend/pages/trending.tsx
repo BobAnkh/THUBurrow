@@ -14,12 +14,13 @@ import {
   Card,
 } from 'antd';
 import { UserOutlined } from '@ant-design/icons';
-import moment from 'moment';
 import PostList from '../components/post-list';
 import '../node_modules/antd/dist/antd.css';
 import axios, { AxiosError } from 'axios';
 
 const { Header, Content, Footer } = Layout;
+axios.defaults.withCredentials = true;
+axios.defaults.headers.post['Content-Type'] = 'application/json';
 
 const Trending: NextPage = () => {
   const router = useRouter();
@@ -113,7 +114,7 @@ const Trending: NextPage = () => {
           <Breadcrumb.Item>App</Breadcrumb.Item>
         </Breadcrumb>
         <Card>
-          <PostList listData={postList} postNum={50} setPage={setPage} />
+          <PostList listData={postList} setPage={setPage} />
         </Card>
       </Content>
       <Footer style={{ textAlign: 'center' }}>THUBurrow © 2021</Footer>

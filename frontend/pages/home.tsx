@@ -24,6 +24,9 @@ import axios, { AxiosError } from 'axios';
 const { Header, Content, Footer } = Layout;
 const { TextArea } = Input;
 
+axios.defaults.withCredentials = true;
+axios.defaults.headers.post['Content-Type'] = 'application/json';
+
 const onFinish = async (values: any) => {
   const time = moment().format('YYYY-MM-DD HH:mm:ss');
   const data = {
@@ -44,7 +47,7 @@ const onFinish = async (values: any) => {
       { headers: { 'Content-Type': 'application/json' } }
     );
     const json = await res.data;
-    if (json.success === false) {
+    if (json.error) {
       message.error('发帖失败');
     } else {
       message.success('发帖成功');
@@ -52,6 +55,7 @@ const onFinish = async (values: any) => {
     }
   } catch (e) {
     message.error('发帖失败');
+    alert(e);
   }
 };
 
@@ -66,20 +70,17 @@ const Home: NextPage = () => {
   );
   const [postList, setPostList] = useState([]);
   const [page, setPage] = useState(1);
-  const [postNum, setPostNum] = useState(0);
   useEffect(() => {
     const fetchPostList = async () => {
       try {
         const res = await axios.get(
-          `${process.env.NEXT_PUBLIC_BASEURL}/content/list?page=${page}`,
+          `${process.env.NEXT_PUBLIC_BASEURL}/content/list?page=${page - 1}`,
           {
             headers: { 'Content-Type': 'application/json' },
           }
         );
         const postlist = res.data.list_page.post_page;
-        const postnum = res.data.list_page.post_num;
         setPostList(postlist);
-        setPostNum(postnum);
       } catch (error) {
         const err = error as AxiosError;
         if (err.response?.status == 401) {
@@ -152,7 +153,7 @@ const Home: NextPage = () => {
           <Breadcrumb.Item>App</Breadcrumb.Item>
         </Breadcrumb>
         <Card>
-          <PostList listData={postList} postNum={postNum} setPage={setPage} />
+          <PostList listData={postList} setPage={setPage} />
           <Form
             labelCol={{ span: 5 }}
             wrapperCol={{ span: 14 }}

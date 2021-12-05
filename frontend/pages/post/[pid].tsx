@@ -26,6 +26,9 @@ import ReplyList from '../../components/reply-list';
 import '../../node_modules/antd/dist/antd.css';
 import axios, { AxiosError } from 'axios';
 
+axios.defaults.withCredentials = true;
+axios.defaults.headers.post['Content-Type'] = 'application/json';
+
 const { Header, Content, Footer } = Layout;
 const { TextArea } = Input;
 
@@ -38,7 +41,6 @@ const PostDetial: NextPage = () => {
   const [bid, setBid] = useState(1);
   const [pid, setPid] = useState(1);
   const [replyList, setReplyList] = useState();
-  const [postLen, setPostLen] = useState(0);
   const [title, setTitle] = useState('test');
   const [like, setLike] = useState(false);
   const [collection, setCollection] = useState(false);
@@ -50,7 +52,7 @@ const PostDetial: NextPage = () => {
     const fetchReplyList = async () => {
       try {
         const res = await axios.get(
-          `${process.env.NEXT_PUBLIC_BASEURL}/content/${pid}?page=${page}`,
+          `${process.env.NEXT_PUBLIC_BASEURL}/content/${pid}?page=${page - 1}`,
           {
             headers: { 'Content-Type': 'application/json' },
           }
@@ -58,7 +60,6 @@ const PostDetial: NextPage = () => {
         const replylist = res.data.post_page.reply_page;
         setBid(res.data.post_page.post_desc.burrow_id);
         setPid(res.data.post_page.post_desc.post_id);
-        setPostLen(res.data.post_page.post_desc.post_len);
         setTitle(res.data.post_page.post_desc.title);
         setLike(res.data.post_page.like);
         setCollection(res.data.post_page.collection);
@@ -93,7 +94,11 @@ const PostDetial: NextPage = () => {
         );
       }
     } catch (e) {
-      message.error('收藏失败');
+      if (activate) {
+        message.error('收藏失败');
+      } else {
+        message.error('取消收藏失败');
+      }
     }
   };
 
@@ -115,7 +120,11 @@ const PostDetial: NextPage = () => {
         );
       }
     } catch (e) {
-      message.error('点赞失败');
+      if (activate) {
+        message.error('点赞失败');
+      } else {
+        message.error('取消点赞失败');
+      }
     }
   };
 
@@ -237,7 +246,7 @@ const PostDetial: NextPage = () => {
           >
             {' ' + '收藏' + ' '}
           </Button>
-          <ReplyList listData={replyList} postLen={postLen} setPage={setPage} />
+          <ReplyList listData={replyList} setPage={setPage} />
           <Form
             labelCol={{ span: 5 }}
             wrapperCol={{ span: 14 }}

@@ -17,9 +17,11 @@ type IconProps = {
 
 type Props = {
   listData: any;
-  postNum: number;
   setPage: any;
 };
+
+axios.defaults.withCredentials = true;
+axios.defaults.headers.post['Content-Type'] = 'application/json';
 
 const IconText = ({ icon, text }: IconProps) => (
   <Space>
@@ -33,7 +35,7 @@ function showtag1(tag: string) {
 const showtag = (value: Array<string>) => {
   return value.map(showtag1);
 };
-export default function PostList({ listData, postNum, setPage }: Props) {
+export default function PostList({ listData, setPage }: Props) {
   const initialchange1 = new Array(10).fill(false);
   const initialchange2 = new Array(10).fill(false);
   const initialnum1 = new Array(10).fill(0);
@@ -42,6 +44,7 @@ export default function PostList({ listData, postNum, setPage }: Props) {
   const [changeCol, setChangeCol] = useState(initialchange2);
   const [likeNum, setLikeNum] = useState(initialnum1);
   const [colNum, setColNum] = useState(initialnum2);
+
   const clickCol = async (pid: number, activate: Boolean, index: number) => {
     let newChangeCol: boolean[] = changeCol;
     newChangeCol[index] = !changeCol[index];
@@ -66,7 +69,11 @@ export default function PostList({ listData, postNum, setPage }: Props) {
         );
       }
     } catch (e) {
-      message.error('收藏失败');
+      if (activate) {
+        message.error('收藏失败');
+      } else {
+        message.error('取消收藏失败');
+      }
     }
   };
 
@@ -94,7 +101,11 @@ export default function PostList({ listData, postNum, setPage }: Props) {
         );
       }
     } catch (e) {
-      message.error('点赞失败');
+      if (activate) {
+        message.error('点赞失败');
+      } else {
+        message.error('取消点赞失败');
+      }
     }
   };
   return (
@@ -108,7 +119,7 @@ export default function PostList({ listData, postNum, setPage }: Props) {
         pageSize: 10,
         showQuickJumper: true,
         showSizeChanger: false,
-        total: postNum,
+        total: 2000,
       }}
       dataSource={listData}
       footer={
