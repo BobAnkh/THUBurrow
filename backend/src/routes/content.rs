@@ -1,15 +1,14 @@
-use std::collections::HashMap;
-
 use rocket::http::Status;
 use rocket::serde::json::Json;
 use rocket::{Build, Rocket};
 use rocket_db_pools::Connection;
-
 use sea_orm::sea_query::Expr;
-use sea_orm::{entity::*, ActiveModelTrait, Condition, ConnectionTrait, DbErr, QueryOrder};
-use sea_orm::{PaginatorTrait, QueryFilter};
+use sea_orm::{
+    entity::*, ActiveModelTrait, Condition, ConnectionTrait, DbErr, PaginatorTrait, QueryFilter,
+    QueryOrder,
+};
+use std::collections::HashMap;
 
-// use crate::db::user::Model;
 use crate::pgdb;
 use crate::pgdb::prelude::*;
 use crate::pool::PgDb;

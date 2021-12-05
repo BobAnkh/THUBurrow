@@ -1,37 +1,31 @@
 use chrono::{FixedOffset, Utc};
-// use futures::future;
-use rocket::http::Status;
-use rocket::http::{Cookie, CookieJar, SameSite};
+use crypto::digest::Digest;
+use crypto::sha3::Sha3;
+use idgenerator::IdHelper;
+use rand::distributions::Alphanumeric;
+use rand::{thread_rng, Rng};
+use rocket::http::{Cookie, CookieJar, SameSite, Status};
 use rocket::serde::json::Json;
 use rocket::{Build, Rocket};
 use rocket_db_pools::Connection;
 use sea_orm::sea_query::{Expr, Query};
 use sea_orm::{entity::*, query::*};
 use sea_orm::{DbErr, QueryFilter};
-// , DatabaseConnection};
+use std::collections::HashMap;
+use std::iter;
 
 use crate::pgdb;
 use crate::pgdb::prelude::*;
 use crate::pool::{PgDb, PulsarSearchProducerMq, RedisDb, RocketPulsarProducer};
-use crate::req::pulsar::*;
 use crate::req::{
     burrow::{BurrowMetadata, BURROW_PER_PAGE},
     content::{Post, POST_PER_PAGE},
+    pulsar::*,
     user::*,
 };
 use crate::utils::auth::Auth;
 use crate::utils::burrow_valid::*;
 use crate::utils::email;
-
-use crypto::digest::Digest;
-use crypto::sha3::Sha3;
-use std::collections::HashMap;
-use std::iter;
-
-use idgenerator::IdHelper;
-
-use rand::distributions::Alphanumeric;
-use rand::{thread_rng, Rng};
 
 pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
     rocket.mount(

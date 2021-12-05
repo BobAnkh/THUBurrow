@@ -4,14 +4,12 @@ use pulsar::{message::proto, producer, Error as PulsarError, Pulsar, TokioExecut
 use reqwest;
 use rocket::State;
 use rocket_db_pools::{rocket::figment::Figment, Config, Database, Error, Pool};
-use s3::BucketConfiguration;
-use sea_orm::{DatabaseConnection, DbErr};
-
-use std::time::Duration;
-
 use s3::bucket::Bucket;
 use s3::creds::Credentials;
 use s3::region::Region;
+use s3::BucketConfiguration;
+use sea_orm::{DatabaseConnection, DbErr};
+use std::time::Duration;
 
 // redis for keydb
 pub trait DeadManager: Manager + Sized + Send + Sync + 'static {
