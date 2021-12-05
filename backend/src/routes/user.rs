@@ -105,6 +105,15 @@ pub async fn user_sign_up(
             }),
         );
     }
+    if user.username.is_empty() {
+        return (
+            Status::BadRequest,
+            Json(UserResponse {
+                default_burrow: -1,
+                errors: vec!["Empty User Name".to_string()],
+            }),
+        )
+    }
     // check if email address is duplicated, add corresponding error if so
     match User::find()
         .filter(pgdb::user::Column::Email.eq(user.email))
