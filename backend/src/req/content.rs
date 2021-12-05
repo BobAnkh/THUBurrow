@@ -6,7 +6,7 @@ use std::convert::From;
 pub static POST_PER_PAGE: usize = 20;
 pub static REPLY_PER_PAGE: usize = 20;
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct PostCreateResponse {
     pub errors: String,
     pub post_id: i64,

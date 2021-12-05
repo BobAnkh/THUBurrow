@@ -34,7 +34,7 @@ fn test_signup() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    println!("{}", response.into_string().await.unwrap());
+    println!("{}", response.into_string().unwrap());
     // sign up a user: perform a wrong action (illegal email address)
     let response = client
         .post("/users/sign-up")
@@ -43,9 +43,9 @@ fn test_signup() {
             "password": "testpassword",
             "email": format!("{}@mails.tsignhua.edu.cn", name)}))
         .remote("127.0.0.1:8000".parse().unwrap())
-        .dispatch().await;
+        .dispatch();
     assert_eq!(response.status(), Status::BadRequest);
-    println!("{}", response.into_string().await.unwrap());
+    println!("{}", response.into_string().unwrap());
     // sign up a user: perform a wrong action (duplicated name and email)
     let response = client
         .post("/users/sign-up")
@@ -174,9 +174,9 @@ fn test_burrow() {
     //         "description": format!("First burrow of {}", name),
     //         "title": "Burrow 1"}))
     //     .remote("127.0.0.1:8000".parse().unwrap())
-    //     .dispatch().await;
+    //     .dispatch();
     // assert_eq!(response.status(), Status::Forbidden);
-    // println!("{}", response.into_string().await.unwrap());
+    // println!("{}", response.into_string().unwrap());
 
     std::thread::sleep(std::time::Duration::from_secs(5));
 
@@ -225,7 +225,7 @@ fn test_burrow() {
             "description": format!("Forth burrow of {}", name),
             "title": "Burrow 4"}))
         .remote("127.0.0.1:8000".parse().unwrap())
-        .dispatch().await;
+        .dispatch();
     assert_eq!(response.status(), Status::Ok);
     println!("Burrow Id: {}", response.into_string().unwrap());
     std::thread::sleep(std::time::Duration::from_secs(5));
@@ -236,7 +236,7 @@ fn test_burrow() {
             "description": format!("Fifth burrow of {}", name),
             "title": "Burrow 5"}))
         .remote("127.0.0.1:8000".parse().unwrap())
-        .dispatch().await;
+        .dispatch();
     assert_eq!(response.status(), Status::Ok);
     println!("Burrow Id: {}", response.into_string().unwrap());
     std::thread::sleep(std::time::Duration::from_secs(5));
@@ -247,7 +247,7 @@ fn test_burrow() {
             "description": format!("Sixth burrow of {}", name),
             "title": "Burrow 6"}))
         .remote("127.0.0.1:8000".parse().unwrap())
-        .dispatch().await;
+        .dispatch();
     assert_eq!(response.status(), Status::BadRequest);
     println!("Burrow Id: {}", response.into_string().unwrap());
 
@@ -299,15 +299,15 @@ fn test_burrow() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    println!("Burrow ids are: {}", response.into_string().await.unwrap());
+    println!("Burrow ids are: {}", response.into_string().unwrap());
 
     // get valid burrow of a user
     let response = client
         .get("/users/valid-burrow")
         .remote("127.0.0.1:8000".parse().unwrap())
-        .dispatch().await;
+        .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    println!("Burrow ids are: {}", response.into_string().await.unwrap());
+    println!("Burrow ids are: {}", response.into_string().unwrap());
 
     // get following burrows of a user
     let response = client
@@ -328,9 +328,9 @@ fn test_burrow() {
     let response = client
         .delete(format!("/burrows/{}", burrow_id))
         .remote("127.0.0.1:8000".parse().unwrap())
-        .dispatch().await;
+        .dispatch();
     assert_eq!(response.status(), Status::BadRequest);
-    println!("{}", response.into_string().await.unwrap());
+    println!("{}", response.into_string().unwrap());
 
     // update burrow: perform a wrong action (invalid burrow)
     let response = client
