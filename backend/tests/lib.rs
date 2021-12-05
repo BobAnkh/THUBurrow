@@ -26,6 +26,7 @@ async fn test_signup() {
         .map(char::from)
         .take(16)
         .collect();
+    // sign up a user
     let response = client
         .post("/users/sign-up")
         .json(&json!({
@@ -36,6 +37,18 @@ async fn test_signup() {
         .dispatch().await;
     assert_eq!(response.status(), Status::Ok);
     println!("{}", response.into_string().await.unwrap());
+    // sign up a user: perform a wrong action (illegal email address)
+    let response = client
+        .post("/users/sign-up")
+        .json(&json!({
+            "username": format!("{}", name),
+            "password": "testpassword",
+            "email": format!("{}@mails.tsignhua.edu.cn", name)}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch().await;
+    assert_eq!(response.status(), Status::BadRequest);
+    println!("{}", response.into_string().await.unwrap());
+    // sign up a user: perform a wrong action (duplicated name and email)
     let response = client
         .post("/users/sign-up")
         .json(&json!({
@@ -207,15 +220,6 @@ async fn test_burrow() {
     assert_eq!(response.status(), Status::BadRequest);
     println!("Burrow Id: {}", response.into_string().unwrap());
 
-    // follow the burrow
-    let response = client
-        .post("/users/relation")
-        .json(&json!({ "ActivateFollow": burrow_id }))
-        .remote("127.0.0.1:8000".parse().unwrap())
-        .dispatch().await;
-    assert_eq!(response.status(), Status::Ok);
-    println!("{:?}", response.into_string().await);
-
     // show burrow
     let response = client
         .get(format!("/burrows/{}", burrow_id))
@@ -264,7 +268,15 @@ async fn test_burrow() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch().await;
     assert_eq!(response.status(), Status::Ok);
-    println!("{}", response.into_string().await.unwrap());
+    println!("Burrow ids are: {}", response.into_string().await.unwrap());
+
+    // get valid burrow of a user
+    let response = client
+        .get("/users/valid-burrow")
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch().await;
+    assert_eq!(response.status(), Status::Ok);
+    println!("Burrow ids are: {}", response.into_string().await.unwrap());
 
     // get following burrows of a user
     let response = client
@@ -274,14 +286,14 @@ async fn test_burrow() {
     assert_eq!(response.status(), Status::Ok);
     println!("{}", response.into_string().await.unwrap());
 
-    // delete burrow
+    // discard burrow
     let response = client
         .delete(format!("/burrows/{}", burrow_id))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch().await;
     assert_eq!(response.status(), Status::Ok);
     println!("{:?}", response.into_string());
-    // delete burrow: perform a wrong action (already delete)
+    // discard burrow: perform a wrong action (already discard)
     let response = client
         .delete(format!("/burrows/{}", burrow_id))
         .remote("127.0.0.1:8000".parse().unwrap())
