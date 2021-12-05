@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use futures::future;
 use rocket::http::Status;
 use rocket::serde::json::Json;
@@ -5,7 +7,7 @@ use rocket::{Build, Rocket};
 use rocket_db_pools::Connection;
 
 use sea_orm::sea_query::Expr;
-use sea_orm::{entity::*, ActiveModelTrait, ConnectionTrait, DbErr, QueryOrder};
+use sea_orm::{entity::*, ActiveModelTrait, Condition, ConnectionTrait, DbErr, QueryOrder};
 use sea_orm::{PaginatorTrait, QueryFilter};
 
 // use crate::db::user::Model;
@@ -251,10 +253,10 @@ pub async fn read_post(
 
 #[get("/post/list?<page>")]
 pub async fn read_post_list(
-    _auth: Auth,
+    auth: Auth,
     db: Connection<PgDb>,
     page: Option<usize>,
-) -> (Status, Json<ListReadResponse>) {
+) -> (Status, Result<Json<ListPage>, String>) {
     let pg_con = db.into_inner();
     let page = page.unwrap_or(0);
     let post_pages = ContentPost::find()
@@ -263,56 +265,67 @@ pub async fn read_post_list(
     let post_info = match post_pages.fetch_page(page).await {
         Ok(post_info) => post_info,
         Err(e) => {
-            return (
-                Status::InternalServerError,
-                Json(ListReadResponse {
-                    errors: format!("{}", e),
-                    list_page: None,
-                }),
-            );
+            log::error!("[READ-POST] Database error: {:?}", e);
+            return (Status::InternalServerError, Err(String::new()));
         }
     };
-    // get total number of posts
-    let post_num: i64;
-    match ContentPost::find()
-        .order_by_desc(pgdb::content_post::Column::PostId)
-        .one(&pg_con)
-        .await
-        .expect("cannot fetch content from pgdb")
-    {
-        None => {
-            return (
-                Status::BadRequest,
-                Json(ListReadResponse {
-                    errors: "No post exsits".to_string(),
-                    list_page: None,
-                }),
-            )
-        }
-        Some(post_last) => {
-            post_num = post_last.post_id;
-        }
-    }
     // check if the user collect and like the posts
     // TODO: check if the post is banned?
-    let post_page: Vec<PostDisplay> = future::try_join_all(post_info.iter().map(move |post| {
-        let inner_conn = pg_con.clone();
-        GetPostList::get_post_display(post, inner_conn, _auth.id)
-    }))
-    .await
-    .unwrap();
-    let list_page = ListPage {
-        post_page,
-        page,
-        post_num,
+    let post_ids = post_info.iter().map(|r| r.post_id).collect::<Vec<i64>>();
+    let like_res = match pgdb::user_like::Entity::find()
+        .filter(
+            Condition::all()
+                .add(pgdb::user_like::Column::Uid.eq(auth.id))
+                .add(pgdb::user_like::Column::PostId.is_in(post_ids.clone())),
+        )
+        .order_by_desc(pgdb::user_like::Column::PostId)
+        .all(&pg_con)
+        .await
+        .map(|user_likes| {
+            let hm: HashMap<i64, bool> = user_likes.iter().map(|r| (r.post_id, true)).collect();
+            hm
+        }) {
+        Ok(hm) => hm,
+        Err(e) => {
+            log::error!("[READ-POST-LIST] Database Error: {:?}", e.to_string());
+            return (Status::InternalServerError, Err(String::new()));
+        }
     };
-    (
-        Status::Ok,
-        Json(ListReadResponse {
-            errors: "".to_string(),
-            list_page: Some(list_page),
-        }),
-    )
+    let collection_res = match pgdb::user_collection::Entity::find()
+        .filter(
+            Condition::all()
+                .add(pgdb::user_collection::Column::Uid.eq(auth.id))
+                .add(pgdb::user_collection::Column::PostId.is_in(post_ids)),
+        )
+        .order_by_desc(pgdb::user_collection::Column::PostId)
+        .all(&pg_con)
+        .await
+        .map(|user_collections| {
+            let hm: HashMap<i64, (bool, bool)> = user_collections
+                .iter()
+                .map(|r| (r.post_id, (true, r.is_update)))
+                .collect();
+            hm
+        }) {
+        Ok(hm) => hm,
+        Err(e) => {
+            log::error!("[READ-POST-LIST] Database Error: {:?}", e.to_string());
+            return (Status::InternalServerError, Err(String::new()));
+        }
+    };
+    let post_page: Vec<PostDisplay> = post_info
+        .iter()
+        .map(|m| {
+            let c = *collection_res.get(&m.post_id).unwrap_or(&(false, false));
+            PostDisplay {
+                post: m.into(),
+                like: *like_res.get(&m.post_id).unwrap_or(&false),
+                collection: c.0,
+                is_update: c.1,
+            }
+        })
+        .collect();
+    (Status::Ok, Ok(Json(ListPage { post_page, page })))
 }
 
 #[post("/reply", data = "<reply_info>", format = "json")]
