@@ -1,6 +1,6 @@
-use crate::pgdb::{self, content_post, content_reply};
+use crate::pgdb::{content_post, content_reply};
 use rocket::serde::{Deserialize, Serialize};
-use sea_orm::{prelude::DateTimeWithTimeZone, DatabaseConnection, EntityTrait};
+use sea_orm::prelude::DateTimeWithTimeZone;
 use std::convert::From;
 
 pub static POST_PER_PAGE: usize = 20;
@@ -8,26 +8,11 @@ pub static REPLY_PER_PAGE: usize = 20;
 
 #[derive(Serialize, Deserialize)]
 pub struct PostCreateResponse {
-    pub errors: String,
-    pub post_id: i64,
-}
-
-#[derive(Serialize)]
-pub struct PostDeleteResponse {
-    pub errors: Vec<String>,
     pub post_id: i64,
 }
 
 #[derive(Serialize)]
 pub struct ReplyCreateResponse {
-    pub errors: Vec<String>,
-    pub post_id: i64,
-    pub reply_id: i32,
-}
-
-#[derive(Serialize)]
-pub struct ReplyUpdateResponse {
-    pub errors: Vec<String>,
     pub post_id: i64,
     pub reply_id: i32,
 }

@@ -112,7 +112,7 @@ pub async fn user_sign_up(
                 default_burrow: -1,
                 errors: vec!["Empty User Name".to_string()],
             }),
-        )
+        );
     }
     // check if email address is duplicated, add corresponding error if so
     match User::find()
