@@ -37,9 +37,13 @@ jobs:
         run: |
           # cargo build --bin consumer
           # cargo run --bin consumer &
+          docker logs pulsar_container
+          sleep 60
           cargo test --no-fail-fast --verbose -- --nocapture --test-threads=1
       - name: remove containers
-        run: docker-compose -f docker-compose-dev.yml down && sudo rm -rf data    
+        run: |
+          docker logs pulsar_container
+          docker-compose -f docker-compose-dev.yml down && sudo rm -rf data    
 
   cargo-coverage-test:
     runs-on: ubuntu-latest
