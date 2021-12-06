@@ -1,3 +1,4 @@
+use chrono::{prelude::*, Duration};
 use rocket::http::Status;
 use rocket::serde::json::Json;
 use rocket::{Build, Rocket};
@@ -16,18 +17,17 @@ use crate::req::content::*;
 use crate::utils::auth::Auth;
 use crate::utils::burrow_valid::is_valid_burrow;
 
-use chrono::{prelude::*, Duration};
-
 pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
     rocket.mount(
         "/content",
         routes![
             create_post,
             read_post,
+            update_post,
+            delete_post,
             read_post_list,
             create_reply,
             update_reply,
-            delete_post,
         ],
     )
 }
@@ -197,6 +197,152 @@ pub async fn read_post(
         Err(e) => {
             log::error!("[READ-POST] Database error: {:?}", e);
             (Status::InternalServerError, Err(String::new()))
+        }
+    }
+}
+
+#[patch("/post/<post_id>", data = "<post_info>", format = "json")]
+pub async fn update_post(
+    auth: Auth,
+    db: Connection<PgDb>,
+    post_id: i64,
+    post_info: Json<PostUpdateInfo>,
+) -> (Status, String) {
+    let pg_con = db.into_inner();
+    let content = post_info.into_inner();
+    let now = Utc::now().with_timezone(&FixedOffset::east(8 * 3600));
+    // check if the post not exsits, add corresponding error if so
+    match ContentPost::find_by_id(post_id).one(&pg_con).await {
+        Ok(r) => match r {
+            None => (Status::BadRequest, "Post not exsits".to_string()),
+            Some(post_info) => {
+                match pgdb::user_status::Entity::find_by_id(auth.id)
+                    .one(&pg_con)
+                    .await
+                {
+                    Ok(opt_state) => match opt_state {
+                        Some(state) => {
+                            // check if this user create the post
+                            if state.user_state != 0 {
+                                (Status::Forbidden, "User invalid".to_string())
+                            } else if is_valid_burrow(&state.valid_burrow, &post_info.burrow_id) {
+                                let section = content.section.join(",");
+                                let tag = content.tag.join(",");
+                                let content_post = pgdb::content_post::ActiveModel {
+                                    post_id: Set(post_id),
+                                    title: Set(content.title),
+                                    update_time: Set(now),
+                                    section: Set(section),
+                                    tag: Set(tag),
+                                    ..Default::default()
+                                };
+                                match content_post.update(&pg_con).await {
+                                    Ok(_) => (Status::Ok, "Success".to_string()),
+                                    Err(e) => {
+                                        log::error!("[UPDATE-POST] Database error: {:?}", e);
+                                        (Status::InternalServerError, String::new())
+                                    }
+                                }
+                            } else {
+                                (
+                                    Status::Forbidden,
+                                    "Not allowed to update this post".to_string(),
+                                )
+                            }
+                        }
+                        None => {
+                            log::info!("[UPDATE-POST] Cannot find user_status by uid.");
+                            (Status::Forbidden, String::new())
+                        }
+                    },
+                    Err(e) => {
+                        log::error!("[UPDATE-POST] Database error: {:?}", e);
+                        (Status::InternalServerError, String::new())
+                    }
+                }
+            }
+        },
+        Err(e) => {
+            log::error!("[UPDATE-POST] Database error: {:?}", e);
+            (Status::InternalServerError, String::new())
+        }
+    }
+}
+
+#[delete("/post/<post_id>")]
+pub async fn delete_post(auth: Auth, db: Connection<PgDb>, post_id: i64) -> (Status, String) {
+    let pg_con = db.into_inner();
+    let now = Utc::now().with_timezone(&FixedOffset::east(8 * 3600));
+    // check if the post not exsits, add corresponding error if so
+    match ContentPost::find_by_id(post_id).one(&pg_con).await {
+        Ok(r) => match r {
+            None => (Status::BadRequest, "Post not exsits".to_string()),
+            Some(post_info) => {
+                //  check if time is within limit, if so, allow user to delete
+                if post_info
+                    .create_time
+                    .checked_add_signed(Duration::seconds(135))
+                    .unwrap()
+                    < now
+                {
+                    return (
+                        Status::Forbidden,
+                        "Can only delete post in 2 minutes".to_string(),
+                    );
+                }
+                match pgdb::user_status::Entity::find_by_id(auth.id)
+                    .one(&pg_con)
+                    .await
+                {
+                    Ok(opt_state) => match opt_state {
+                        Some(state) => {
+                            // check if this user create the post
+                            if is_valid_burrow(&state.valid_burrow, &post_info.burrow_id) {
+                                // delete data in content_subject
+                                let delete_post: pgdb::content_post::ActiveModel = post_info.into();
+                                match pg_con
+                                    .transaction::<_, (), DbErr>(|txn| {
+                                        Box::pin(async move {
+                                            delete_post.delete(txn).await?;
+                                            ContentReply::delete_many()
+                                                .filter(
+                                                    pgdb::content_reply::Column::PostId.eq(post_id),
+                                                )
+                                                .exec(txn)
+                                                .await?;
+                                            Ok(())
+                                        })
+                                    })
+                                    .await
+                                {
+                                    Ok(_) => (Status::Ok, "Success".to_string()),
+                                    Err(e) => {
+                                        log::error!("[DELETE-POST] Database error: {:?}", e);
+                                        (Status::InternalServerError, String::new())
+                                    }
+                                }
+                            } else {
+                                (
+                                    Status::Forbidden,
+                                    "Not allowed to delete this post".to_string(),
+                                )
+                            }
+                        }
+                        None => {
+                            log::info!("[DELETE-POST] Cannot find user_status by uid.");
+                            (Status::Forbidden, "".to_string())
+                        }
+                    },
+                    Err(e) => {
+                        log::error!("[DELETE-POST] Database error: {:?}", e);
+                        (Status::InternalServerError, String::new())
+                    }
+                }
+            }
+        },
+        Err(e) => {
+            log::error!("[DELETE-POST] Database error: {:?}", e);
+            (Status::InternalServerError, String::new())
         }
     }
 }
@@ -403,17 +549,43 @@ pub async fn update_reply(
                                     &user_state_info.valid_burrow,
                                     &reply_info.burrow_id,
                                 ) {
-                                    let now =
-                                        Utc::now().with_timezone(&FixedOffset::east(8 * 3600));
-                                    // fill the row in content_reply
-                                    let mut content_reply: pgdb::content_reply::ActiveModel =
-                                        reply_info.into();
-                                    content_reply.content = Set(content.content);
-                                    content_reply.update_time = Set(now);
-                                    match content_reply.update(&pg_con).await {
+                                    match pg_con
+                                        .transaction::<_, (), DbErr>(|txn| {
+                                            Box::pin(async move {
+                                                let now = Utc::now().with_timezone(&FixedOffset::east(8 * 3600));
+                                                // fill the row in content_reply
+                                                let mut content_reply: pgdb::content_reply::ActiveModel =
+                                                    reply_info.into();
+                                                content_reply.content = Set(content.content);
+                                                content_reply.update_time = Set(now);
+                                                content_reply.update(txn).await?;
+                                                let post_update = pgdb::content_post::ActiveModel {
+                                                    post_id: Set(content.post_id),
+                                                    update_time: Set(now),
+                                                    ..Default::default()
+                                                };
+                                                // update the row in database
+                                                post_update.update(txn).await?;
+                                                // // Not inform user when only update reply
+                                                // UserCollection::update_many()
+                                                //     .col_expr(
+                                                //         pgdb::user_collection::Column::IsUpdate,
+                                                //         Expr::value(true),
+                                                //     )
+                                                //     .filter(
+                                                //         pgdb::user_collection::Column::PostId
+                                                //             .eq(content.post_id),
+                                                //     )
+                                                //     .exec(txn)
+                                                //     .await?;
+                                                Ok(())
+                                            })
+                                    })
+                                    .await
+                                    {
                                         Ok(_) => (Status::Ok, "Success".to_string()),
                                         Err(e) => {
-                                            log::error!("[CREATE-POST] Database error: {:?}", e);
+                                            log::error!("[UPDATE-REPLY] Database error: {:?}", e);
                                             (Status::InternalServerError, String::new())
                                         }
                                     }
@@ -423,7 +595,7 @@ pub async fn update_reply(
                             }
                         },
                         Err(e) => {
-                            log::error!("[CREATE-POST] Database error: {:?}", e);
+                            log::error!("[UPDATE-REPLY] Database error: {:?}", e);
                             (Status::InternalServerError, String::new())
                         }
                     }
@@ -431,85 +603,7 @@ pub async fn update_reply(
             }
         },
         Err(e) => {
-            log::error!("[CREATE-POST] Database error: {:?}", e);
-            (Status::InternalServerError, String::new())
-        }
-    }
-}
-
-#[delete("/post/<post_id>")]
-pub async fn delete_post(auth: Auth, db: Connection<PgDb>, post_id: i64) -> (Status, String) {
-    let pg_con = db.into_inner();
-    let now = Utc::now().with_timezone(&FixedOffset::east(8 * 3600));
-    // check if the post not exsits, add corresponding error if so
-    match ContentPost::find_by_id(post_id).one(&pg_con).await {
-        Ok(r) => match r {
-            None => (Status::BadRequest, "Post not exsits".to_string()),
-            Some(post_info) => {
-                // TODO: check if this user create the post
-                // TODO: check if time is within limit, if so, allow user to delete
-                if post_info
-                    .create_time
-                    .checked_add_signed(Duration::seconds(135))
-                    .unwrap()
-                    < now
-                {
-                    return (
-                        Status::Forbidden,
-                        "Can only delete post in 2 minutes".to_string(),
-                    );
-                }
-                match pgdb::user_status::Entity::find_by_id(auth.id)
-                    .one(&pg_con)
-                    .await
-                {
-                    Ok(opt_state) => match opt_state {
-                        Some(state) => {
-                            if is_valid_burrow(&state.valid_burrow, &post_info.burrow_id) {
-                                // delete data in content_subject
-                                let delete_post: pgdb::content_post::ActiveModel = post_info.into();
-                                match pg_con
-                                    .transaction::<_, (), DbErr>(|txn| {
-                                        Box::pin(async move {
-                                            delete_post.delete(txn).await?;
-                                            ContentReply::delete_many()
-                                                .filter(
-                                                    pgdb::content_reply::Column::PostId.eq(post_id),
-                                                )
-                                                .exec(txn)
-                                                .await?;
-                                            Ok(())
-                                        })
-                                    })
-                                    .await
-                                {
-                                    Ok(_) => (Status::Ok, "Success".to_string()),
-                                    Err(e) => {
-                                        log::error!("[DELETE-POST] Database error: {:?}", e);
-                                        (Status::InternalServerError, String::new())
-                                    }
-                                }
-                            } else {
-                                (
-                                    Status::Forbidden,
-                                    "Not allowed to delete this post".to_string(),
-                                )
-                            }
-                        }
-                        None => {
-                            log::info!("[DELETE-POST] Cannot find user_status by uid.");
-                            (Status::Forbidden, "".to_string())
-                        }
-                    },
-                    Err(e) => {
-                        log::error!("[DELETE-POST] Database error: {:?}", e);
-                        (Status::InternalServerError, String::new())
-                    }
-                }
-            }
-        },
-        Err(e) => {
-            log::error!("[DELETE-POST] Database error: {:?}", e);
+            log::error!("[UPDATE-REPLY] Database error: {:?}", e);
             (Status::InternalServerError, String::new())
         }
     }

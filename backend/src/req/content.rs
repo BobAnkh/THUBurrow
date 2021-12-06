@@ -11,6 +11,13 @@ pub struct PostCreateResponse {
     pub post_id: i64,
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct PostUpdateInfo {
+    pub title: String,
+    pub section: Vec<String>,
+    pub tag: Vec<String>,
+}
+
 #[derive(Serialize)]
 pub struct ReplyCreateResponse {
     pub post_id: i64,
