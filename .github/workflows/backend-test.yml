@@ -11,37 +11,35 @@ on:
   workflow_dispatch:
 
 jobs:
-  # cargo-integration-test:
-  #   runs-on: ubuntu-latest
-  #   defaults:
-  #     run:
-  #       working-directory: backend
+  cargo-integration-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
 
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v2
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
 
-  #     - name: Install latest nightly
-  #       uses: actions-rs/toolchain@v1
-  #       with:
-  #           toolchain: nightly-2021-11-18
-  #           override: true
-  #           components: rustfmt, clippy
-  #     - name: deal with rust cache
-  #       uses: Swatinem/rust-cache@v1
-  #       with:
-  #         working-directory: backend
-  #     - name: Add containers
-  #       run: docker-compose -f docker-compose-dev.yml up -d
-  #     - name: cargo test
-  #       run: |
-  #         # cargo build --bin consumer
-  #         # cargo run --bin consumer &
-  #         cargo clean
-  #         cargo build --tests
-  #         cargo test --no-fail-fast --verbose -- --nocapture
-  #     - name: remove containers
-  #       run: docker-compose -f docker-compose-dev.yml down && sudo rm -rf data    
+      - name: Install latest nightly
+        uses: actions-rs/toolchain@v1
+        with:
+            toolchain: nightly-2021-11-18
+            override: true
+            components: rustfmt, clippy
+      - name: deal with rust cache
+        uses: Swatinem/rust-cache@v1
+        with:
+          working-directory: backend
+      - name: Add containers
+        run: docker-compose -f docker-compose-dev.yml up -d
+      - name: cargo test
+        run: |
+          # cargo build --bin consumer
+          # cargo run --bin consumer &
+          cargo test --no-fail-fast --verbose -- --nocapture
+      - name: remove containers
+        run: docker-compose -f docker-compose-dev.yml down && sudo rm -rf data    
 
   cargo-coverage-test:
     runs-on: ubuntu-latest
