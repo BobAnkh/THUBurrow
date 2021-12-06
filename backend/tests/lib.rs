@@ -329,7 +329,7 @@ async fn test_burrow() {
         .delete(format!("/burrows/{}", burrow_id))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch().await;
-    assert_eq!(response.status(), Status::BadRequest);
+    assert_eq!(response.status(), Status::Forbidden);
     println!("{}", response.into_string().await.unwrap());
 
     // update burrow: perform a wrong action (invalid burrow)
@@ -448,10 +448,10 @@ async fn test_content() {
     println!("{}", response.into_string().await.unwrap());
     // get post: perform a wrong action (post not exsit)
     let response = client
-        .get(format!("/content/post/{}", post_id))
+        .get(format!("/content/post/{}", post_id+10000))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch().await;
-    assert_eq!(response.status(), Status::Forbidden);
+    assert_eq!(response.status(), Status::BadRequest);
     println!("{}", response.into_string().await.unwrap());
 
     // get post list
