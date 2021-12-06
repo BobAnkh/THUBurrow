@@ -248,7 +248,7 @@ async fn test_burrow() {
             "title": "Burrow 6"}))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch().await;
-    assert_eq!(response.status(), Status::BadRequest);
+    assert_eq!(response.status(), Status::Forbidden);
     println!("Burrow Id: {}", response.into_string().await.unwrap());
 
     // show burrow
@@ -416,7 +416,7 @@ async fn test_content() {
         .json(&json!({
             "title": format!("Third post of {}", name),
             "burrow_id": burrow_id,
-            "section": [""],
+            "section": [],
             "tag": ["NoTag"],
             "content": "This is a test post no.3"}))
         .remote("127.0.0.1:8000".parse().unwrap())
@@ -451,7 +451,7 @@ async fn test_content() {
         .get(format!("/content/post/{}", post_id))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch().await;
-    assert_eq!(response.status(), Status::BadRequest);
+    assert_eq!(response.status(), Status::Forbidden);
     println!("{}", response.into_string().await.unwrap());
 
     // get post list
