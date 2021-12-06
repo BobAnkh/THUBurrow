@@ -3,7 +3,7 @@ use tokio::time::Duration;
 
 #[tokio::main]
 async fn main() {
-    // log_init();
+    backend::log_init();
     let scheduler = vec![tokio::spawn(generate_trending())];
     let handles = vec![
         tokio::spawn(pulsar_relation()),

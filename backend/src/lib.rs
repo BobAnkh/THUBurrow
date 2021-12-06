@@ -13,14 +13,16 @@ use rocket::{fairing::AdHoc, Build, Rocket};
 use rocket_db_pools::Database;
 
 #[cfg(debug_assertions)]
-fn log_init() {}
+pub fn log_init() {}
 
 #[cfg(not(debug_assertions))]
-fn log_init() {
+pub fn log_init() {
     let filename = if std::path::Path::new("/etc/backend/conf/log4rs.yml").exists() {
         "/etc/backend/conf/log4rs.yml"
-    } else {
+    } else if std::path::Path::new("/etc/backend/conf/log4rs-default.yml").exists() {
         "/etc/backend/conf/log4rs-default.yml"
+    } else {
+        "conf/log4rs.yml"
     };
     match log4rs::init_file(filename, Default::default()) {
         Ok(_) => (),

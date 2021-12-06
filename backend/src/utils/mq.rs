@@ -1,17 +1,17 @@
 extern crate serde;
-use crate::pgdb::{content_post, prelude::*, user_collection, user_follow, user_like};
-use crate::req::content::Post;
-use crate::req::pulsar::*;
 use futures::TryStreamExt;
 use lazy_static::lazy_static;
 use pulsar::{Consumer, Pulsar, SubType, TokioExecutor};
 use sea_orm::sea_query::Expr;
-use sea_orm::{entity::*, ConnectionTrait, DbErr, PaginatorTrait, QueryOrder};
-use sea_orm::{Database, DatabaseConnection, QueryFilter};
+use sea_orm::{entity::*, ConnectionTrait, Database, DatabaseConnection, DbErr, QueryFilter};
 use serde_json::json;
 use std::collections::HashMap;
 use std::env;
 use tokio::time::Duration;
+
+use crate::pgdb::{content_post, prelude::*, user_collection, user_follow, user_like};
+use crate::req::pulsar::*;
+use crate::routes::trending::select_trending;
 
 lazy_static! {
     static ref TYPESENSE_API_KEY: String = {
@@ -382,8 +382,8 @@ pub async fn pulsar_relation() -> Result<(), pulsar::Error> {
     let db: DatabaseConnection = match Database::connect(postgres_addr).await {
         Ok(db) => db,
         Err(e) => {
-            println!("{:?}", e);
-            panic!("database connection failed");
+            log::error!("[PULSAR-RELATION] Database Error {:?}", e);
+            panic!("pulsar relation database connection failed");
         }
     };
     while let Some(msg) = consumer.try_next().await? {
@@ -391,7 +391,7 @@ pub async fn pulsar_relation() -> Result<(), pulsar::Error> {
         let data = match msg.deserialize() {
             Ok(data) => data,
             Err(e) => {
-                println!("could not deserialize message: {:?}", e);
+                log::error!("[PULSAR-RELATION] Could not deserialize message: {:?}", e);
                 continue;
             }
         };
@@ -421,8 +421,8 @@ pub async fn pulsar_relation() -> Result<(), pulsar::Error> {
                     })
                     .await
                 {
-                    Ok(_) => println!("insert like success"),
-                    Err(e) => println!("insert like failed {:?}", e),
+                    Ok(_) => log::info!("[PULSAR-RELATION] Insert like success"),
+                    Err(e) => log::error!("[PULSAR-RELATION] Insert like failed {:?}", e),
                 }
             }
             PulsarRelationData::DeactivateLike(uid, post_id) => {
@@ -432,7 +432,10 @@ pub async fn pulsar_relation() -> Result<(), pulsar::Error> {
                 };
                 match like.delete(&db).await {
                     Ok(res) => {
-                        println!("delete like success {}", res.rows_affected);
+                        log::info!(
+                            "[PULSAR-RELATION] Delete like success {}",
+                            res.rows_affected
+                        );
                         if res.rows_affected == 1 {
                             let _ = ContentPost::update_many()
                                 .col_expr(
@@ -444,7 +447,7 @@ pub async fn pulsar_relation() -> Result<(), pulsar::Error> {
                                 .await;
                         }
                     }
-                    Err(e) => println!("delete like failed {:?}", e),
+                    Err(e) => log::error!("[PULSAR-RELATION] Delete like failed {:?}", e),
                 }
             }
             PulsarRelationData::ActivateCollection(uid, post_id) => {
@@ -473,8 +476,8 @@ pub async fn pulsar_relation() -> Result<(), pulsar::Error> {
                     })
                     .await
                 {
-                    Ok(_) => println!("insert collection success"),
-                    Err(e) => println!("insert collection failed {:?}", e),
+                    Ok(_) => log::info!("[PULSAR-RELATION] Insert collection success"),
+                    Err(e) => log::error!("[PULSAR-RELATION] Insert collection failed {:?}", e),
                 }
             }
             PulsarRelationData::DeactivateCollection(uid, post_id) => {
@@ -485,7 +488,10 @@ pub async fn pulsar_relation() -> Result<(), pulsar::Error> {
                 };
                 match collection.delete(&db).await {
                     Ok(res) => {
-                        println!("delete collection success {}", res.rows_affected);
+                        log::info!(
+                            "[PULSAR-RELATION] Delete collection success {}",
+                            res.rows_affected
+                        );
                         if res.rows_affected == 1 {
                             let _ = ContentPost::update_many()
                                 .col_expr(
@@ -497,7 +503,7 @@ pub async fn pulsar_relation() -> Result<(), pulsar::Error> {
                                 .await;
                         }
                     }
-                    Err(e) => println!("delete collection failed {:?}", e),
+                    Err(e) => log::error!("[PULSAR-RELATION] Delete collection failed {:?}", e),
                 }
             }
             PulsarRelationData::ActivateFollow(uid, burrow_id) => {
@@ -519,8 +525,8 @@ pub async fn pulsar_relation() -> Result<(), pulsar::Error> {
                     })
                     .await
                 {
-                    Ok(_) => println!("insert follow success"),
-                    Err(e) => println!("insert follow failed {:?}", e),
+                    Ok(_) => log::info!("[PULSAR-RELATION] Insert follow success"),
+                    Err(e) => log::error!("[PULSAR-RELATION] Insert follow failed {:?}", e),
                 }
             }
             PulsarRelationData::DeactivateFollow(uid, burrow_id) => {
@@ -531,9 +537,12 @@ pub async fn pulsar_relation() -> Result<(), pulsar::Error> {
                 };
                 match follow.delete(&db).await {
                     Ok(res) => {
-                        println!("delete follow success {}", res.rows_affected);
+                        log::info!(
+                            "[PULSAR-RELATION] Delete follow success {}",
+                            res.rows_affected
+                        );
                     }
-                    Err(e) => println!("delete follow failed {:?}", e),
+                    Err(e) => log::error!("[PULSAR-RELATION] Delete follow failed {:?}", e),
                 }
             }
         }
@@ -552,38 +561,21 @@ pub async fn generate_trending() -> redis::RedisResult<()> {
     let pg_con: DatabaseConnection = match Database::connect(postgres_addr).await {
         Ok(db) => db,
         Err(e) => {
-            println!("{:?}", e);
-            panic!("database connection failed");
+            log::error!("[PULSAR-TRENDING] Database Error{:?}", e);
+            panic!("pulsar trending database connection failed");
         }
     };
     let seconds = 900;
     let mut interval = tokio::time::interval(Duration::from_secs(seconds));
+    interval.tick().await;
     loop {
         interval.tick().await;
-        let query_formula = Expr::cust(
-            r#"(ln("content_post"."post_len")+"content_post"."like_num"+"content_post"."collection_num")/((floor(extract(epoch from (CURRENT_TIMESTAMP - "content_post"."create_time") ) / 60 / 60)/2+floor(extract(epoch from (CURRENT_TIMESTAMP - "content_post"."update_time") ) / 60 / 60)/2+2)^1.2+10)"#,
-        );
-        let trend_pages = ContentPost::find()
-            .filter(content_post::Column::PostState.eq(0))
-            .order_by_desc(query_formula)
-            .paginate(&pg_con, 50);
-        match trend_pages.fetch_page(0).await {
-            Ok(t) => {
-                let trend: Vec<Post> = t.iter().map(|r| r.into()).collect();
-                match serde_json::to_string(&trend) {
-                    Ok(trending) => {
-                        let _: Result<String, redis::RedisError> = redis::cmd("SETEX")
-                            .arg("trending")
-                            .arg(3600i32)
-                            .arg(&trending)
-                            .query_async(&mut kv_conn)
-                            .await;
-                    }
-                    Err(e) => log::error!("{}", e),
-                }
+        match select_trending(&pg_con, &mut kv_conn).await {
+            Ok(trending) => {
+                log::info!("[PULSAR-TRENDING] Get Trending: {}", trending);
             }
             Err(e) => {
-                log::error!("[TRENDING] Err: {}", e);
+                log::error!("[PULSAR-TRENDING] Error: {}", e);
             }
         }
     }

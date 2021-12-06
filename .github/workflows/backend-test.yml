@@ -35,8 +35,8 @@ jobs:
         run: docker-compose -f docker-compose-dev.yml up -d
       - name: cargo test
         run: |
-          cargo build --bin consumer
-          cargo run --bin consumer &
+          # cargo build --bin consumer
+          # cargo run --bin consumer &
           cargo test --no-fail-fast --verbose -- --nocapture
       - name: remove containers
         run: docker-compose -f docker-compose-dev.yml down && sudo rm -rf data    
@@ -69,9 +69,9 @@ jobs:
       - name: Generate code coverage
         run: |
           cargo install cargo-tarpaulin
-          cargo tarpaulin --all-features --no-run --skip-clean --no-fail-fast --verbose --timeout 300 --out Xml
-          ./target/debug/consumer &
-          cargo tarpaulin --all-features --skip-clean --no-fail-fast --verbose --timeout 300 --out Xml
+          # cargo tarpaulin --all-features --no-run --skip-clean --no-fail-fast --verbose --timeout 300 --out Xml
+          # ./target/debug/consumer &
+          cargo tarpaulin --all-features --no-fail-fast --skip-clean --verbose --timeout 300 --out Xml
       - name: remove containers
         run: docker-compose -f docker-compose-dev.yml down && sudo rm -rf data    
       - name: Upload to codecov.io

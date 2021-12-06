@@ -1,4 +1,3 @@
-use crate::pool::RedisDb;
 use crypto::digest::Digest;
 use crypto::sha3::Sha3;
 use rand::distributions::Alphanumeric;
@@ -6,6 +5,8 @@ use rand::{thread_rng, Rng};
 use rocket::http::{Cookie, SameSite, Status};
 use rocket::request::{self, FromRequest, Outcome, Request};
 use rocket::State;
+
+use crate::pool::RedisDb;
 
 pub struct Auth {
     pub id: i64,
