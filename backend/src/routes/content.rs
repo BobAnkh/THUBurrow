@@ -52,7 +52,10 @@ pub async fn create_post(
     // check if user has been banned
     match UserStatus::find_by_id(auth.id).one(&pg_con).await {
         Ok(ust) => match ust {
-            None => (Status::BadRequest, Err("User not exists".to_string())),
+            None => {
+                log::info!("[UPDATE-POST] Cannot find user_status by uid.");
+                (Status::Forbidden, Err(String::new()))
+            },
             Some(user_state_info) => {
                 if user_state_info.user_state != 0 {
                     (Status::Forbidden, Err("User invalid".to_string()))
@@ -216,7 +219,7 @@ pub async fn update_post(
         Ok(r) => match r {
             None => (Status::BadRequest, "Post not exsits".to_string()),
             Some(post_info) => {
-                match pgdb::user_status::Entity::find_by_id(auth.id)
+                match UserStatus::find_by_id(auth.id)
                     .one(&pg_con)
                     .await
                 {
@@ -281,7 +284,7 @@ pub async fn delete_post(auth: Auth, db: Connection<PgDb>, post_id: i64) -> (Sta
                 //  check if time is within limit, if so, allow user to delete
                 if post_info
                     .create_time
-                    .checked_add_signed(Duration::seconds(135))
+                    .checked_add_signed(Duration::seconds(5))
                     .unwrap()
                     < now
                 {
@@ -290,7 +293,7 @@ pub async fn delete_post(auth: Auth, db: Connection<PgDb>, post_id: i64) -> (Sta
                         "Can only delete post in 2 minutes".to_string(),
                     );
                 }
-                match pgdb::user_status::Entity::find_by_id(auth.id)
+                match UserStatus::find_by_id(auth.id)
                     .one(&pg_con)
                     .await
                 {
@@ -435,7 +438,10 @@ pub async fn create_reply(
     let content = reply_info.into_inner();
     match UserStatus::find_by_id(auth.id).one(&pg_con).await {
         Ok(ust) => match ust {
-            None => (Status::BadRequest, Err("User not exists".to_string())),
+            None => {
+                log::info!("[UPDATE-POST] Cannot find user_status by uid.");
+                (Status::Forbidden, Err("User not exists".to_string()))
+            },
             Some(user_state_info) => {
                 if user_state_info.user_state != 0 {
                     (Status::Forbidden, Err("User invalid".to_string()))
@@ -532,7 +538,10 @@ pub async fn update_reply(
     let content = reply_update_info.into_inner();
     match UserStatus::find_by_id(auth.id).one(&pg_con).await {
         Ok(ust) => match ust {
-            None => (Status::BadRequest, "User not exists".to_string()),
+            None => {
+                log::info!("[UPDATE-POST] Cannot find user_status by uid.");
+                (Status::Forbidden, String::new())
+            },
             Some(user_state_info) => {
                 if user_state_info.user_state != 0 {
                     (Status::Forbidden, "User invalid".to_string())
