@@ -222,12 +222,6 @@ async fn test_burrow() {
         .await;
     assert_eq!(response.status(), Status::Ok);
     // println!("{}", response.into_string().await.unwrap());
-    let res = response
-        .into_json::<backend::req::burrow::BurrowCreateResponse>()
-        .await
-        .unwrap();
-    let burrow_id = res.burrow_id;
-    println!("Burrow Id: {}", burrow_id);
 
     // create burrow: perform a wrong action (amount up to limit)
     std::thread::sleep(std::time::Duration::from_secs(5));
@@ -647,7 +641,7 @@ async fn test_content() {
     assert_eq!(response.status(), Status::BadRequest);
     // update post no.4: perform a wrong action (invalid burrow)
     let response = client
-        .patch(format!("/content/post/{}", post_id + 2))
+        .patch(format!("/content/post/{}", post_id + 3))
         .json(&json!({
             "title": format!("New wrong post of {}", name),
             "section": ["NewTestSection"],
