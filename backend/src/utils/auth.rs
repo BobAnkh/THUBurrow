@@ -1,4 +1,3 @@
-use crate::pool::RedisDb;
 use crypto::digest::Digest;
 use crypto::sha3::Sha3;
 use rand::distributions::Alphanumeric;
@@ -7,7 +6,9 @@ use rocket::http::{Cookie, SameSite, Status};
 use rocket::request::{self, FromRequest, Outcome, Request};
 use rocket::State;
 
-pub struct SsoAuth {
+use crate::pool::RedisDb;
+
+pub struct Auth {
     pub id: i64,
 }
 
@@ -175,7 +176,7 @@ pub async fn auth_token<'r>(request: &'r Request<'_>) -> Option<ValidToken> {
 }
 
 #[rocket::async_trait]
-impl<'r> FromRequest<'r> for SsoAuth {
+impl<'r> FromRequest<'r> for Auth {
     type Error = AuthTokenError;
 
     async fn from_request(request: &'r Request<'_>) -> request::Outcome<Self, Self::Error> {
@@ -193,8 +194,8 @@ impl<'r> FromRequest<'r> for SsoAuth {
                 ValidToken::DatabaseErr => {
                     Outcome::Failure((Status::InternalServerError, AuthTokenError::DatabaseErr))
                 }
-                ValidToken::Refresh(id) => Outcome::Success(SsoAuth { id: *id }),
-                ValidToken::Valid(id) => Outcome::Success(SsoAuth { id: *id }),
+                ValidToken::Refresh(id) => Outcome::Success(Auth { id: *id }),
+                ValidToken::Valid(id) => Outcome::Success(Auth { id: *id }),
             },
             None => Outcome::Failure((Status::InternalServerError, AuthTokenError::DatabaseErr)),
         }

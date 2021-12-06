@@ -8,7 +8,7 @@ pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub uid: i64,
     #[sea_orm(primary_key, auto_increment = false)]
-    pub post_id: i32,
+    pub post_id: i64,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter)]

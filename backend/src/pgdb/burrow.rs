@@ -3,13 +3,17 @@
 use sea_orm::entity::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
-#[sea_orm(table_name = "user_collection")]
+#[sea_orm(table_name = "burrow")]
 pub struct Model {
-    #[sea_orm(primary_key, auto_increment = false)]
+    #[sea_orm(primary_key)]
+    pub burrow_id: i64,
+    #[sea_orm(column_type = "Text")]
+    pub title: String,
+    #[sea_orm(column_type = "Text")]
+    pub description: String,
     pub uid: i64,
-    #[sea_orm(primary_key, auto_increment = false)]
-    pub post_id: i64,
-    pub is_update: bool,
+    pub burrow_state: i32,
+    pub post_num: i32,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter)]

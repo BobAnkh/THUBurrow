@@ -3,12 +3,12 @@
 use sea_orm::entity::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
-#[sea_orm(table_name = "user_collection")]
+#[sea_orm(table_name = "user_follow")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub uid: i64,
     #[sea_orm(primary_key, auto_increment = false)]
-    pub post_id: i64,
+    pub burrow_id: i64,
     pub is_update: bool,
 }
 

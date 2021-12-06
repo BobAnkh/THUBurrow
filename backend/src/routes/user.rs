@@ -1,40 +1,82 @@
-use rocket::http::{Cookie, CookieJar, SameSite};
-use rocket::serde::json::Json;
-use rocket::{Build, Rocket};
-// use rocket::response::status;
-use rocket::http::Status;
-use rocket_db_pools::Connection;
-use sea_orm::entity::*;
-use sea_orm::QueryFilter;
-
-use crate::pgdb;
-use crate::pgdb::user::Entity as User;
-use crate::pool::{PgDb, RedisDb};
-use crate::req::user::*;
-use crate::utils::email;
-
+use chrono::{FixedOffset, Utc};
 use crypto::digest::Digest;
 use crypto::sha3::Sha3;
-use std::iter;
-
 use idgenerator::IdHelper;
-
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
+use rocket::http::{Cookie, CookieJar, SameSite, Status};
+use rocket::serde::json::Json;
+use rocket::{Build, Rocket};
+use rocket_db_pools::Connection;
+use sea_orm::sea_query::{Expr, Query};
+use sea_orm::{entity::*, query::*};
+use sea_orm::{DbErr, QueryFilter};
+use std::collections::HashMap;
+use std::iter;
 
-use chrono::{FixedOffset, Utc};
+use crate::pgdb;
+use crate::pgdb::prelude::*;
+use crate::pool::{PgDb, PulsarSearchProducerMq, RedisDb, RocketPulsarProducer};
+use crate::req::{
+    burrow::{BurrowMetadata, BURROW_PER_PAGE},
+    content::{Post, POST_PER_PAGE},
+    pulsar::*,
+    user::*,
+};
+use crate::utils::auth::Auth;
+use crate::utils::burrow_valid::*;
+use crate::utils::email;
 
 pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
-    rocket.mount("/users", routes![user_log_in, user_sign_up])
+    rocket.mount(
+        "/users",
+        routes![
+            user_log_in,
+            user_sign_up,
+            get_follow,
+            get_collection,
+            get_burrow,
+            user_relation,
+            get_user_valid_burrow,
+        ],
+    )
 }
 
-pub async fn gen_salt() -> String {
+async fn gen_salt() -> String {
     let salt: String = iter::repeat(())
         .map(|()| thread_rng().sample(Alphanumeric))
         .map(char::from)
         .take(8)
         .collect();
     salt
+}
+
+#[post("/relation", data = "<relation_info>", format = "json")]
+pub async fn user_relation(
+    auth: Auth,
+    pulsar: Connection<PulsarSearchProducerMq>,
+    relation_info: Json<RelationData>,
+) -> Status {
+    let relation = relation_info.into_inner();
+    let msg = relation.to_pulsar(auth.id);
+    let mut producer = match pulsar
+        .get_producer("persistent://public/default/relation")
+        .await
+    {
+        Ok(producer) => producer,
+        Err(e) => {
+            log::error!("{}", e);
+            return Status::InternalServerError;
+        }
+    };
+    match producer.send(msg).await {
+        Ok(_) => log::info!("send data to pulsar successfully!"),
+        Err(e) => {
+            log::error!("Err: {}", e);
+            return Status::InternalServerError;
+        }
+    }
+    Status::Ok
 }
 
 #[post("/sign-up", data = "<user_info>", format = "json")]
@@ -52,7 +94,17 @@ pub async fn user_sign_up(
         return (
             Status::BadRequest,
             Json(UserResponse {
+                default_burrow: -1,
                 errors: vec!["Illegal Email Address".to_string()],
+            }),
+        );
+    }
+    if user.username.is_empty() {
+        return (
+            Status::BadRequest,
+            Json(UserResponse {
+                default_burrow: -1,
+                errors: vec!["Empty User Name".to_string()],
             }),
         );
     }
@@ -67,11 +119,15 @@ pub async fn user_sign_up(
                 errors.push("Duplicated Email Address".to_string());
             }
         }
-        _ => {
+        Err(e) => {
+            log::error!("[SIGN-UP] Database Error: {:?}", e);
             return (
                 Status::InternalServerError,
-                Json(UserResponse { errors: Vec::new() }),
-            )
+                Json(UserResponse {
+                    default_burrow: -1,
+                    errors: Vec::new(),
+                }),
+            );
         }
     }
     // check if username is duplicated, add corresponding error if so
@@ -85,16 +141,26 @@ pub async fn user_sign_up(
                 errors.push("Duplicated Username".to_string());
             }
         }
-        _ => {
+        Err(e) => {
+            log::error!("[SIGN-UP] Database Error: {:?}", e);
             return (
                 Status::InternalServerError,
-                Json(UserResponse { errors: Vec::new() }),
-            )
+                Json(UserResponse {
+                    default_burrow: -1,
+                    errors: Vec::new(),
+                }),
+            );
         }
     }
     // if error exists, refuse to add user
     if !errors.is_empty() {
-        (Status::BadRequest, Json(UserResponse { errors }))
+        (
+            Status::BadRequest,
+            Json(UserResponse {
+                default_burrow: -1,
+                errors,
+            }),
+        )
     } else {
         // generate salt
         let salt = gen_salt().await;
@@ -104,29 +170,61 @@ pub async fn user_sign_up(
         let password = hash_sha3.result_str();
         // generate uid
         let uid: i64 = IdHelper::next_id();
-        // fill the row
+        // fill the row of table 'user' and 'user_status'
+        let now = Utc::now().with_timezone(&FixedOffset::east(8 * 3600));
         let users = pgdb::user::ActiveModel {
-            uid: Set(uid.to_owned()),
+            uid: Set(uid),
             username: Set(user.username.to_string()),
             password: Set(password),
             email: Set(user.email.to_string()),
-            create_time: Set(Utc::now().with_timezone(&FixedOffset::east(8 * 3600))),
+            create_time: Set(now),
             salt: Set(salt),
         };
-        // insert the row in database
-        let ins_result = users.insert(&pg_con).await;
-        match ins_result {
-            Ok(res) => {
-                info!(
-                    "[SIGN-UP] User signup Succ, save user: {}",
-                    res.uid.unwrap()
-                );
-                (Status::Ok, Json(UserResponse { errors }))
-            }
-            _ => (
-                Status::InternalServerError,
-                Json(UserResponse { errors: Vec::new() }),
+
+        let burrows = pgdb::burrow::ActiveModel {
+            uid: Set(uid),
+            title: Set("Default".to_owned()),
+            description: Set("".to_owned()),
+            ..Default::default()
+        };
+        // insert rows in database
+        // <Fn, A, B> -> Result<A, B>
+        match pg_con
+            .transaction::<_, i64, DbErr>(|txn| {
+                Box::pin(async move {
+                    users.insert(txn).await?;
+                    let res = burrows.insert(txn).await?;
+                    let burrow_id = res.burrow_id.unwrap();
+                    let valid_burrows_str = burrow_id.to_string();
+                    let users_status = pgdb::user_status::ActiveModel {
+                        uid: Set(uid),
+                        update_time: Set(now),
+                        valid_burrow: Set(valid_burrows_str),
+                        ..Default::default()
+                    };
+                    users_status.insert(txn).await?;
+                    Ok(burrow_id)
+                })
+            })
+            .await
+        {
+            Ok(default_burrow) => (
+                Status::Ok,
+                Json(UserResponse {
+                    default_burrow,
+                    errors,
+                }),
             ),
+            Err(e) => {
+                error!("[SIGN-UP] Database error: {:?}", e);
+                (
+                    Status::InternalServerError,
+                    Json(UserResponse {
+                        default_burrow: -1,
+                        errors: Vec::new(),
+                    }),
+                )
+            }
         }
     }
 }
@@ -203,6 +301,7 @@ pub async fn user_log_in(
                         }
                     };
                     // get old token and set new token by getset id -> token
+                    // TODO: add time limit to the key?
                     let old_token_get: Result<Option<String>, redis::RedisError> =
                         redis::cmd("GETSET")
                             .arg(matched_user.uid)
@@ -283,6 +382,193 @@ pub async fn user_log_in(
                 (Status::BadRequest, "Wrong username or password".to_string())
             }
         },
-        _ => (Status::InternalServerError, "".to_string()),
+        Err(e) => {
+            error!("[LOGIN] Database error: {:?}", e);
+            (Status::InternalServerError, "".to_string())
+        }
+    }
+}
+
+#[get("/burrow")]
+pub async fn get_burrow(db: Connection<PgDb>, auth: Auth) -> (Status, Json<Vec<BurrowMetadata>>) {
+    // Ok(burrows) => {
+    //     // let mut posts_num = Vec::new();
+    //     let r: Vec<i64> = future::try_join_all(burrows.iter().map(move |burrow| {
+    //         let inner_conn = pg_con.clone();
+    //         GetBurrow::get_post(burrow, inner_conn)
+    //     }))
+    //     .await
+    //     .unwrap();
+    let pg_con = db.into_inner();
+    match pgdb::user_status::Entity::find_by_id(auth.id)
+        .one(&pg_con)
+        .await
+    {
+        Ok(opt_state) => match opt_state {
+            Some(state) => {
+                let valid_burrows = get_burrow_list(&state.valid_burrow);
+                let banned_burrows = get_burrow_list(&state.banned_burrow);
+                let burrow_ids = [valid_burrows, banned_burrows].concat();
+                match Burrow::find()
+                    .filter(Condition::any().add(pgdb::burrow::Column::BurrowId.is_in(burrow_ids)))
+                    .order_by_desc(pgdb::burrow::Column::BurrowId)
+                    .all(&pg_con)
+                    .await
+                {
+                    Ok(burrows) => (
+                        Status::Ok,
+                        Json(burrows.iter().map(|burrow| burrow.into()).collect()),
+                    ),
+                    Err(e) => {
+                        error!("[GET_BURROW] failed to get burrow list: {:?}", e);
+                        (Status::InternalServerError, Json(Vec::new()))
+                    }
+                }
+            }
+            None => {
+                info!("[GET-BURROW] Cannot find user_status by uid.");
+                (Status::Forbidden, Json(Vec::new()))
+            }
+        },
+        Err(e) => {
+            error!("[GET-BURROW] Database Error: {:?}", e);
+            (Status::InternalServerError, Json(Vec::new()))
+        }
+    }
+}
+
+#[get("/collection?<page>")]
+pub async fn get_collection(
+    db: Connection<PgDb>,
+    auth: Auth,
+    page: Option<u64>,
+) -> (Status, Json<Vec<Post>>) {
+    let pg_con = db.into_inner();
+    let page = page.unwrap_or(0);
+    match ContentPost::find()
+        .filter(
+            Condition::any().add(
+                pgdb::content_post::Column::PostId.in_subquery(
+                    Query::select()
+                        .column(pgdb::user_collection::Column::PostId)
+                        .from(UserCollection)
+                        .and_where(Expr::col(pgdb::user_collection::Column::Uid).eq(auth.id))
+                        .order_by_columns(vec![(
+                            pgdb::user_collection::Column::PostId,
+                            Order::Desc,
+                        )])
+                        .limit(POST_PER_PAGE as u64)
+                        .offset(page * POST_PER_PAGE as u64)
+                        .to_owned(),
+                ),
+            ),
+        )
+        .order_by_desc(pgdb::content_post::Column::PostId)
+        .all(&pg_con)
+        .await
+    {
+        Ok(posts) => (
+            Status::Ok,
+            Json(posts.iter().map(|post| post.into()).collect()),
+        ),
+        Err(e) => {
+            error!("[GET-FAV] Database Error: {:?}", e);
+            (Status::InternalServerError, Json(Vec::new()))
+        }
+    }
+}
+
+#[get("/follow?<page>")]
+pub async fn get_follow(
+    db: Connection<PgDb>,
+    auth: Auth,
+    page: Option<usize>,
+) -> (Status, Json<Vec<UserGetFollowResponse>>) {
+    let pg_con = db.into_inner();
+    let page = page.unwrap_or(0);
+    match pgdb::user_follow::Entity::find()
+        .filter(pgdb::user_follow::Column::Uid.eq(auth.id))
+        .order_by_desc(pgdb::user_follow::Column::BurrowId)
+        .paginate(&pg_con, BURROW_PER_PAGE)
+        .fetch_page(page)
+        .await
+    {
+        Ok(results) => {
+            let burrow_ids = results.iter().map(|r| r.burrow_id).collect::<Vec<i64>>();
+            match pgdb::burrow::Entity::find()
+                .filter(pgdb::burrow::Column::BurrowId.is_in(burrow_ids))
+                .order_by_desc(pgdb::burrow::Column::BurrowId)
+                .all(&pg_con)
+                .await
+            {
+                Ok(burrows) => {
+                    if burrows.len() == results.len() {
+                        (
+                            Status::Ok,
+                            Json(
+                                burrows
+                                    .iter()
+                                    .map(|burrow| {
+                                        let meta: BurrowMetadata = burrow.into();
+                                        meta
+                                    })
+                                    .zip(results.iter().map(|r| r.is_update))
+                                    .map(|(burrow, is_update)| UserGetFollowResponse {
+                                        burrow,
+                                        is_update,
+                                    })
+                                    .collect(),
+                            ),
+                        )
+                    } else {
+                        let hm: HashMap<i64, bool> =
+                            results.iter().map(|r| (r.burrow_id, r.is_update)).collect();
+                        (
+                            Status::Ok,
+                            Json(
+                                burrows
+                                    .iter()
+                                    .map(|meta| {
+                                        let burrow: BurrowMetadata = meta.into();
+                                        let is_update =
+                                            *hm.get(&burrow.burrow_id).unwrap_or(&false);
+                                        UserGetFollowResponse { burrow, is_update }
+                                    })
+                                    .collect(),
+                            ),
+                        )
+                    }
+                }
+                Err(e) => {
+                    error!("[GET-FOLLOW] DataBase Error: {:?}", e.to_string());
+                    (Status::InternalServerError, Json(Vec::new()))
+                }
+            }
+        }
+        Err(e) => {
+            error!("[GET-FOLLOW] Database Error: {:?}", e.to_string());
+            (Status::InternalServerError, Json(Vec::new()))
+        }
+    }
+}
+
+#[get("/valid-burrow")]
+pub async fn get_user_valid_burrow(auth: Auth, db: Connection<PgDb>) -> (Status, Json<Vec<i64>>) {
+    let pg_con = db.into_inner();
+    match pgdb::user_status::Entity::find_by_id(auth.id)
+        .one(&pg_con)
+        .await
+    {
+        Ok(opt_state) => match opt_state {
+            Some(state) => (Status::Ok, Json(get_burrow_list(&state.valid_burrow))),
+            None => {
+                info!("[GET-VALID-BURROW] Cannot find user_status by uid.");
+                (Status::Forbidden, Json(Vec::new()))
+            }
+        },
+        Err(e) => {
+            error!("[GET-VALID-BURROW] Database Error: {:?}", e);
+            (Status::InternalServerError, Json(Vec::new()))
+        }
     }
 }

@@ -445,6 +445,8 @@ dependencies = [
  "lazy_static",
  "log",
  "log4rs",
+ "once_cell",
+ "parking_lot",
  "pulsar",
  "rand 0.8.4",
  "redis",
@@ -460,6 +462,7 @@ dependencies = [
  "serde_json",
  "time 0.3.5",
  "tokio",
+ "toml",
  "uuid",
 ]
 
@@ -3379,6 +3382,7 @@ dependencies = [
  "mio",
  "num_cpus",
  "once_cell",
+ "parking_lot",
  "pin-project-lite",
  "signal-hook-registry",
  "tokio-macros",
