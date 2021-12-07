@@ -12,6 +12,7 @@ use crate::pgdb::user::Entity as User;
 use crate::pool::{PgDb, RedisDb};
 use crate::req::user::*;
 use crate::utils::email;
+use crate::utils::send_email;
 
 use crypto::digest::Digest;
 use crypto::sha3::Sha3;
@@ -48,14 +49,19 @@ pub async fn user_sign_up(
     // get user info from request
     let user = user_info.into_inner();
     // check if email address is valid, add corresponding error if so
-    if !email::check_email_syntax(user.email) {
-        return (
-            Status::BadRequest,
-            Json(UserResponse {
-                errors: vec!["Illegal Email Address".to_string()],
-            }),
-        );
+    if !(email::check_email_syntax(user.email) &&
+         email::check_email_exist(user.email).await.0) {
+            errors.push("Illegal Email Address".to_string());
     }
+    let res = send_email::post().await;
+        match res {
+            Ok(res) => {
+                println!("{:#?}", res);
+            },
+            Err(e) => {
+                error!("{:#?}", e);
+            }
+        }
     // check if email address is duplicated, add corresponding error if so
     match User::find()
         .filter(pgdb::user::Column::Email.eq(user.email))
@@ -96,6 +102,8 @@ pub async fn user_sign_up(
     if !errors.is_empty() {
         (Status::BadRequest, Json(UserResponse { errors }))
     } else {
+        // send verification email
+
         // generate salt
         let salt = gen_salt().await;
         // encrypt password

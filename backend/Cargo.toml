@@ -41,3 +41,5 @@ tokio = "1.13.0"
 futures = "0.3"
 check-if-email-exists = "0.8"
 async-smtp = "0.4.0"
+reqwest = { version = "0.11.5", features = ["json"] }
+rustc-serialize = "0.3"

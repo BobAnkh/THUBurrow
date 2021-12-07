@@ -1,5 +1,6 @@
 #[macro_use]
 extern crate rocket;
+extern crate rustc_serialize;
 
 use rocket::fairing::AdHoc;
 use rocket_db_pools::Database;
