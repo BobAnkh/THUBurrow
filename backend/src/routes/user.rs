@@ -16,7 +16,7 @@ use std::iter;
 
 use crate::pgdb;
 use crate::pgdb::prelude::*;
-use crate::pool::{PgDb, PulsarSearchProducerMq, RedisDb, RocketPulsarProducer};
+use crate::pool::{PgDb, PulsarSearchProducerMq, RedisDb};
 use crate::req::{
     burrow::{BurrowMetadata, BURROW_PER_PAGE},
     content::{Post, POST_PER_PAGE},
@@ -54,22 +54,22 @@ async fn gen_salt() -> String {
 #[post("/relation", data = "<relation_info>", format = "json")]
 pub async fn user_relation(
     auth: Auth,
-    pulsar: Connection<PulsarSearchProducerMq>,
+    mut producer: Connection<PulsarSearchProducerMq>,
     relation_info: Json<RelationData>,
 ) -> Status {
     let relation = relation_info.into_inner();
     let msg = relation.to_pulsar(auth.id);
-    let mut producer = match pulsar
-        .get_producer("persistent://public/default/relation")
-        .await
-    {
-        Ok(producer) => producer,
-        Err(e) => {
-            log::error!("{}", e);
-            return Status::InternalServerError;
-        }
-    };
-    match producer.send(msg).await {
+    // let mut producer = match pulsar
+    //     .get_producer("persistent://public/default/relation")
+    //     .await
+    // {
+    //     Ok(producer) => producer,
+    //     Err(e) => {
+    //         log::error!("{}", e);
+    //         return Status::InternalServerError;
+    //     }
+    // };
+    match producer.send("persistent://public/default/relation", msg).await {
         Ok(_) => log::info!("send data to pulsar successfully!"),
         Err(e) => {
             log::error!("Err: {}", e);

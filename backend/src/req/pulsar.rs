@@ -107,7 +107,7 @@ impl DeserializeMessage for PulsarSearchData {
 pub struct PulsarSearchBurrowData {
     pub burrow_id: i64,
     pub title: String,
-    pub introduction: String,
+    pub description: String,
     pub update_time: DateTimeWithTimeZone,
 }
 
@@ -118,8 +118,6 @@ pub struct PulsarSearchPostData {
     pub burrow_id: i64,
     pub section: Vec<String>,
     pub tag: Vec<String>,
-    pub post_type: i32,
-    pub post_state: i32,
     pub update_time: DateTimeWithTimeZone,
 }
 
@@ -129,7 +127,6 @@ pub struct PulsarSearchReplyData {
     pub post_id: i64,
     pub burrow_id: i64,
     pub content: String,
-    pub reply_state: i32,
     pub update_time: DateTimeWithTimeZone,
 }
 
@@ -138,32 +135,29 @@ pub struct TypesenseBurrowData {
     pub id: String,
     pub burrow_id: i64,
     pub title: String,
-    pub introduction: String,
-    pub update_time: String,
+    pub description: String,
+    pub update_time: DateTimeWithTimeZone,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct TypesensePostData {
     pub id: String,
     pub post_id: i64,
-    pub title: String,
     pub burrow_id: i64,
-    pub update_time: String,
-    pub post_type: i32,
-    pub post_state: i32,
+    pub title: String,
     pub section: Vec<String>,
     pub tag: Vec<String>,
+    pub update_time: DateTimeWithTimeZone,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct TypesenseReplyData {
     pub id: String,
-    pub reply_id: i32,
     pub post_id: i64,
+    pub reply_id: i32,
     pub burrow_id: i64,
     pub content: String,
-    pub update_time: String,
-    pub reply_state: i32,
+    pub update_time: DateTimeWithTimeZone,
 }
 
 impl From<PulsarSearchBurrowData> for TypesenseBurrowData {
@@ -172,8 +166,8 @@ impl From<PulsarSearchBurrowData> for TypesenseBurrowData {
             id: burrow.burrow_id.to_string(),
             burrow_id: burrow.burrow_id,
             title: burrow.title,
-            introduction: burrow.introduction,
-            update_time: burrow.update_time.to_rfc3339(),
+            description: burrow.description,
+            update_time: burrow.update_time,
         }
     }
 }
@@ -184,8 +178,8 @@ impl From<&PulsarSearchBurrowData> for TypesenseBurrowData {
             id: burrow.burrow_id.to_string(),
             burrow_id: burrow.burrow_id,
             title: burrow.title.to_owned(),
-            introduction: burrow.introduction.to_owned(),
-            update_time: burrow.update_time.to_rfc3339(),
+            description: burrow.description.to_owned(),
+            update_time: burrow.update_time.to_owned(),
         }
     }
 }
@@ -197,9 +191,7 @@ impl From<PulsarSearchPostData> for TypesensePostData {
             post_id: post.post_id,
             title: post.title,
             burrow_id: post.burrow_id,
-            update_time: post.update_time.to_rfc3339(),
-            post_type: post.post_type,
-            post_state: post.post_state,
+            update_time: post.update_time,
             section: post.section,
             tag: post.tag,
         }
@@ -213,9 +205,7 @@ impl From<&PulsarSearchPostData> for TypesensePostData {
             post_id: post.post_id,
             title: post.title.to_owned(),
             burrow_id: post.burrow_id,
-            update_time: post.update_time.to_rfc3339(),
-            post_type: post.post_type,
-            post_state: post.post_state,
+            update_time: post.update_time.to_owned(),
             section: post.section.to_owned(),
             tag: post.tag.to_owned(),
         }
@@ -225,13 +215,12 @@ impl From<&PulsarSearchPostData> for TypesensePostData {
 impl From<PulsarSearchReplyData> for TypesenseReplyData {
     fn from(reply: PulsarSearchReplyData) -> TypesenseReplyData {
         TypesenseReplyData {
-            id: format!("{}={}", reply.post_id, reply.reply_id),
+            id: format!("{}-{}", reply.post_id, reply.reply_id),
             reply_id: reply.reply_id,
             post_id: reply.post_id,
             burrow_id: reply.burrow_id,
             content: reply.content,
-            update_time: reply.update_time.to_rfc3339(),
-            reply_state: reply.reply_state,
+            update_time: reply.update_time,
         }
     }
 }
@@ -239,34 +228,22 @@ impl From<PulsarSearchReplyData> for TypesenseReplyData {
 impl From<&PulsarSearchReplyData> for TypesenseReplyData {
     fn from(reply: &PulsarSearchReplyData) -> TypesenseReplyData {
         TypesenseReplyData {
-            id: format!("{}={}", reply.post_id, reply.reply_id),
+            id: format!("{}-{}", reply.post_id, reply.reply_id),
             reply_id: reply.reply_id,
             post_id: reply.post_id,
             burrow_id: reply.burrow_id,
             content: reply.content.to_owned(),
-            update_time: reply.update_time.to_rfc3339(),
-            reply_state: reply.reply_state,
+            update_time: reply.update_time.to_owned(),
         }
     }
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct SearchRequest2 {
-    pub keyword: Option<String>,
-    pub id: Option<usize>,
-    pub tag: Option<String>,
-    pub order: Option<String>,
-    pub area: Option<String>,
-    pub page: Option<i16>,
-    pub filter_by: Option<String>,
-}
-
-#[derive(Serialize, Deserialize)]
 pub enum SearchRequest {
-    SearchBurrowKeyword { keyword: String, page: usize },
+    SearchBurrowKeyword { keyword: String},
     RetrieveBurrow { burrow_id: i64 },
-    SearchPostKeyword { keyword: String, page: usize },
-    SearchPostTag { tag: String, page: usize },
+    SearchPostKeyword { keyword: String},
+    SearchPostTag { tag: String },
     RetrievePost { post_id: i64 },
 }
 
@@ -282,12 +259,7 @@ pub struct GroupedSearchResult {
     pub grouped_hits: Vec<serde_json::Value>,
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct Keyword {
-    pub keyword: String,
-}
-
-/// `{"ActivateLike":10}`, where 10 is the post_id or burrow_id
+/// `{"ActivateLike":10}` or `{"DeactivateFollow": 10}`, where 10 is the post_id or burrow_id
 #[derive(Serialize, Deserialize)]
 pub enum RelationData {
     ActivateLike(i64),

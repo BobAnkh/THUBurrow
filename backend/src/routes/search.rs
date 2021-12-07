@@ -7,14 +7,15 @@ use rocket_db_pools::Connection;
 use serde_json::json;
 
 pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
-    rocket.mount("/search", routes![search,])
+    rocket.mount("/", routes![search,])
 }
 
-#[post("/", data = "<data>", format = "json")]
-async fn search(searchpool: Connection<TypesenseSearch>, data: Json<SearchRequest>) -> String {
-    let client = searchpool.into_inner();
+#[post("/search?<page>", data = "<data>", format = "json")]
+async fn search(conn: Connection<TypesenseSearch>, data: Json<SearchRequest>, page: Option<usize>) -> String {
+    let page = page.unwrap_or(0);
+    let client = conn.into_inner();
     match data.into_inner() {
-        SearchRequest::SearchBurrowKeyword { keyword, page } => {
+        SearchRequest::SearchBurrowKeyword { keyword} => {
             let uri = format!("/collections/burrows/documents/search?q={}&query_by=title,introduction&filter_by=&sort_by=burrow_id:desc&page={}",keyword,page);
             let response = match client.build_get(&uri).send().await {
                 Ok(a) => a.json::<serde_json::Value>().await.unwrap().to_string(),
@@ -43,7 +44,7 @@ async fn search(searchpool: Connection<TypesenseSearch>, data: Json<SearchReques
                 Err(e) => panic!("build_get send Error: {:?}", e),
             }
         }
-        SearchRequest::SearchPostKeyword { keyword, page } => {
+        SearchRequest::SearchPostKeyword { keyword } => {
             let uri_qby_title = format!(
             "/collections/posts/documents/search?q={}&query_by=title&filter_by=&group_by=&sort_by=post_id:desc&page={}",
             keyword,page
@@ -82,7 +83,7 @@ async fn search(searchpool: Connection<TypesenseSearch>, data: Json<SearchReques
             })
             .to_string()
         }
-        SearchRequest::SearchPostTag { tag, page } => {
+        SearchRequest::SearchPostTag { tag } => {
             let uri = format!(
             "/collections/posts/documents/search?q={}&query_by=tag&filter_by=&group_by=&sort_by=post_id:desc&page={}",
             tag,page

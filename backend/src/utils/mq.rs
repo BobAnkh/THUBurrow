@@ -15,7 +15,7 @@ use crate::routes::trending::select_trending;
 
 lazy_static! {
     static ref TYPESENSE_API_KEY: String = {
-        let env_v = "ROCKET_DATABASES=".to_string() + &env::var("ROCKET_DATABASES").ok().unwrap_or_else(|| r#"{search={url="http://127.0.0.1:8108@$8Dz4jRrsBjYgdCD/VGP1bleph7oBThJr5IcF43l0U24="}}"#.to_string());
+        let env_v = "ROCKET_DATABASES=".to_string() + &env::var("ROCKET_DATABASES").ok().unwrap_or_else(|| r#"{search={url="http://127.0.0.1:8108@8Dz4jRrsBjYgdCD/VGP1bleph7oBThJr5IcF43l0U24="}}"#.to_string());
         let env_v =
             toml::from_str::<HashMap<String, HashMap<String, HashMap<String, String>>>>(&env_v)
                 .unwrap();
@@ -23,14 +23,15 @@ lazy_static! {
             Some(r) => match r.get("search") {
                 Some(r) => match r.get("url") {
                     Some(r) => r.to_owned(),
-                    None => "http://127.0.0.1:8108@$8Dz4jRrsBjYgdCD/VGP1bleph7oBThJr5IcF43l0U24="
+                    None => "http://127.0.0.1:8108@8Dz4jRrsBjYgdCD/VGP1bleph7oBThJr5IcF43l0U24="
                         .to_string(),
                 },
-                None => "http://127.0.0.1:8108@$8Dz4jRrsBjYgdCD/VGP1bleph7oBThJr5IcF43l0U24="
-                    .to_string(),
+                None => {
+                    "http://127.0.0.1:8108@8Dz4jRrsBjYgdCD/VGP1bleph7oBThJr5IcF43l0U24=".to_string()
+                }
             },
             None => {
-                "http://127.0.0.1:8108@$8Dz4jRrsBjYgdCD/VGP1bleph7oBThJr5IcF43l0U24=".to_string()
+                "http://127.0.0.1:8108@8Dz4jRrsBjYgdCD/VGP1bleph7oBThJr5IcF43l0U24=".to_string()
             }
         };
         let info: Vec<&str> = url.split('@').collect();
@@ -45,7 +46,7 @@ lazy_static! {
         api_key
     };
     static ref TYPESENSE_ADDR: String = {
-        let env_v = "ROCKET_DATABASES=".to_string() + &env::var("ROCKET_DATABASES").ok().unwrap_or_else(|| r#"{search={url="http://127.0.0.1:8108@$8Dz4jRrsBjYgdCD/VGP1bleph7oBThJr5IcF43l0U24="}}"#.to_string());
+        let env_v = "ROCKET_DATABASES=".to_string() + &env::var("ROCKET_DATABASES").ok().unwrap_or_else(|| r#"{search={url="http://127.0.0.1:8108@8Dz4jRrsBjYgdCD/VGP1bleph7oBThJr5IcF43l0U24="}}"#.to_string());
         let env_v =
             toml::from_str::<HashMap<String, HashMap<String, HashMap<String, String>>>>(&env_v)
                 .unwrap();
@@ -53,14 +54,15 @@ lazy_static! {
             Some(r) => match r.get("search") {
                 Some(r) => match r.get("url") {
                     Some(r) => r.to_owned(),
-                    None => "http://127.0.0.1:8108@$8Dz4jRrsBjYgdCD/VGP1bleph7oBThJr5IcF43l0U24="
+                    None => "http://127.0.0.1:8108@8Dz4jRrsBjYgdCD/VGP1bleph7oBThJr5IcF43l0U24="
                         .to_string(),
                 },
-                None => "http://127.0.0.1:8108@$8Dz4jRrsBjYgdCD/VGP1bleph7oBThJr5IcF43l0U24="
-                    .to_string(),
+                None => {
+                    "http://127.0.0.1:8108@8Dz4jRrsBjYgdCD/VGP1bleph7oBThJr5IcF43l0U24=".to_string()
+                }
             },
             None => {
-                "http://127.0.0.1:8108@$8Dz4jRrsBjYgdCD/VGP1bleph7oBThJr5IcF43l0U24=".to_string()
+                "http://127.0.0.1:8108@8Dz4jRrsBjYgdCD/VGP1bleph7oBThJr5IcF43l0U24=".to_string()
             }
         };
         let info: Vec<&str> = url.split('@').collect();
@@ -134,45 +136,61 @@ lazy_static! {
     };
 }
 
-pub async fn create_typesense_collections() -> Result<(), reqwest::Error> {
+async fn create_typesense_collections() -> Result<(), reqwest::Error> {
     //create typesense collections
     let collection_burrows = json!({
-      "name": "burrows",
-      "fields": [
-        {"name": "id", "type": "int64"},
-        {"name": "title", "type": "string" },
-        {"name": "introduction", "type": "string"},
-        {"name": "update_time", "type": "string"}
-      ]
+        "name": "burrows",
+        "fields": [
+            {"name": "burrow_id", "type": "int64", "index": false, "optional": true },
+            {"name": "title", "type": "string", "locale": "zh"},
+            {"name": "description", "type": "string", "locale": "zh"},
+        ]
     });
     let collection_posts = json!({
-      "name": "posts",
-      "fields": [
-        {"name": "id", "type": "int64" },
-        {"name": "title", "type": "string" },
-        {"name": "burrow_id", "type": "int64" },
-        {"name": "update_time", "type": "string"},
-        {"name": "post_type", "type": "int32"},
-        {"name": "post_state", "type": "int32"},
-        {"name": "section", "type": "string[]"},
-        {"name": "tag", "type": "string[]"}
-      ]
+        "name": "posts",
+        "fields": [
+            {"name": "post_id", "type": "int64", "index": false , "optional": true},
+            {"name": "burrow_id", "type": "int64" , "index": false , "optional": true},
+            {"name": "title", "type": "string", "locale": "zh"},
+            {"name": "section", "type": "string[]", "facet":true},
+            {"name": "tag", "type": "string[]", "facet":true},
+        ]
     });
     let collection_replies = json!({
-      "name": "replies",
-      "fields": [
-        {"name": "id", "type": "int32" },
-        {"name": "post_id", "type": "int64"},
-        {"name": "burrow_id", "type": "int64"},
-        {"name": "update_time", "type": "string"},
-        {"name": "content", "type": "string"},
-        {"name": "reply_state", "type": "int32"}
-      ]
+        "name": "replies",
+        "fields": [
+            {"name": "post_id", "type": "int64", "index": false , "optional": true},
+            {"name": "reply_id", "type": "int32", "index": false , "optional": true},
+            {"name": "burrow_id", "type": "int64", "index": false , "optional": true},
+            {"name": "content", "type": "string", "locale": "zh"},
+        ]
     });
     let client = reqwest::Client::new();
     for each in [collection_burrows, collection_posts, collection_replies].iter() {
-        let _res = client.build_post("/collections").json(&each).send().await?;
-        // TODO: match the status code of Response here, to see whether it is successfully created or is already created, or failed
+        match client.build_post("/collections").json(&each).send().await {
+            Ok(a) => match a.status().as_u16() {
+                201 => (),
+                400 => panic!(
+                    "Bad Request - The request could not be understood due to malformed syntax."
+                ),
+                401 => panic!("Unauthorized - Your API key is wrong."),
+                404 => panic!("Not Found - The requested resource is not found."),
+                409 => {
+                    log::warn!("Collections already exist.");
+                }
+                422 => panic!(
+                    "Unprocessable Entity - Request is well-formed, but cannot be processed."
+                ),
+                503 => panic!(
+                    "Service Unavailable - We’re temporarily offline. Please try again later."
+                ),
+                _ => panic!(
+                    "Unknown error when creating collections. Status code:{}",
+                    a.status().as_u16()
+                ),
+            },
+            Err(e) => panic!("Err when create typesense collections,{:?}", e),
+        }
     }
     Ok(())
 }
@@ -196,7 +214,6 @@ impl Typesense for reqwest::Client {
         let typesense_api_key: &str = &TYPESENSE_API_KEY;
         let typesense_addr: String = TYPESENSE_ADDR.to_owned();
         self.post(typesense_addr + uri)
-            .header("Content-Type", "application/json")
             .header("X-TYPESENSE-API-KEY", typesense_api_key)
     }
 
@@ -211,7 +228,6 @@ impl Typesense for reqwest::Client {
         let typesense_api_key: &str = &TYPESENSE_API_KEY;
         let typesense_addr: String = TYPESENSE_ADDR.to_owned();
         self.patch(typesense_addr + uri)
-            .header("Content-Type", "application/json")
             .header("X-TYPESENSE-API-KEY", typesense_api_key)
     }
 }
@@ -232,136 +248,266 @@ pub async fn pulsar_typesense() -> Result<(), pulsar::Error> {
 
     match create_typesense_collections().await {
         Ok(_) => {
-            println!("Typesense successfully initialized");
+            log::warn!("Search engine successfully initialized");
         }
         Err(e) => {
-            panic!("Failed to initialize typesense: {}", e);
+            panic!("Failed to initialize search engine: {:?}", e);
         }
     };
     let client = reqwest::Client::new();
     while let Some(msg) = consumer.try_next().await? {
         consumer.ack(&msg).await?;
-        println!("metadata: {:?},id: {:?}", msg.metadata(), msg.message_id());
+        // println!("metadata: {:?},id: {:?}", msg.metadata(), msg.message_id());
         let data = match msg.deserialize() {
             Ok(data) => data,
             Err(e) => {
-                println!("could not deserialize message: {:?}", e);
+                log::error!("could not deserialize message: {:?}", e);
                 continue;
             }
         };
-        // if data.data.as_str() != "data" {
-        //     println!("Unexpected payload: {}", &data.data);
-        //     break;
-        // }
         match data {
             PulsarSearchData::CreateBurrow(burrow) => {
                 let data: TypesenseBurrowData = burrow.into();
-
                 match client
                     .build_post("/collections/burrows/documents")
-                    .body(serde_json::to_string(&data).unwrap())
+                    .json(&data)
                     .send()
                     .await
                 {
-                    Ok(r) => println!("add new burrow.{:?}", r),
-                    Err(e) => println!("add new burrow failed {:?}", e),
+                    Ok(r) => match r.status().as_u16() {
+                        201 => log::info!("[PULSAR-SEARCH] 201: Add new burrow."),
+                        409 => log::info!("[PULSAR-SEARCH] 409: Burrow already exist."),
+                        _ => log::error!(
+                            "[PULSAR-SEARCH] {}:  Failed to add new burrow. {}",
+                            r.status().as_u16(),
+                            r.text().await.unwrap()
+                        ),
+                    },
+                    Err(e) => log::error!("add new burrow failed {:?}", e),
                 }
             }
             PulsarSearchData::CreatePost(post) => {
                 let data: TypesensePostData = post.into();
 
                 match client
-                    .build_post("/collections/burrows/documents")
-                    .body(serde_json::to_string(&data).unwrap())
+                    .build_post("/collections/posts/documents")
+                    .json(&data)
                     .send()
                     .await
                 {
-                    Ok(r) => println!("add new post.{:?}", r),
-                    Err(e) => println!("add new post failed {:?}", e),
+                    Ok(r) => match r.status().as_u16() {
+                        201 => log::info!("[PULSAR-SEARCH] 201: Add new post."),
+                        409 => log::info!("[PULSAR-SEARCH] 409: Post already exist."),
+                        _ => log::error!(
+                            "[PULSAR-SEARCH] {}:  Failed to add new post. {}",
+                            r.status().as_u16(),
+                            r.text().await.unwrap()
+                        ),
+                    },
+                    Err(e) => log::error!("add new post failed {:?}", e),
                 }
             }
             PulsarSearchData::CreateReply(reply) => {
                 let data: TypesenseReplyData = reply.into();
 
                 match client
-                    .post("/collections/burrows/documents")
-                    .body(serde_json::to_string(&data).unwrap())
+                    .post("/collections/replies/documents")
+                    .json(&data)
                     .send()
                     .await
                 {
-                    Ok(r) => println!("add new reply.{:?}", r),
-                    Err(e) => println!("add new reply failed {:?}", e),
+                    Ok(r) => match r.status().as_u16() {
+                        201 => log::info!("[PULSAR-SEARCH] 201: Add new reply."),
+                        409 => log::info!("[PULSAR-SEARCH] 409: Reply already exist."),
+                        _ => log::error!(
+                            "[PULSAR-SEARCH] {}:  Failed to add new reply. {}",
+                            r.status().as_u16(),
+                            r.text().await.unwrap()
+                        ),
+                    },
+                    Err(e) => log::error!("add new reply failed {:?}", e),
                 }
             }
             PulsarSearchData::UpdateBurrow(burrow) => {
-                // TODO: read from typesense first, check the time if it is newer than the one in typesense
+                let burrow_id = burrow.burrow_id;
                 let data: TypesenseBurrowData = burrow.into();
-                let uri: String = format!("/collections/burrows/documents/{}", data.id);
                 match client
-                    .build_patch(&uri)
-                    .body(serde_json::to_string(&data).unwrap())
+                    .build_get(&format!("/collections/burrows/documents/{}", burrow_id))
                     .send()
                     .await
                 {
-                    Ok(r) => println!("a burrow updated.{:?}", r),
-                    Err(e) => println!("update burrow failed{:?}", e),
+                    Ok(r) => match r.status().as_u16() {
+                        200 => {
+                            let response = r.json::<TypesenseBurrowData>().await.unwrap();
+                            if response.update_time < data.update_time {
+                                match client
+                                    .build_patch(&format!(
+                                        "/collections/burrows/documents/{}",
+                                        burrow_id
+                                    ))
+                                    .json(&data)
+                                    .send()
+                                    .await
+                                {
+                                    Ok(r) => match r.status().as_u16() {
+                                        201 => log::info!("[PULSAR-SEARCH] 201: Update burrow."),
+                                        _ => log::error!(
+                                            "[PULSAR-SEARCH] {}:  Failed to update burrow. {}",
+                                            r.status().as_u16(),
+                                            r.text().await.unwrap()
+                                        ),
+                                    },
+                                    Err(e) => {
+                                        log::error!("[PULSAR-SEARCH] Update burrow failed {:?}", e)
+                                    }
+                                }
+                            } else {
+                                log::info!("[PULSAR-SEARCH] Burrow is up to date.");
+                            }
+                        }
+                        404 => log::info!("[PULSAR-SEARCH] 404: Burrow does not exist."),
+                        _ => log::error!(
+                            "[PULSAR-SEARCH] {}:  Failed to update burrow. {}",
+                            r.status().as_u16(),
+                            r.text().await.unwrap()
+                        ),
+                    },
+                    Err(e) => log::error!("[PULSAR-SEARCH] Update burrow failed {:?}", e),
                 }
             }
             PulsarSearchData::UpdatePost(post) => {
-                // TODO: read from typesense first, check the time if it is newer than the one in typesense
+                let post_id = post.post_id;
                 let data: TypesensePostData = post.into();
-                let uri: String = format!("/collections/posts/documents/{}", data.id);
                 match client
-                    .build_patch(&uri)
-                    .body(serde_json::to_string(&data).unwrap())
+                    .build_get(&format!("/collections/posts/documents/{}", post_id))
                     .send()
                     .await
                 {
-                    Ok(r) => println!("update post.{:?}", r),
-                    Err(e) => println!("update post failed {:?}", e),
+                    Ok(r) => match r.status().as_u16() {
+                        200 => {
+                            let response = r.json::<TypesensePostData>().await.unwrap();
+                            if response.update_time < data.update_time {
+                                match client
+                                    .build_patch(&format!(
+                                        "/collections/posts/documents/{}",
+                                        post_id
+                                    ))
+                                    .json(&data)
+                                    .send()
+                                    .await
+                                {
+                                    Ok(r) => match r.status().as_u16() {
+                                        201 => log::info!("[PULSAR-SEARCH] 201: Update post."),
+                                        _ => log::error!(
+                                            "[PULSAR-SEARCH] {}:  Failed to update post. {}",
+                                            r.status().as_u16(),
+                                            r.text().await.unwrap()
+                                        ),
+                                    },
+                                    Err(e) => {
+                                        log::error!("[PULSAR-SEARCH] Update post failed {:?}", e)
+                                    }
+                                }
+                            } else {
+                                log::info!("[PULSAR-SEARCH] Post is up to date.");
+                            }
+                        }
+                        404 => log::info!("[PULSAR-SEARCH] 404: post does not exist."),
+                        _ => log::error!(
+                            "[PULSAR-SEARCH] {}:  Failed to update post. {}",
+                            r.status().as_u16(),
+                            r.text().await.unwrap()
+                        ),
+                    },
+                    Err(e) => log::error!("[PULSAR-SEARCH] Update post failed {:?}", e),
                 }
             }
             PulsarSearchData::UpdateReply(reply) => {
-                // TODO: read from typesense first, check the time if it is newer than the one in typesense
+                let post_id = reply.post_id;
+                let reply_id = reply.reply_id;
                 let data: TypesenseReplyData = reply.into();
-                let uri: String = format!("/collections/replies/documents/{}", data.id);
                 match client
-                    .build_patch(&uri)
-                    .body(serde_json::to_string(&data).unwrap())
+                    .build_get(&format!(
+                        "/collections/replies/documents/{}-{}",
+                        post_id, reply_id
+                    ))
                     .send()
                     .await
                 {
-                    Ok(r) => println!("update reply.{:?}", r),
-                    Err(e) => println!("update reply failed {:?}", e),
+                    Ok(r) => match r.status().as_u16() {
+                        200 => {
+                            let response = r.json::<TypesenseReplyData>().await.unwrap();
+                            if response.update_time < data.update_time {
+                                match client
+                                    .build_patch(&format!(
+                                        "/collections/replies/documents/{}-{}",
+                                        post_id, reply_id
+                                    ))
+                                    .json(&data)
+                                    .send()
+                                    .await
+                                {
+                                    Ok(r) => match r.status().as_u16() {
+                                        201 => log::info!("[PULSAR-SEARCH] 201: Update reply."),
+                                        _ => log::error!(
+                                            "[PULSAR-SEARCH] {}:  Failed to update reply. {}",
+                                            r.status().as_u16(),
+                                            r.text().await.unwrap()
+                                        ),
+                                    },
+                                    Err(e) => {
+                                        log::error!("[PULSAR-SEARCH] Update reply failed {:?}", e)
+                                    }
+                                }
+                            } else {
+                                log::info!("[PULSAR-SEARCH] Reply is up to date.");
+                            }
+                        }
+                        404 => log::info!("[PULSAR-SEARCH] 404: reply does not exist."),
+                        _ => log::error!(
+                            "[PULSAR-SEARCH] {}:  Failed to update reply. {}",
+                            r.status().as_u16(),
+                            r.text().await.unwrap()
+                        ),
+                    },
+                    Err(e) => log::error!("[PULSAR-SEARCH] Update reply failed {:?}", e),
                 }
             }
             PulsarSearchData::DeleteBurrow(burrow_id) => {
-                let uri: String = format!("/collections/burrows/documents/{}", burrow_id);
-                match client.delete(&uri).send().await {
-                    Ok(r) => println!("a burrow deleted.{:?}", r),
-                    Err(e) => println!("delete burrow failed{:?}", e),
+                match client
+                    .delete(&format!("/collections/burrows/documents/{}", burrow_id))
+                    .send()
+                    .await
+                {
+                    Ok(_) => log::info!("[PULSAR-SEARCH] Delete burrow successfully"),
+                    Err(e) => log::error!("[PULSAR-SEARCH] Delete burrow failed: {:?}", e),
                 }
             }
-
             PulsarSearchData::DeletePost(post_id) => {
-                let uri: String = format!("/collections/posts/documents/{}", post_id);
-                match client.delete(&uri).send().await {
-                    Ok(r) => println!("a post deleted.{:?}", r),
-                    Err(e) => println!("delete post failed{:?}", e),
+                match client
+                    .delete(&format!("/collections/posts/documents/{}", post_id))
+                    .send()
+                    .await
+                {
+                    Ok(_) => println!("[PULSAR-SEARCH] Delete post successfully"),
+                    Err(e) => println!("[PULSAR-SEARCH] Delete post failed: {:?}", e),
                 }
             }
             PulsarSearchData::DeleteReply(post_id, reply_id) => {
-                let uri: String = format!("/collections/replies/documents/{}", reply_id);
-                match client.delete(&uri).send().await {
-                    Ok(r) => println!("a reply deleted.{:?}", r),
-                    Err(e) => println!("delete reply failed{:?}", e),
+                match client
+                    .delete(&format!(
+                        "/collections/replies/documents/{}-{}",
+                        post_id, reply_id
+                    ))
+                    .send()
+                    .await
+                {
+                    Ok(_) => println!("[PULSAR-SEARCH] Delete reply successfully"),
+                    Err(e) => println!("[PULSAR-SEARCH] Delete reply failed: {:?}", e),
                 }
             }
         }
-        // sleep(Duration::from_millis(10000)).await;
-        // println!("10000ms have elapsed");
     }
-
     Ok(())
 }
 

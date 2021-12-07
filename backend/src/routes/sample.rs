@@ -9,7 +9,7 @@ use sea_orm::{entity::*, ActiveModelTrait};
 use uuid::Uuid;
 
 use crate::db;
-use crate::pool::{PgDb, PulsarSearchProducerMq, RedisDb, RocketPulsarProducer};
+use crate::pool::{PgDb, PulsarSearchProducerMq, RedisDb};
 use crate::req::pulsar::*;
 use crate::req::user::*;
 use crate::utils::auth::{self, Auth, AuthTokenError, ValidToken};
@@ -102,26 +102,26 @@ async fn auth_new_unauthorized(request: &Request<'_>) -> String {
 }
 
 #[get("/pulsar/<burrow_id>")]
-async fn pulsar_produce(pulsar: Connection<PulsarSearchProducerMq>, burrow_id: i64) -> String {
-    let mut producer = match pulsar
-        .get_producer("persistent://public/default/search")
-        .await
-    {
-        Ok(producer) => producer,
-        Err(e) => {
-            println!("{:?}", e);
-            return "Error".to_string();
-        }
-    };
+async fn pulsar_produce(mut producer: Connection<PulsarSearchProducerMq>, burrow_id: i64) -> String {
+    // let mut producer = match pulsar
+    //     .get_producer("persistent://public/default/search")
+    //     .await
+    // {
+    //     Ok(producer) => producer,
+    //     Err(e) => {
+    //         println!("{:?}", e);
+    //         return "Error".to_string();
+    //     }
+    // };
     let now = Utc::now().with_timezone(&FixedOffset::east(8 * 3600));
     let data = PulsarSearchBurrowData {
         burrow_id: burrow_id,
         title: format!("This is burrow NO.{}", burrow_id),
-        introduction: format!("Content of burrow.{}", burrow_id),
+        description: format!("Content of burrow.{}", burrow_id),
         update_time: now,
     };
     let msg = PulsarSearchData::CreateBurrow(data);
-    match producer.send(msg).await {
+    match producer.send("persistent://public/default/search", msg).await {
         // Ok(r) => match r.await {
         //     Ok(cs) => format!("send data successfully!, {}", cs.producer_id),
         //     Err(e) => format!("Err: {}", e),

@@ -5,6 +5,7 @@ use std::convert::From;
 
 pub static POST_PER_PAGE: usize = 20;
 pub static REPLY_PER_PAGE: usize = 20;
+pub static MAX_SECTION: usize = 3;
 
 #[derive(Serialize, Deserialize)]
 pub struct PostCreateResponse {
