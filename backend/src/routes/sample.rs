@@ -9,10 +9,12 @@ use sea_orm::{entity::*, ActiveModelTrait};
 use uuid::Uuid;
 
 use crate::db;
-use crate::pool::{PgDb, RedisDb};
+use crate::pool::{PgDb, PulsarSearchProducerMq, RedisDb, RocketPulsarProducer};
+use crate::req::pulsar::*;
 use crate::req::user::*;
-use crate::utils::sso::{self, AuthTokenError, SsoAuth, ValidToken};
+use crate::utils::auth::{self, Auth, AuthTokenError, ValidToken};
 
+use chrono::prelude::*;
 use chrono::Local;
 use crypto::digest::Digest;
 use crypto::sha3::Sha3;
@@ -33,7 +35,8 @@ pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
                 redis_read,
                 auth_name,
                 auth_new,
-                sso_test
+                sso_test,
+                pulsar_produce
             ],
         )
         .register(
@@ -43,12 +46,12 @@ pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
 }
 
 #[get("/test/sso")]
-pub async fn sso_test(a: sso::SsoAuth) -> Json<i64> {
+pub async fn sso_test(a: auth::Auth) -> Json<i64> {
     Json(a.id)
 }
 
 #[get("/auth/<name>")]
-async fn auth_name(auth: Result<SsoAuth, AuthTokenError>, name: &str) -> String {
+async fn auth_name(auth: Result<Auth, AuthTokenError>, name: &str) -> String {
     if let Err(e) = auth {
         match e {
             AuthTokenError::Invalid => return "Invalid token".to_string(),
@@ -60,14 +63,14 @@ async fn auth_name(auth: Result<SsoAuth, AuthTokenError>, name: &str) -> String 
 }
 
 #[get("/auth/new/<name>")]
-async fn auth_new(auth: SsoAuth, name: &str) -> String {
+async fn auth_new(auth: Auth, name: &str) -> String {
     format!("Hello, {}, your id is {}!", name, auth.id)
 }
 
 #[catch(400)]
 async fn auth_new_bad_request(request: &Request<'_>) -> String {
     let user_result = request
-        .local_cache_async(async { sso::auth_token(request).await })
+        .local_cache_async(async { auth::auth_token(request).await })
         .await;
     match user_result {
         Some(e) => match e {
@@ -84,7 +87,7 @@ async fn auth_new_bad_request(request: &Request<'_>) -> String {
 #[catch(401)]
 async fn auth_new_unauthorized(request: &Request<'_>) -> String {
     let user_result = request
-        .local_cache_async(async { sso::auth_token(request).await })
+        .local_cache_async(async { auth::auth_token(request).await })
         .await;
     match user_result {
         Some(e) => match e {
@@ -96,6 +99,38 @@ async fn auth_new_unauthorized(request: &Request<'_>) -> String {
         },
         None => "Valid token".to_string(),
     }
+}
+
+#[get("/pulsar/<name>")]
+async fn pulsar_produce(pulsar: Connection<PulsarSearchProducerMq>, name: &str) -> String {
+    let mut producer = match pulsar
+        .get_producer("persistent://public/default/search")
+        .await
+    {
+        Ok(producer) => producer,
+        Err(e) => {
+            println!("{:?}", e);
+            return "Error".to_string();
+        }
+    };
+    let now = Utc::now().with_timezone(&FixedOffset::east(8 * 3600));
+    let data = PulsarSearchBurrowData {
+        burrow_id: 1i64,
+        title: name.to_string(),
+        introduction: name.to_string(),
+        update_time: now,
+    };
+    let msg = PulsarSearchData::CreateBurrow(data);
+    match producer.send(msg).await {
+        // Ok(r) => match r.await {
+        //     Ok(cs) => format!("send data successfully!, {}", cs.producer_id),
+        //     Err(e) => format!("Err: {}", e),
+        // },
+        // Err(e) => format!("Err: {}", e),
+        Ok(_) => format!("send data to pulsar successfully!,{}", name),
+        Err(e) => format!("Err: {}", e),
+    }
+    // let f1 = r.await?;
 }
 
 #[get("/hello/<name>", rank = 2)]
