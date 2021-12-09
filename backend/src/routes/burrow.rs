@@ -126,8 +126,8 @@ pub async fn create_burrow(
                                 let burrow_id = res.burrow_id.unwrap();
                                 let pulsar_burrow = PulsarSearchBurrowData {
                                     burrow_id,
-                                    title: res.title.unwrap().to_owned(),
-                                    description: res.description.unwrap().to_owned(),
+                                    title: res.title.unwrap(),
+                                    description: res.description.unwrap(),
                                     update_time: now.to_owned(),
                                 };
                                 let uid = res.uid.unwrap();

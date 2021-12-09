@@ -26,7 +26,7 @@ use crate::pool::{PgDb, PulsarSearchProducerMq, RedisDb};
 use crate::utils::auth::{Auth, CookieOptions};
 use crate::utils::burrow_valid::*;
 use crate::utils::email;
-use crate::{db, pgdb};
+use crate::{pgdb};
 
 pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
     rocket.mount(

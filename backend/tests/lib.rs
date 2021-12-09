@@ -28,7 +28,7 @@ fn test_signup() {
     let response = client
         .post("/users/sign-up")
         .json(&json!({
-            "username": format!("{}", name),
+            "username": name.to_string(),
             "password": "testpassword",
             "email": format!("{}@mails.tsinghua.edu.cn", name)}))
         .remote("127.0.0.1:8000".parse().unwrap())
@@ -39,7 +39,7 @@ fn test_signup() {
     let response = client
         .post("/users/sign-up")
         .json(&json!({
-            "username": format!("{}", name),
+            "username": name.to_string(),
             "password": "testpassword",
             "email": format!("{}@mails.tsignhua.edu.cn", name)}))
         .remote("127.0.0.1:8000".parse().unwrap())
@@ -50,7 +50,7 @@ fn test_signup() {
     let response = client
         .post("/users/sign-up")
         .json(&json!({
-            "username": format!("{}", name),
+            "username": name.to_string(),
             "password": "testpassword",
             "email": format!("{}@mails.tsinghua.edu.cn", name)}))
         .remote("127.0.0.1:8000".parse().unwrap())
@@ -82,7 +82,7 @@ fn test_login_signup() {
     let response = client
         .post("/users/sign-up")
         .json(&json!({
-            "username": format!("{}", name),
+            "username": name.to_string(),
             "password": "testpassword",
             "email": format!("{}@mails.tsinghua.edu.cn", name)}))
         .remote("127.0.0.1:8000".parse().unwrap())
@@ -93,7 +93,7 @@ fn test_login_signup() {
     let response = client
         .post("/users/login")
         .json(&json!({
-            "username": format!("{}", name),
+            "username": name.to_string(),
             "password": "testpassword"}))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
@@ -113,7 +113,7 @@ fn test_login_signup() {
     let response = client
         .post("/users/login")
         .json(&json!({
-            "username": format!("{}", name),
+            "username": name.to_string(),
             "password": "wrongpassword"}))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
@@ -136,7 +136,7 @@ fn test_burrow() {
     let response = client
         .post("/users/sign-up")
         .json(&json!({
-            "username": format!("{}", name),
+            "username": name.to_string(),
             "password": "testpassword",
             "email": format!("{}@mails.tsinghua.edu.cn", name)}))
         .remote("127.0.0.1:8000".parse().unwrap())
@@ -151,7 +151,7 @@ fn test_burrow() {
     let response = client
         .post("/users/login")
         .json(&json!({
-            "username": format!("{}", name),
+            "username": name.to_string(),
             "password": "testpassword"}))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
@@ -352,7 +352,7 @@ fn test_content() {
     let response = client
         .post("/users/sign-up")
         .json(&json!({
-            "username": format!("{}", name),
+            "username": name.to_string(),
             "password": "testpassword",
             "email": format!("{}@mails.tsinghua.edu.cn", name)}))
         .remote("127.0.0.1:8000".parse().unwrap())
@@ -367,7 +367,7 @@ fn test_content() {
     let response = client
         .post("/users/login")
         .json(&json!({
-            "username": format!("{}", name),
+            "username": name.to_string(),
             "password": "testpassword"}))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();

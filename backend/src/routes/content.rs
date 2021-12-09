@@ -80,7 +80,7 @@ pub async fn create_post(
     if content.title.is_empty() {
         return (Status::BadRequest, Err("Empty Title".to_string()));
     }
-    if content.section.len() == 0 || content.section.len() > MAX_SECTION {
+    if content.section.is_empty() || content.section.len() > MAX_SECTION {
         return (Status::BadRequest, Err("Wrong Section".to_string()));
     }
     // TODO: check if section is valid

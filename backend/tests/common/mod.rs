@@ -19,7 +19,7 @@ pub fn get_client() -> &'static Mutex<Client> {
         // tokio::time::sleep(std::time::Duration::from_secs(5)).await;
         let rocket = backend::rocket_init();
         let client = Client::tracked(rocket).expect("valid rocket instance");
-        let r = Mutex::new(client);
-        r
+        
+        Mutex::new(client)
     })
 }

@@ -185,10 +185,10 @@ async fn search(
                 Ok(r) => (Status::Ok, Ok(r)),
                 Err(e) => {
                     log::error!("[SEARCH-BURROW] Database error: {:?}", e);
-                    return (
+                    (
                         Status::InternalServerError,
                         Err(Json(ErrorResponse::build(ErrorCode::DatabaseErr, ""))),
-                    );
+                    )
                 }
             }
         }
@@ -242,16 +242,16 @@ async fn search(
                 Ok(r) => (Status::Ok, Ok(r)),
                 Err(e) => {
                     log::error!("[SEARCH-MIX] Database error: {:?}", e);
-                    return (
+                    (
                         Status::InternalServerError,
                         Err(Json(ErrorResponse::build(ErrorCode::DatabaseErr, ""))),
-                    );
+                    )
                 }
             }
         }
         SearchRequest::SearchPostTag { tag } => {
             let page = page + 1;
-            if tag.len() == 0 {
+            if tag.is_empty() {
                 return (
                     Status::BadRequest,
                     Err(Json(ErrorResponse::build(
@@ -289,10 +289,10 @@ async fn search(
                 Ok(r) => (Status::Ok, Ok(r)),
                 Err(e) => {
                     log::error!("[SEARCH-BURROW] Database error: {:?}", e);
-                    return (
+                    (
                         Status::InternalServerError,
                         Err(Json(ErrorResponse::build(ErrorCode::DatabaseErr, ""))),
-                    );
+                    )
                 }
             }
         }

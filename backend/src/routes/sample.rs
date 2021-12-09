@@ -115,7 +115,7 @@ async fn pulsar_produce(
     // };
     let now = Utc::now().with_timezone(&FixedOffset::east(8 * 3600));
     let data = PulsarSearchBurrowData {
-        burrow_id: burrow_id,
+        burrow_id,
         title: format!("This is burrow NO.{}", burrow_id),
         description: format!("Content of burrow.{}", burrow_id),
         update_time: now,
