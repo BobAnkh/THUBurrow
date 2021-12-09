@@ -9,10 +9,10 @@ use sea_orm::{entity::*, ActiveModelTrait};
 use uuid::Uuid;
 
 use crate::db;
-use crate::pool::{PgDb, PulsarSearchProducerMq, RedisDb};
+use crate::models::error::*;
 use crate::models::pulsar::*;
 use crate::models::user::*;
-use crate::models::error::*;
+use crate::pool::{PgDb, PulsarSearchProducerMq, RedisDb};
 use crate::utils::auth::{self, Auth, ValidToken};
 
 use chrono::prelude::*;

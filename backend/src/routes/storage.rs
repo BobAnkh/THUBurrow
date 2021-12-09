@@ -8,9 +8,9 @@ use rocket::{Build, Rocket};
 use rocket_db_pools::Connection;
 use sea_orm::{entity::*, ActiveModelTrait};
 
+use crate::models::storage::{ReferrerCheck, SaveImage};
 use crate::pgdb::image;
 use crate::pool::{MinioImageStorage, PgDb};
-use crate::models::storage::{ReferrerCheck, SaveImage};
 use crate::utils::auth::Auth;
 
 pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {

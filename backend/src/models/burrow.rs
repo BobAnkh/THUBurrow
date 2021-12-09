@@ -1,4 +1,4 @@
-use crate::{pgdb::burrow, models::content::Post};
+use crate::{models::content::Post, pgdb::burrow};
 use rocket::serde::{Deserialize, Serialize};
 use sea_orm::FromQueryResult;
 
@@ -12,7 +12,7 @@ pub struct LastBurrowSeq {
 
 #[derive(Serialize, Deserialize)]
 pub struct BurrowTotalCount {
-    pub total: i64
+    pub total: i64,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -64,19 +64,18 @@ impl From<&burrow::Model> for BurrowMetadata {
     }
 }
 
-impl From<LastBurrowSeq> for BurrowTotalCount{
-    fn from(seq: LastBurrowSeq) -> BurrowTotalCount{
-        BurrowTotalCount{
-            total: seq.last_value
+impl From<LastBurrowSeq> for BurrowTotalCount {
+    fn from(seq: LastBurrowSeq) -> BurrowTotalCount {
+        BurrowTotalCount {
+            total: seq.last_value,
         }
     }
 }
 
-impl From<&LastBurrowSeq> for BurrowTotalCount{
-    fn from(seq: &LastBurrowSeq) -> BurrowTotalCount{
-        BurrowTotalCount{
-            total: seq.last_value
+impl From<&LastBurrowSeq> for BurrowTotalCount {
+    fn from(seq: &LastBurrowSeq) -> BurrowTotalCount {
+        BurrowTotalCount {
+            total: seq.last_value,
         }
     }
 }
-

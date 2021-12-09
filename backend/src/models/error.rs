@@ -44,3 +44,9 @@ impl ErrorResponse {
         }
     }
 }
+
+impl Default for ErrorResponse {
+    fn default() -> Self {
+        Self::new()
+    }
+}

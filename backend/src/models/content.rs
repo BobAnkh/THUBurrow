@@ -14,7 +14,7 @@ pub struct LastPostSeq {
 
 #[derive(Serialize, Deserialize)]
 pub struct PostTotalCount {
-    pub total: i64
+    pub total: i64,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -211,18 +211,18 @@ impl From<&content_reply::Model> for Reply {
     }
 }
 
-impl From<LastPostSeq> for PostTotalCount{
-    fn from(seq: LastPostSeq) -> PostTotalCount{
-        PostTotalCount{
-            total: seq.last_value
+impl From<LastPostSeq> for PostTotalCount {
+    fn from(seq: LastPostSeq) -> PostTotalCount {
+        PostTotalCount {
+            total: seq.last_value,
         }
     }
 }
 
-impl From<&LastPostSeq> for PostTotalCount{
-    fn from(seq: &LastPostSeq) -> PostTotalCount{
-        PostTotalCount{
-            total: seq.last_value
+impl From<&LastPostSeq> for PostTotalCount {
+    fn from(seq: &LastPostSeq) -> PostTotalCount {
+        PostTotalCount {
+            total: seq.last_value,
         }
     }
 }

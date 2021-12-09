@@ -329,4 +329,3 @@ impl From<&SearchMixResult> for SearchMixResponse {
         }
     }
 }
-

@@ -2,9 +2,9 @@
 extern crate rocket;
 
 pub mod db;
+pub mod models;
 pub mod pgdb;
 pub mod pool;
-pub mod models;
 pub mod routes;
 pub mod setup;
 pub mod utils;
