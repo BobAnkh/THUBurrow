@@ -56,7 +56,7 @@ async fn search(
                                 error!("[SEARCH-BURROW] Database Error: {:?}", e);
                                 (
                                     Status::InternalServerError,
-                                    Err(Json(ErrorResponse::build(ErrorCode::DatabaseErr, ""))),
+                                    Err(Json(ErrorResponse::default())),
                                 )
                             }
                         }
@@ -73,7 +73,7 @@ async fn search(
                     error!("[SEARCH-BURROW] Database Error: {:?}", e);
                     (
                         Status::InternalServerError,
-                        Err(Json(ErrorResponse::build(ErrorCode::DatabaseErr, ""))),
+                        Err(Json(ErrorResponse::default())),
                     )
                 }
             }
@@ -99,7 +99,7 @@ async fn search(
                                 log::error!("[READ-POST] Database error: {:?}", e);
                                 return (
                                     Status::InternalServerError,
-                                    Err(Json(ErrorResponse::build(ErrorCode::DatabaseErr, ""))),
+                                    Err(Json(ErrorResponse::default())),
                                 );
                             }
                         };
@@ -120,7 +120,7 @@ async fn search(
                                     log::error!("[READ-POST] Database error: {:?}", e);
                                     return (
                                         Status::InternalServerError,
-                                        Err(Json(ErrorResponse::build(ErrorCode::DatabaseErr, ""))),
+                                        Err(Json(ErrorResponse::default())),
                                     );
                                 }
                             },
@@ -152,7 +152,7 @@ async fn search(
                     log::error!("[READ-POST] Database error: {:?}", e);
                     (
                         Status::InternalServerError,
-                        Err(Json(ErrorResponse::build(ErrorCode::DatabaseErr, ""))),
+                        Err(Json(ErrorResponse::default())),
                     )
                 }
             }
@@ -168,7 +168,7 @@ async fn search(
                         log::error!("[SEARCH-BURROW] Database error: {:?}", e);
                         return (
                             Status::InternalServerError,
-                            Err(Json(ErrorResponse::build(ErrorCode::DatabaseErr, ""))),
+                            Err(Json(ErrorResponse::default())),
                         );
                     }
                 },
@@ -176,7 +176,7 @@ async fn search(
                     log::error!("[SEARCH-BURROW] Database error: {:?}", e);
                     return (
                         Status::InternalServerError,
-                        Err(Json(ErrorResponse::build(ErrorCode::DatabaseErr, ""))),
+                        Err(Json(ErrorResponse::default())),
                     );
                 }
             };
@@ -187,7 +187,7 @@ async fn search(
                     log::error!("[SEARCH-BURROW] Database error: {:?}", e);
                     (
                         Status::InternalServerError,
-                        Err(Json(ErrorResponse::build(ErrorCode::DatabaseErr, ""))),
+                        Err(Json(ErrorResponse::default())),
                     )
                 }
             }
@@ -225,7 +225,7 @@ async fn search(
                         log::error!("[SEARCH-MIX] Database error: {:?}", e);
                         return (
                             Status::InternalServerError,
-                            Err(Json(ErrorResponse::build(ErrorCode::DatabaseErr, ""))),
+                            Err(Json(ErrorResponse::default())),
                         );
                     }
                 },
@@ -233,7 +233,7 @@ async fn search(
                     log::error!("[SEARCH-MIX] Database error: {:?}", e);
                     return (
                         Status::InternalServerError,
-                        Err(Json(ErrorResponse::build(ErrorCode::DatabaseErr, ""))),
+                        Err(Json(ErrorResponse::default())),
                     );
                 }
             };
@@ -244,7 +244,7 @@ async fn search(
                     log::error!("[SEARCH-MIX] Database error: {:?}", e);
                     (
                         Status::InternalServerError,
-                        Err(Json(ErrorResponse::build(ErrorCode::DatabaseErr, ""))),
+                        Err(Json(ErrorResponse::default())),
                     )
                 }
             }
@@ -255,7 +255,7 @@ async fn search(
                 return (
                     Status::BadRequest,
                     Err(Json(ErrorResponse::build(
-                        ErrorCode::SearchEmptyTag,
+                        ErrorCode::EmptyField,
                         "Tags should not be empty",
                     ))),
                 );
@@ -272,7 +272,7 @@ async fn search(
                         log::error!("[SEARCH-BURROW] Database error: {:?}", e);
                         return (
                             Status::InternalServerError,
-                            Err(Json(ErrorResponse::build(ErrorCode::DatabaseErr, ""))),
+                            Err(Json(ErrorResponse::default())),
                         );
                     }
                 },
@@ -280,7 +280,7 @@ async fn search(
                     log::error!("[SEARCH-BURROW] Database error: {:?}", e);
                     return (
                         Status::InternalServerError,
-                        Err(Json(ErrorResponse::build(ErrorCode::DatabaseErr, ""))),
+                        Err(Json(ErrorResponse::default())),
                     );
                 }
             };
@@ -291,7 +291,7 @@ async fn search(
                     log::error!("[SEARCH-BURROW] Database error: {:?}", e);
                     (
                         Status::InternalServerError,
-                        Err(Json(ErrorResponse::build(ErrorCode::DatabaseErr, ""))),
+                        Err(Json(ErrorResponse::default())),
                     )
                 }
             }
