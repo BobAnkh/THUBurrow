@@ -21,12 +21,12 @@ use crate::models::{
     pulsar::*,
     user::*,
 };
+use crate::pgdb;
 use crate::pgdb::prelude::*;
 use crate::pool::{PgDb, PulsarSearchProducerMq, RedisDb};
 use crate::utils::auth::{Auth, CookieOptions};
 use crate::utils::burrow_valid::*;
 use crate::utils::email;
-use crate::{pgdb};
 
 pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
     rocket.mount(
