@@ -4,7 +4,7 @@ extern crate rocket;
 pub mod db;
 pub mod pgdb;
 pub mod pool;
-pub mod req;
+pub mod models;
 pub mod routes;
 pub mod setup;
 pub mod utils;
@@ -40,6 +40,7 @@ pub fn rocket_init() -> Rocket<Build> {
         .attach(pool::RedisDb::init())
         .attach(pool::PulsarSearchProducerMq::init())
         .attach(pool::MinioImageStorage::init())
+        .attach(pool::TypesenseSearch::init())
         .attach(AdHoc::on_ignite("mount_sample", routes::sample::init))
         .attach(AdHoc::on_ignite("mount_routes", routes::routes_init))
         .attach(AdHoc::try_on_ignite(

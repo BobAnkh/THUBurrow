@@ -4,7 +4,7 @@ use crypto::sha3::Sha3;
 use idgenerator::IdHelper;
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
-use rocket::http::{Cookie, CookieJar, SameSite, Status};
+use rocket::http::{Cookie, CookieJar, Status};
 use rocket::serde::json::Json;
 use rocket::{Build, Rocket};
 use rocket_db_pools::Connection;
@@ -14,18 +14,19 @@ use sea_orm::{DbErr, QueryFilter};
 use std::collections::HashMap;
 use std::iter;
 
-use crate::pgdb;
-use crate::pgdb::prelude::*;
-use crate::pool::{PgDb, PulsarSearchProducerMq, RedisDb};
-use crate::req::{
+use crate::models::{
     burrow::{BurrowMetadata, BURROW_PER_PAGE},
     content::{Post, POST_PER_PAGE},
+    error::*,
     pulsar::*,
     user::*,
 };
-use crate::utils::auth::Auth;
+use crate::pgdb::prelude::*;
+use crate::pool::{PgDb, PulsarSearchProducerMq, RedisDb};
+use crate::utils::auth::{Auth, CookieOptions};
 use crate::utils::burrow_valid::*;
 use crate::utils::email;
+use crate::{db, pgdb};
 
 pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
     rocket.mount(
@@ -69,7 +70,10 @@ pub async fn user_relation(
     //         return Status::InternalServerError;
     //     }
     // };
-    match producer.send("persistent://public/default/relation", msg).await {
+    match producer
+        .send("persistent://public/default/relation", msg)
+        .await
+    {
         Ok(_) => log::info!("send data to pulsar successfully!"),
         Err(e) => {
             log::error!("Err: {}", e);
@@ -77,6 +81,65 @@ pub async fn user_relation(
         }
     }
     Status::Ok
+}
+
+#[post("/email", data = "<email_info>", format = "json")]
+pub async fn user_email_activate(
+    db: Connection<PgDb>,
+    email_info: Json<UserEmail>,
+    mut producer: Connection<PulsarSearchProducerMq>,
+) -> (Status, Result<String, Json<ErrorResponse>>) {
+    let pg_con = db.into_inner();
+    let email = email_info.into_inner().email;
+    if !email::check_email_syntax(&email) {
+        return (
+            Status::BadRequest,
+            Err(Json(ErrorResponse::build(
+                ErrorCode::InvalidEmail,
+                "Invalid Email address",
+            ))),
+        );
+    }
+    // check if email address is duplicated, add corresponding error if so
+    match User::find()
+        .filter(pgdb::user::Column::Email.eq(email.clone()))
+        .one(&pg_con)
+        .await
+    {
+        Ok(res) => {
+            if res.is_some() {
+                (
+                    Status::BadRequest,
+                    Err(Json(ErrorResponse::build(
+                        ErrorCode::DuplicateEmail,
+                        "This Email address is already in use",
+                    ))),
+                )
+            } else {
+                let msg = PulsarSendEmail { email };
+                match producer
+                    .send("persistent://public/default/email", msg)
+                    .await
+                {
+                    Ok(_) => (Status::Ok, Ok("Success".to_string())),
+                    Err(e) => {
+                        log::error!("[SEND-EMAIL] Database error: {:?}", e);
+                        (
+                            Status::InternalServerError,
+                            Err(Json(ErrorResponse::build(ErrorCode::DatabaseErr, ""))),
+                        )
+                    }
+                }
+            }
+        }
+        Err(e) => {
+            log::error!("[SIGN-UP] Database Error: {:?}", e);
+            (
+                Status::InternalServerError,
+                Err(Json(ErrorResponse::build(ErrorCode::DatabaseErr, ""))),
+            )
+        }
+    }
 }
 
 #[post("/sign-up", data = "<user_info>", format = "json")]
@@ -95,7 +158,7 @@ pub async fn user_sign_up(
             Status::BadRequest,
             Json(UserResponse {
                 default_burrow: -1,
-                errors: vec!["Illegal Email Address".to_string()],
+                errors: vec!["Invalid Email Address".to_string()],
             }),
         );
     }
@@ -360,14 +423,7 @@ pub async fn user_log_in(
                         }
                     };
                     // build cookie
-                    let cookie = Cookie::build("token", token)
-                        .domain(".thuburrow.com")
-                        .path("/")
-                        .same_site(SameSite::Strict)
-                        .secure(true)
-                        .http_only(true)
-                        .max_age(time::Duration::weeks(1))
-                        .finish();
+                    let cookie = Cookie::build("token", token).cookie_options().finish();
                     // set cookie
                     cookies.add_private(cookie);
                     info!("[LOGIN] User login complete.");

@@ -143,7 +143,7 @@ fn test_burrow() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     let res = response
-        .into_json::<backend::req::user::UserResponse>()
+        .into_json::<backend::models::user::UserResponse>()
         .unwrap();
     let burrow_id = res.default_burrow;
 
@@ -359,7 +359,7 @@ fn test_content() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     let res = response
-        .into_json::<backend::req::user::UserResponse>()
+        .into_json::<backend::models::user::UserResponse>()
         .unwrap();
     let burrow_id = res.default_burrow;
 
@@ -387,7 +387,7 @@ fn test_content() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     let res = response
-        .into_json::<backend::req::content::PostCreateResponse>()
+        .into_json::<backend::models::content::PostCreateResponse>()
         .unwrap();
     let post_id = res.post_id;
     println!("Post Id: {}", post_id);
@@ -483,7 +483,7 @@ fn test_content() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     let res = response
-        .into_json::<backend::req::burrow::BurrowCreateResponse>()
+        .into_json::<backend::models::burrow::BurrowCreateResponse>()
         .unwrap();
     let new_burrow_id = res.burrow_id;
     println!("Burrow Id: {}", new_burrow_id);

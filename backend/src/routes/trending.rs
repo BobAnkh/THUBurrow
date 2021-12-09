@@ -6,7 +6,7 @@ use sea_orm::{entity::*, DatabaseConnection, PaginatorTrait, QueryFilter, QueryO
 
 use crate::pgdb::{content_post, prelude::*};
 use crate::pool::{PgDb, RedisDb};
-use crate::req::content::*;
+use crate::models::content::*;
 use crate::utils::auth::Auth;
 
 pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {

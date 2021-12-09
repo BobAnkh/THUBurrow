@@ -1,8 +1,19 @@
-use crate::{pgdb::burrow, req::content::Post};
+use crate::{pgdb::burrow, models::content::Post};
 use rocket::serde::{Deserialize, Serialize};
+use sea_orm::FromQueryResult;
 
 pub static BURROW_PER_PAGE: usize = 10;
 pub static BURROW_LIMIT: usize = 5;
+
+#[derive(Debug, FromQueryResult)]
+pub struct LastBurrowSeq {
+    last_value: i64,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct BurrowTotalCount {
+    pub total: i64
+}
 
 #[derive(Serialize, Deserialize)]
 pub struct BurrowInfo {
@@ -30,6 +41,7 @@ pub struct BurrowMetadata {
     pub post_num: i32,
 }
 
+// TODO: According to burrow state to determine whether to show burrow
 impl From<burrow::Model> for BurrowMetadata {
     fn from(burrow: burrow::Model) -> BurrowMetadata {
         BurrowMetadata {
@@ -51,3 +63,20 @@ impl From<&burrow::Model> for BurrowMetadata {
         }
     }
 }
+
+impl From<LastBurrowSeq> for BurrowTotalCount{
+    fn from(seq: LastBurrowSeq) -> BurrowTotalCount{
+        BurrowTotalCount{
+            total: seq.last_value
+        }
+    }
+}
+
+impl From<&LastBurrowSeq> for BurrowTotalCount{
+    fn from(seq: &LastBurrowSeq) -> BurrowTotalCount{
+        BurrowTotalCount{
+            total: seq.last_value
+        }
+    }
+}
+

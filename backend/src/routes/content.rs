@@ -5,15 +5,17 @@ use rocket::{Build, Rocket};
 use rocket_db_pools::Connection;
 use sea_orm::sea_query::Expr;
 use sea_orm::{
-    entity::*, ActiveModelTrait, Condition, ConnectionTrait, DbErr, PaginatorTrait, QueryFilter,
-    QueryOrder,
+    entity::*, ActiveModelTrait, Condition, ConnectionTrait, DbBackend, DbErr, PaginatorTrait,
+    QueryFilter, QueryOrder, Statement,
 };
 use std::collections::HashMap;
 
+use crate::models::content::*;
+use crate::models::error::*;
+use crate::models::pulsar::*;
 use crate::pgdb;
 use crate::pgdb::prelude::*;
-use crate::pool::PgDb;
-use crate::req::content::*;
+use crate::pool::{PgDb, PulsarSearchProducerMq};
 use crate::utils::auth::Auth;
 use crate::utils::burrow_valid::is_valid_burrow;
 
@@ -28,15 +30,48 @@ pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
             read_post_list,
             create_reply,
             update_reply,
+            get_total_post_count,
         ],
     )
 }
 
-#[post("/post", data = "<post_info>", format = "json")]
+#[get("/posts/total")]
+pub async fn get_total_post_count(
+    _auth: Auth,
+    db: Connection<PgDb>,
+) -> (Status, Result<Json<PostTotalCount>, Json<ErrorResponse>>) {
+    let pg_con = db.into_inner();
+    match LastPostSeq::find_by_statement(Statement::from_sql_and_values(
+        DbBackend::Postgres,
+        r#"SELECT "last_value" FROM "content_post_post_id_seq"#,
+        vec![],
+    ))
+    .one(&pg_con)
+    .await
+    {
+        Ok(r) => match r {
+            Some(r) => (Status::Ok, Ok(Json(r.into()))),
+            None => (
+                Status::InternalServerError,
+                Err(Json(ErrorResponse::build(ErrorCode::DatabaseErr, ""))),
+            ),
+        },
+        Err(e) => {
+            log::error!("[TOTAL-POST] Database error: {:?}", e);
+            (
+                Status::InternalServerError,
+                Err(Json(ErrorResponse::build(ErrorCode::DatabaseErr, ""))),
+            )
+        }
+    }
+}
+
+#[post("/posts", data = "<post_info>", format = "json")]
 pub async fn create_post(
     auth: Auth,
     db: Connection<PgDb>,
     post_info: Json<PostInfo>,
+    mut producer: Connection<PulsarSearchProducerMq>,
 ) -> (Status, Result<Json<PostCreateResponse>, String>) {
     let pg_con = db.into_inner();
     // get content info from request
@@ -69,12 +104,12 @@ pub async fn create_post(
                                 let section = content.section.join(",");
                                 let tag = content.tag.join(",");
                                 let content_post = pgdb::content_post::ActiveModel {
-                                    title: Set(content.title),
+                                    title: Set(content.title.to_owned()),
                                     burrow_id: Set(content.burrow_id),
                                     create_time: Set(now.to_owned()),
                                     update_time: Set(now.to_owned()),
-                                    section: Set(section),
-                                    tag: Set(tag),
+                                    section: Set(section.to_owned()),
+                                    tag: Set(tag.to_owned()),
                                     ..Default::default()
                                 };
                                 // insert the row in database
@@ -87,8 +122,8 @@ pub async fn create_post(
                                     reply_id: Set(0),
                                     burrow_id: Set(content.burrow_id),
                                     create_time: Set(now.to_owned()),
-                                    update_time: Set(now),
-                                    content: Set(content.content.to_string()),
+                                    update_time: Set(now.to_owned()),
+                                    content: Set(content.content.to_owned()),
                                     ..Default::default()
                                 };
                                 let reply_res = content_reply.insert(txn).await?;
@@ -109,6 +144,29 @@ pub async fn create_post(
                                         "burrow not found".to_string(),
                                     ));
                                 }
+                                let pulsar_post = PulsarSearchPostData {
+                                    post_id,
+                                    title: content.title,
+                                    burrow_id: content.burrow_id,
+                                    section: content.section,
+                                    tag: content.tag,
+                                    update_time: now.to_owned(),
+                                };
+                                let pulsar_reply = PulsarSearchReplyData {
+                                    post_id,
+                                    reply_id: 0,
+                                    burrow_id: content.burrow_id,
+                                    content: content.content,
+                                    update_time: now,
+                                };
+                                let msg = PulsarSearchData::CreatePost(pulsar_post);
+                                let _ = producer
+                                    .send("persistent://public/default/search", msg)
+                                    .await;
+                                let msg = PulsarSearchData::CreateReply(pulsar_reply);
+                                let _ = producer
+                                    .send("persistent://public/default/search", msg)
+                                    .await;
                                 Ok(post_id)
                             })
                         })
@@ -132,7 +190,7 @@ pub async fn create_post(
     }
 }
 
-#[get("/post/<post_id>?<page>")]
+#[get("/posts/<post_id>?<page>")]
 pub async fn read_post(
     auth: Auth,
     db: Connection<PgDb>,
@@ -204,12 +262,13 @@ pub async fn read_post(
     }
 }
 
-#[patch("/post/<post_id>", data = "<post_info>", format = "json")]
+#[patch("/posts/<post_id>", data = "<post_info>", format = "json")]
 pub async fn update_post(
     auth: Auth,
     db: Connection<PgDb>,
     post_id: i64,
     post_info: Json<PostUpdateInfo>,
+    mut producer: Connection<PulsarSearchProducerMq>,
 ) -> (Status, String) {
     let pg_con = db.into_inner();
     let content = post_info.into_inner();
@@ -230,14 +289,29 @@ pub async fn update_post(
                                 let tag = content.tag.join(",");
                                 let content_post = pgdb::content_post::ActiveModel {
                                     post_id: Set(post_id),
-                                    title: Set(content.title),
-                                    update_time: Set(now),
+                                    title: Set(content.title.to_owned()),
+                                    update_time: Set(now.to_owned()),
                                     section: Set(section),
                                     tag: Set(tag),
                                     ..Default::default()
                                 };
+
                                 match content_post.update(&pg_con).await {
-                                    Ok(_) => (Status::Ok, "Success".to_string()),
+                                    Ok(r) => {
+                                        let pulsar_post = PulsarSearchPostData {
+                                            post_id,
+                                            title: content.title,
+                                            burrow_id: r.burrow_id.unwrap(),
+                                            section: content.section,
+                                            tag: content.tag,
+                                            update_time: now,
+                                        };
+                                        let msg = PulsarSearchData::UpdatePost(pulsar_post);
+                                        let _ = producer
+                                            .send("persistent://public/default/search", msg)
+                                            .await;
+                                        (Status::Ok, "Success".to_string())
+                                    }
                                     Err(e) => {
                                         log::error!("[UPDATE-POST] Database error: {:?}", e);
                                         (Status::InternalServerError, String::new())
@@ -269,8 +343,13 @@ pub async fn update_post(
     }
 }
 
-#[delete("/post/<post_id>")]
-pub async fn delete_post(auth: Auth, db: Connection<PgDb>, post_id: i64) -> (Status, String) {
+#[delete("/posts/<post_id>")]
+pub async fn delete_post(
+    auth: Auth,
+    db: Connection<PgDb>,
+    post_id: i64,
+    mut producer: Connection<PulsarSearchProducerMq>,
+) -> (Status, String) {
     let pg_con = db.into_inner();
     let now = Utc::now().with_timezone(&FixedOffset::east(8 * 3600));
     // check if the post not exsits, add corresponding error if so
@@ -312,7 +391,13 @@ pub async fn delete_post(auth: Auth, db: Connection<PgDb>, post_id: i64) -> (Sta
                                     })
                                     .await
                                 {
-                                    Ok(_) => (Status::Ok, "Success".to_string()),
+                                    Ok(_) => {
+                                        let msg = PulsarSearchData::DeletePost(post_id);
+                                        let _ = producer
+                                            .send("persistent://public/default/search", msg)
+                                            .await;
+                                        (Status::Ok, "Success".to_string())
+                                    }
                                     Err(e) => {
                                         log::error!("[DELETE-POST] Database error: {:?}", e);
                                         (Status::InternalServerError, String::new())
@@ -344,7 +429,7 @@ pub async fn delete_post(auth: Auth, db: Connection<PgDb>, post_id: i64) -> (Sta
     }
 }
 
-#[get("/post/list?<page>")]
+#[get("/posts/list?<page>")]
 pub async fn read_post_list(
     auth: Auth,
     db: Connection<PgDb>,
@@ -421,11 +506,12 @@ pub async fn read_post_list(
     (Status::Ok, Ok(Json(ListPage { post_page, page })))
 }
 
-#[post("/reply", data = "<reply_info>", format = "json")]
+#[post("/replies", data = "<reply_info>", format = "json")]
 pub async fn create_reply(
     auth: Auth,
     db: Connection<PgDb>,
     reply_info: Json<ReplyInfo>,
+    mut producer: Connection<PulsarSearchProducerMq>,
 ) -> (Status, Result<Json<ReplyCreateResponse>, String>) {
     let pg_con = db.into_inner();
     // get content info from request
@@ -458,7 +544,7 @@ pub async fn create_reply(
                                                 burrow_id: Set(content.burrow_id),
                                                 create_time: Set(now.to_owned()),
                                                 update_time: Set(now.to_owned()),
-                                                content: Set(content.content.to_string()),
+                                                content: Set(content.content.to_owned()),
                                                 ..Default::default()
                                             };
                                             // insert the row in database
@@ -467,7 +553,7 @@ pub async fn create_reply(
                                             log::info!("[CREATE-REPLY] create reply {}", reply_id);
                                             let post_update = pgdb::content_post::ActiveModel {
                                                 post_id: Set(post_info.post_id),
-                                                update_time: Set(now),
+                                                update_time: Set(now.to_owned()),
                                                 post_len: Set(post_info.post_len + 1),
                                                 ..Default::default()
                                             };
@@ -488,6 +574,17 @@ pub async fn create_reply(
                                                 )
                                                 .exec(txn)
                                                 .await?;
+                                            let pulsar_reply = PulsarSearchReplyData {
+                                                post_id: post_info.post_id,
+                                                reply_id,
+                                                burrow_id: content.burrow_id,
+                                                content: content.content,
+                                                update_time: now,
+                                            };
+                                            let msg = PulsarSearchData::CreateReply(pulsar_reply);
+                                            let _ = producer
+                                                .send("persistent://public/default/search", msg)
+                                                .await;
                                             Ok(reply_id)
                                         })
                                     })
@@ -521,11 +618,12 @@ pub async fn create_reply(
     }
 }
 
-#[put("/reply", data = "<reply_update_info>", format = "json")]
+#[patch("/replies", data = "<reply_update_info>", format = "json")]
 pub async fn update_reply(
     auth: Auth,
     db: Connection<PgDb>,
     reply_update_info: Json<ReplyUpdateInfo>,
+    mut producer: Connection<PulsarSearchProducerMq>,
 ) -> (Status, String) {
     let pg_con = db.into_inner();
     // get content info from request
@@ -559,12 +657,12 @@ pub async fn update_reply(
                                                 // fill the row in content_reply
                                                 let mut content_reply: pgdb::content_reply::ActiveModel =
                                                     reply_info.into();
-                                                content_reply.content = Set(content.content);
+                                                content_reply.content = Set(content.content.to_owned());
                                                 content_reply.update_time = Set(now);
-                                                content_reply.update(txn).await?;
+                                                let content_reply = content_reply.update(txn).await?;
                                                 let post_update = pgdb::content_post::ActiveModel {
                                                     post_id: Set(content.post_id),
-                                                    update_time: Set(now),
+                                                    update_time: Set(now.to_owned()),
                                                     ..Default::default()
                                                 };
                                                 // update the row in database
@@ -581,6 +679,17 @@ pub async fn update_reply(
                                                 //     )
                                                 //     .exec(txn)
                                                 //     .await?;
+                                                let pulsar_reply = PulsarSearchReplyData {
+                                                    post_id: content.post_id,
+                                                    reply_id: content.reply_id,
+                                                    burrow_id: content_reply.burrow_id.unwrap(),
+                                                    content: content.content,
+                                                    update_time: now,
+                                                };
+                                                let msg = PulsarSearchData::UpdateReply(pulsar_reply);
+                                                let _ = producer
+                                                    .send("persistent://public/default/search", msg)
+                                                    .await;
                                                 Ok(())
                                             })
                                     })

@@ -1,11 +1,21 @@
 use crate::pgdb::{content_post, content_reply};
 use rocket::serde::{Deserialize, Serialize};
-use sea_orm::prelude::DateTimeWithTimeZone;
+use sea_orm::{prelude::DateTimeWithTimeZone, FromQueryResult};
 use std::convert::From;
 
 pub static POST_PER_PAGE: usize = 20;
 pub static REPLY_PER_PAGE: usize = 20;
 pub static MAX_SECTION: usize = 3;
+
+#[derive(Debug, FromQueryResult)]
+pub struct LastPostSeq {
+    last_value: i64,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct PostTotalCount {
+    pub total: i64
+}
 
 #[derive(Serialize, Deserialize)]
 pub struct PostCreateResponse {
@@ -71,6 +81,33 @@ pub struct PostDisplay {
     pub is_update: bool,
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct Post {
+    pub post_id: i64,
+    pub title: String,
+    pub burrow_id: i64,
+    pub section: Vec<String>,
+    pub tag: Vec<String>,
+    pub create_time: DateTimeWithTimeZone,
+    pub update_time: DateTimeWithTimeZone,
+    pub post_state: i32,
+    pub post_type: i32,
+    pub like_num: i32,
+    pub collection_num: i32,
+    pub post_len: i32,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct Reply {
+    pub post_id: i64,
+    pub reply_id: i32,
+    pub burrow_id: i64,
+    pub create_time: DateTimeWithTimeZone,
+    pub update_time: DateTimeWithTimeZone,
+    pub content: String,
+    pub reply_state: i32,
+}
+
 // pub struct GetPostList {}
 // impl GetPostList {
 //     pub async fn get_post_display(
@@ -106,33 +143,6 @@ pub struct PostDisplay {
 //         })
 //     }
 // }
-
-#[derive(Serialize, Deserialize)]
-pub struct Post {
-    pub post_id: i64,
-    pub title: String,
-    pub burrow_id: i64,
-    pub section: Vec<String>,
-    pub tag: Vec<String>,
-    pub create_time: DateTimeWithTimeZone,
-    pub update_time: DateTimeWithTimeZone,
-    pub post_state: i32,
-    pub post_type: i32,
-    pub like_num: i32,
-    pub collection_num: i32,
-    pub post_len: i32,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct Reply {
-    pub post_id: i64,
-    pub reply_id: i32,
-    pub burrow_id: i64,
-    pub create_time: DateTimeWithTimeZone,
-    pub update_time: DateTimeWithTimeZone,
-    pub content: String,
-    pub reply_state: i32,
-}
 
 // TODO: According to post_state to determine whether the post is visible
 impl From<content_post::Model> for Post {
@@ -197,6 +207,22 @@ impl From<&content_reply::Model> for Reply {
             update_time: reply_info.update_time,
             content: reply_info.content.to_owned(),
             reply_state: reply_info.reply_state,
+        }
+    }
+}
+
+impl From<LastPostSeq> for PostTotalCount{
+    fn from(seq: LastPostSeq) -> PostTotalCount{
+        PostTotalCount{
+            total: seq.last_value
+        }
+    }
+}
+
+impl From<&LastPostSeq> for PostTotalCount{
+    fn from(seq: &LastPostSeq) -> PostTotalCount{
+        PostTotalCount{
+            total: seq.last_value
         }
     }
 }

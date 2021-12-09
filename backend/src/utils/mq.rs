@@ -9,9 +9,11 @@ use std::collections::HashMap;
 use std::env;
 use tokio::time::Duration;
 
+use crate::models::{pulsar::*, search::*};
 use crate::pgdb::{content_post, prelude::*, user_collection, user_follow, user_like};
-use crate::req::pulsar::*;
 use crate::routes::trending::select_trending;
+
+use super::email::check_email_exist;
 
 lazy_static! {
     static ref TYPESENSE_API_KEY: String = {
@@ -725,4 +727,68 @@ pub async fn generate_trending() -> redis::RedisResult<()> {
             }
         }
     }
+}
+
+pub async fn pulsar_email() -> Result<(), pulsar::Error> {
+    // setup pulsar consumer
+    let redis_addr: String = REDIS_ADDR.to_owned();
+    let addr = redis_addr;
+    let client = match redis::Client::open(addr) {
+        Ok(c) => c,
+        Err(e) => {
+            panic!("[PULSAR-EMAIL] Redis Error: {:?}", e);
+        }
+    };
+    let mut kv_conn = match client.get_async_connection().await {
+        Ok(c) => c,
+        Err(e) => {
+            panic!("[PULSAR-EMAIL] Redis Error: {:?}", e);
+        }
+    };
+    let pulsar_addr: String = PULSAR_ADDR.to_owned();
+    let addr = pulsar_addr;
+    let topic = "persistent://public/default/email".to_string();
+    let builder = Pulsar::builder(addr, TokioExecutor);
+    let pulsar: Pulsar<_> = builder.build().await?;
+    let mut consumer: Consumer<PulsarSendEmail, _> = pulsar
+        .consumer()
+        .with_topic(topic)
+        .with_subscription_type(SubType::Exclusive)
+        .build()
+        .await?;
+    while let Some(msg) = consumer.try_next().await? {
+        consumer.ack(&msg).await?;
+        let data = match msg.deserialize() {
+            Ok(data) => data,
+            Err(e) => {
+                log::error!("[PULSAR-RELATION] Could not deserialize message: {:?}", e);
+                continue;
+            }
+        };
+        if check_email_exist(&data.email).await.0 {
+            let redis_result: Result<String, redis::RedisError> = redis::cmd("SETEX")
+                .arg(data.email)
+                .arg(14400)
+                .arg(666666)
+                .query_async(&mut kv_conn)
+                .await;
+            match redis_result {
+                Ok(_) => log::info!("[PULSAR-EMAIL] Redis set success"),
+                Err(e) => log::error!("[PULSAR-EMAIL] Redis set failed {:?}", e),
+            }
+        } else {
+            let redis_result: Result<String, redis::RedisError> = redis::cmd("SETEX")
+                .arg(data.email)
+                .arg(14400)
+                .arg(666666)
+                .query_async(&mut kv_conn)
+                .await;
+            match redis_result {
+                Ok(_) => log::info!("[PULSAR-EMAIL] Redis set success"),
+                Err(e) => log::error!("[PULSAR-EMAIL] Redis set failed {:?}", e),
+            }
+        }
+    }
+
+    Ok(())
 }

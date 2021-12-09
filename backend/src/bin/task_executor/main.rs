@@ -8,6 +8,7 @@ async fn main() {
     let handles = vec![
         tokio::spawn(pulsar_relation()),
         tokio::spawn(pulsar_typesense()),
+        tokio::spawn(pulsar_email()),
     ];
     futures::future::join_all(handles).await;
     futures::future::join_all(scheduler).await;

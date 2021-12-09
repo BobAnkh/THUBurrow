@@ -10,9 +10,10 @@ use uuid::Uuid;
 
 use crate::db;
 use crate::pool::{PgDb, PulsarSearchProducerMq, RedisDb};
-use crate::req::pulsar::*;
-use crate::req::user::*;
-use crate::utils::auth::{self, Auth, AuthTokenError, ValidToken};
+use crate::models::pulsar::*;
+use crate::models::user::*;
+use crate::models::error::*;
+use crate::utils::auth::{self, Auth, ValidToken};
 
 use chrono::prelude::*;
 use chrono::Local;
@@ -51,13 +52,9 @@ pub async fn sso_test(a: auth::Auth) -> Json<i64> {
 }
 
 #[get("/auth/<name>")]
-async fn auth_name(auth: Result<Auth, AuthTokenError>, name: &str) -> String {
+async fn auth_name(auth: Result<Auth, ErrorResponse>, name: &str) -> String {
     if let Err(e) = auth {
-        match e {
-            AuthTokenError::Invalid => return "Invalid token".to_string(),
-            AuthTokenError::Missing => return "Missing token".to_string(),
-            AuthTokenError::DatabaseErr => return "DatabaseErr token".to_string(),
-        }
+        return format!("{:?}", e);
     }
     format!("Hello, {}!", name)
 }
@@ -102,7 +99,10 @@ async fn auth_new_unauthorized(request: &Request<'_>) -> String {
 }
 
 #[get("/pulsar/<burrow_id>")]
-async fn pulsar_produce(mut producer: Connection<PulsarSearchProducerMq>, burrow_id: i64) -> String {
+async fn pulsar_produce(
+    mut producer: Connection<PulsarSearchProducerMq>,
+    burrow_id: i64,
+) -> String {
     // let mut producer = match pulsar
     //     .get_producer("persistent://public/default/search")
     //     .await
@@ -121,7 +121,10 @@ async fn pulsar_produce(mut producer: Connection<PulsarSearchProducerMq>, burrow
         update_time: now,
     };
     let msg = PulsarSearchData::CreateBurrow(data);
-    match producer.send("persistent://public/default/search", msg).await {
+    match producer
+        .send("persistent://public/default/search", msg)
+        .await
+    {
         // Ok(r) => match r.await {
         //     Ok(cs) => format!("send data successfully!, {}", cs.producer_id),
         //     Err(e) => format!("Err: {}", e),

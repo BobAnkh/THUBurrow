@@ -10,7 +10,7 @@ use sea_orm::{entity::*, ActiveModelTrait};
 
 use crate::pgdb::image;
 use crate::pool::{MinioImageStorage, PgDb};
-use crate::req::storage::{ReferrerCheck, SaveImage};
+use crate::models::storage::{ReferrerCheck, SaveImage};
 use crate::utils::auth::Auth;
 
 pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {

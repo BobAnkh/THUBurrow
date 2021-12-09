@@ -3,29 +3,69 @@ use rocket::http::Status;
 use rocket::serde::json::Json;
 use rocket::{Build, Rocket};
 use rocket_db_pools::Connection;
-use sea_orm::query::*;
 use sea_orm::{entity::*, DbErr};
+use sea_orm::{query::*, DbBackend};
 
-use crate::pgdb;
-use crate::pool::PgDb;
-use crate::req::{
+use crate::models::error::*;
+use crate::models::pulsar::*;
+use crate::models::{
     burrow::*,
     content::{Post, REPLY_PER_PAGE},
 };
+use crate::pgdb;
+use crate::pool::{PgDb, PulsarSearchProducerMq};
 use crate::utils::auth::Auth;
 use crate::utils::burrow_valid::*;
 
 pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
     rocket.mount(
         "/burrows",
-        routes![create_burrow, discard_burrow, show_burrow, update_burrow],
+        routes![
+            create_burrow,
+            discard_burrow,
+            show_burrow,
+            update_burrow,
+            get_total_burrow_count
+        ],
     )
+}
+
+#[get("/total")]
+pub async fn get_total_burrow_count(
+    _auth: Auth,
+    db: Connection<PgDb>,
+) -> (Status, Result<Json<BurrowTotalCount>, Json<ErrorResponse>>) {
+    let pg_con = db.into_inner();
+    match LastBurrowSeq::find_by_statement(Statement::from_sql_and_values(
+        DbBackend::Postgres,
+        r#"SELECT "last_value" FROM "burrow_burrow_id_seq"#,
+        vec![],
+    ))
+    .one(&pg_con)
+    .await
+    {
+        Ok(r) => match r {
+            Some(r) => (Status::Ok, Ok(Json(r.into()))),
+            None => (
+                Status::InternalServerError,
+                Err(Json(ErrorResponse::build(ErrorCode::DatabaseErr, ""))),
+            ),
+        },
+        Err(e) => {
+            log::error!("[TOTAL-BURROW] Database error: {:?}", e);
+            (
+                Status::InternalServerError,
+                Err(Json(ErrorResponse::build(ErrorCode::DatabaseErr, ""))),
+            )
+        }
+    }
 }
 
 #[post("/", data = "<burrow_info>", format = "json")]
 pub async fn create_burrow(
     db: Connection<PgDb>,
     burrow_info: Json<BurrowInfo>,
+    mut producer: Connection<PulsarSearchProducerMq>,
     auth: Auth,
 ) -> (Status, Result<Json<BurrowCreateResponse>, String>) {
     let pg_con = db.into_inner();
@@ -84,6 +124,12 @@ pub async fn create_burrow(
                             Box::pin(async move {
                                 let res = burrows.insert(txn).await?;
                                 let burrow_id = res.burrow_id.unwrap();
+                                let pulsar_burrow = PulsarSearchBurrowData {
+                                    burrow_id,
+                                    title: res.title.unwrap().to_owned(),
+                                    description: res.description.unwrap().to_owned(),
+                                    update_time: now.to_owned(),
+                                };
                                 let uid = res.uid.unwrap();
                                 ust.update_time = Set(now);
                                 ust.valid_burrow = {
@@ -102,6 +148,10 @@ pub async fn create_burrow(
                                     "[Create-Burrow] successfully create burrow {} for user {}",
                                     burrow_id, uid
                                 );
+                                let msg = PulsarSearchData::CreateBurrow(pulsar_burrow);
+                                let _ = producer
+                                    .send("persistent://public/default/search", msg)
+                                    .await;
                                 Ok(BurrowCreateResponse { burrow_id })
                             })
                         })
@@ -285,11 +335,12 @@ pub async fn show_burrow(
     }
 }
 
-#[put("/<burrow_id>", data = "<burrow_info>", format = "json")]
+#[patch("/<burrow_id>", data = "<burrow_info>", format = "json")]
 pub async fn update_burrow(
     db: Connection<PgDb>,
     burrow_id: i64,
     burrow_info: Json<BurrowInfo>,
+    mut producer: Connection<PulsarSearchProducerMq>,
     auth: Auth,
 ) -> Status {
     let pg_con = db.into_inner();
@@ -309,12 +360,25 @@ pub async fn update_burrow(
                 if is_valid_burrow(&state.valid_burrow, &burrow_id) {
                     let burrows = pgdb::burrow::ActiveModel {
                         burrow_id: Set(burrow_id),
-                        title: Set(burrow.title),
-                        description: Set(burrow.description),
+                        title: Set(burrow.title.to_owned()),
+                        description: Set(burrow.description.to_owned()),
                         ..Default::default()
                     };
+                    let now = Utc::now().with_timezone(&FixedOffset::east(8 * 3600));
+                    let pulsar_burrow = PulsarSearchBurrowData {
+                        burrow_id,
+                        title: burrow.title,
+                        description: burrow.description,
+                        update_time: now,
+                    };
                     match burrows.update(&pg_con).await {
-                        Ok(_) => Status::Ok,
+                        Ok(_) => {
+                            let msg = PulsarSearchData::UpdateBurrow(pulsar_burrow);
+                            let _ = producer
+                                .send("persistent://public/default/search", msg)
+                                .await;
+                            Status::Ok
+                        }
                         Err(e) => {
                             error!("[UPDATE-BURROW] Database Error: {:?}", e);
                             Status::InternalServerError
