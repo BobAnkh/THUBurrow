@@ -270,7 +270,7 @@ fn test_burrow() {
 
     // update burrow
     let response = client
-        .put(format!("/burrows/{}", burrow_id))
+        .patch(format!("/burrows/{}", burrow_id))
         .json(&json!({
             "description": format!("New Third burrow of {}", name),
             "title": "New Burrow 3"}))
@@ -279,7 +279,7 @@ fn test_burrow() {
     assert_eq!(response.status(), Status::Ok);
     // update burrow: perform a wrong action (missing burrow title)
     let response = client
-        .put(format!("/burrows/{}", burrow_id))
+        .patch(format!("/burrows/{}", burrow_id))
         .json(&json!({
             "description": format!("New Third burrow of {}", name),
             "title": ""}))
@@ -297,7 +297,7 @@ fn test_burrow() {
 
     // get burrow of a user
     let response = client
-        .get("/users/burrow")
+        .get("/users/burrows")
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
@@ -305,7 +305,7 @@ fn test_burrow() {
 
     // get valid burrow of a user
     let response = client
-        .get("/users/valid-burrow")
+        .get("/users/valid-burrows")
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
@@ -328,7 +328,7 @@ fn test_burrow() {
 
     // update burrow: perform a wrong action (invalid burrow)
     let response = client
-        .put(format!("/burrows/{}", burrow_id))
+        .patch(format!("/burrows/{}", burrow_id))
         .json(&json!({
             "description": format!("New Third burrow of {}", name),
             "title": ""}))
@@ -376,7 +376,7 @@ fn test_content() {
 
     // create post 1
     let response = client
-        .post("/content/post")
+        .post("/content/posts")
         .json(&json!({
             "title": format!("First post of {}", name),
             "burrow_id": burrow_id,
@@ -393,7 +393,7 @@ fn test_content() {
     println!("Post Id: {}", post_id);
     // create post: perform a wrong action (empty title)
     let response = client
-        .post("/content/post")
+        .post("/content/posts")
         .json(&json!({
             "title": "",
             "burrow_id": burrow_id,
@@ -406,7 +406,7 @@ fn test_content() {
     println!("{}", response.into_string().unwrap());
     // create post: perform a wrong action (empty section)
     let response = client
-        .post("/content/post")
+        .post("/content/posts")
         .json(&json!({
             "title": format!("Third post of {}", name),
             "burrow_id": burrow_id,
@@ -421,7 +421,7 @@ fn test_content() {
     // create post: perform a wrong action (invalid section)
     // create post: perform a wrong action (invalid burrow)
     let response = client
-        .post("/content/post")
+        .post("/content/posts")
         .json(&json!({
             "title": format!("Forth post of {}", name),
             "burrow_id": burrow_id + 10000,
@@ -434,7 +434,7 @@ fn test_content() {
     println!("{}", response.into_string().unwrap());
     // create post 2
     let response = client
-        .post("/content/post")
+        .post("/content/posts")
         .json(&json!({
             "title": format!("Fifth post of {}", name),
             "burrow_id": burrow_id,
@@ -446,7 +446,7 @@ fn test_content() {
     assert_eq!(response.status(), Status::Ok);
     // create post 3
     let response = client
-        .post("/content/post")
+        .post("/content/posts")
         .json(&json!({
             "title": format!("Sixth post of {}", name),
             "burrow_id": burrow_id,
@@ -458,7 +458,7 @@ fn test_content() {
     assert_eq!(response.status(), Status::Ok);
     // delete post 2
     let response = client
-        .delete(format!("/content/post/{}", post_id + 1))
+        .delete(format!("/content/posts/{}", post_id + 1))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
@@ -467,7 +467,7 @@ fn test_content() {
     std::thread::sleep(std::time::Duration::from_secs(5));
     // delete post 3: perform a wrong action (out of time limit)
     let response = client
-        .delete(format!("/content/post/{}", post_id + 2))
+        .delete(format!("/content/posts/{}", post_id + 2))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Forbidden);
@@ -489,7 +489,7 @@ fn test_content() {
     println!("Burrow Id: {}", new_burrow_id);
     // create post 4 with new_burrow_id
     let response = client
-        .post("/content/post")
+        .post("/content/posts")
         .json(&json!({
             "title": format!("Sixth post of {}", name),
             "burrow_id": new_burrow_id,
@@ -508,7 +508,7 @@ fn test_content() {
     println!("{:?}", response.into_string());
     // delete post no.4: perform a wrong action (invalid burrow)
     let response = client
-        .delete(format!("/content/post/{}", post_id + 3))
+        .delete(format!("/content/posts/{}", post_id + 3))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Forbidden);
@@ -533,21 +533,21 @@ fn test_content() {
 
     // get post no.1
     let response = client
-        .get(format!("/content/post/{}", post_id))
+        .get(format!("/content/posts/{}", post_id))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     println!("{}", response.into_string().unwrap());
     // get post no.2: perform a wrong action (post not exsit)
     let response = client
-        .get(format!("/content/post/{}", post_id + 1))
+        .get(format!("/content/posts/{}", post_id + 1))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::BadRequest);
     println!("{}", response.into_string().unwrap());
     // get post no.3
     let response = client
-        .get(format!("/content/post/{}", post_id + 2))
+        .get(format!("/content/posts/{}", post_id + 2))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
@@ -555,7 +555,7 @@ fn test_content() {
 
     // get post list
     let response = client
-        .get("/content/post/list")
+        .get("/content/posts/list")
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
@@ -566,7 +566,7 @@ fn test_content() {
 
     // update post no.1
     let response = client
-        .patch(format!("/content/post/{}", post_id))
+        .patch(format!("/content/posts/{}", post_id))
         .json(&json!({
             "title": format!("New First post of {}", name),
             "section": ["NewTestSection"],
@@ -576,7 +576,7 @@ fn test_content() {
     assert_eq!(response.status(), Status::Ok);
     // update post no.2: perform a wrong action (post not exist)
     let response = client
-        .patch(format!("/content/post/{}", post_id + 1))
+        .patch(format!("/content/posts/{}", post_id + 1))
         .json(&json!({
             "title": format!("New wrong post of {}", name),
             "section": ["NewTestSection"],
@@ -586,7 +586,7 @@ fn test_content() {
     assert_eq!(response.status(), Status::BadRequest);
     // update post no.4: perform a wrong action (invalid burrow)
     let response = client
-        .patch(format!("/content/post/{}", post_id + 3))
+        .patch(format!("/content/posts/{}", post_id + 3))
         .json(&json!({
             "title": format!("New wrong post of {}", name),
             "section": ["NewTestSection"],
