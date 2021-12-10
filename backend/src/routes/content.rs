@@ -199,7 +199,7 @@ pub async fn read_post(
 ) -> (Status, Result<Json<PostPage>, String>) {
     let pg_con = db.into_inner();
     let page = page.unwrap_or(0);
-    // check if the post not exsits, add corresponding error if so
+    // check if the post not exists, add corresponding error if so
     match ContentPost::find_by_id(post_id).one(&pg_con).await {
         Ok(r) => match r {
             None => (Status::BadRequest, Err("Post not exists".to_string())),
@@ -273,10 +273,10 @@ pub async fn update_post(
     let pg_con = db.into_inner();
     let content = post_info.into_inner();
     let now = Utc::now().with_timezone(&FixedOffset::east(8 * 3600));
-    // check if the post not exsits, add corresponding error if so
+    // check if the post not exists, add corresponding error if so
     match ContentPost::find_by_id(post_id).one(&pg_con).await {
         Ok(r) => match r {
-            None => (Status::BadRequest, "Post not exsits".to_string()),
+            None => (Status::BadRequest, "Post not exists".to_string()),
             Some(post_info) => {
                 match UserStatus::find_by_id(auth.id).one(&pg_con).await {
                     Ok(opt_state) => match opt_state {
@@ -352,10 +352,10 @@ pub async fn delete_post(
 ) -> (Status, String) {
     let pg_con = db.into_inner();
     let now = Utc::now().with_timezone(&FixedOffset::east(8 * 3600));
-    // check if the post not exsits, add corresponding error if so
+    // check if the post not exists, add corresponding error if so
     match ContentPost::find_by_id(post_id).one(&pg_con).await {
         Ok(r) => match r {
-            None => (Status::BadRequest, "Post not exsits".to_string()),
+            None => (Status::BadRequest, "Post not exists".to_string()),
             Some(post_info) => {
                 //  check if time is within limit, if so, allow user to delete
                 if post_info

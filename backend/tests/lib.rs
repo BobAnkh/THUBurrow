@@ -99,11 +99,11 @@ fn test_login_signup() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     // println!("{}", response.into_string().unwrap());
-    // user log in: perform a wrong action (user not exsit)
+    // user log in: perform a wrong action (user not exist)
     let response = client
         .post("/users/login")
         .json(&json!({
-            "username": "usernotexsit",
+            "username": "usernotexist",
             "password": "testpassword"}))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
@@ -253,6 +253,14 @@ fn test_burrow() {
     assert_eq!(response.status(), Status::Forbidden);
     println!("Burrow Id: {}", response.into_string().unwrap());
 
+    // get total burrow count
+    let response = client
+        .get("/burrows/total")
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    println!("{}", response.into_string().unwrap());
+
     // show burrow
     let response = client
         .get(format!("/burrows/{}", burrow_id))
@@ -262,7 +270,7 @@ fn test_burrow() {
     println!("{}", response.into_string().unwrap());
     // show burrow: perform a wrong action (cannot find the burrow)
     let response = client
-        .get(format!("/burrows/{}", burrow_id + 10))
+        .get(format!("/burrows/{}", burrow_id + 10000))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::BadRequest);
@@ -374,6 +382,15 @@ fn test_content() {
     assert_eq!(response.status(), Status::Ok);
     // println!("{}", response.into_string().unwrap());
 
+    // follow the burrow
+    let response = client
+        .post("/users/relation")
+        .json(&json!({ "ActivateFollow": burrow_id }))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    println!("{:?}", response.into_string());
+
     // create post 1
     let response = client
         .post("/content/posts")
@@ -456,6 +473,7 @@ fn test_content() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
+
     // delete post 2
     let response = client
         .delete(format!("/content/posts/{}", post_id + 1))
@@ -463,7 +481,6 @@ fn test_content() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     println!("{:?}", response.into_string());
-
     std::thread::sleep(std::time::Duration::from_secs(5));
     // delete post 3: perform a wrong action (out of time limit)
     let response = client
@@ -487,6 +504,14 @@ fn test_content() {
         .unwrap();
     let new_burrow_id = res.burrow_id;
     println!("Burrow Id: {}", new_burrow_id);
+    // follow the burrow
+    let response = client
+        .post("/users/relation")
+        .json(&json!({ "ActivateFollow": new_burrow_id }))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    println!("{:?}", response.into_string());
     // create post 4 with new_burrow_id
     let response = client
         .post("/content/posts")
@@ -499,6 +524,123 @@ fn test_content() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
+
+    // collect post no.1
+    let response = client
+        .post("/users/relation")
+        .json(&json!({ "ActivateCollection": post_id }))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    println!("{:?}", response.into_string());
+    // collect post no.2 (post no.2 not exist)
+    let response = client
+        .post("/users/relation")
+        .json(&json!({ "ActivateCollection": post_id + 1 }))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    println!("{:?}", response.into_string());
+    // collect post no.3
+    let response = client
+        .post("/users/relation")
+        .json(&json!({ "ActivateCollection": post_id + 2 }))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    println!("{:?}", response.into_string());
+    // like post no.1
+    let response = client
+        .post("/users/relation")
+        .json(&json!({ "ActivateLike": post_id }))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    println!("{:?}", response.into_string());
+
+    // get following burrows of a user
+    let response = client
+        .get("/users/follow")
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    println!("{}", response.into_string().unwrap());
+
+    // test trending interface
+    let response = client
+        .get("/trending")
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+
+    // create reply for post no.1, using default burrow
+    let response = client
+        .post("/content/replies")
+        .json(&json!({
+            "post_id": post_id,
+            "burrow_id": burrow_id,
+            "content": "This is a test reply no.1 for post no.1"}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    let res = response
+        .into_json::<backend::models::content::ReplyCreateResponse>()
+        .unwrap();
+    let reply_id = res.reply_id;
+    println!("Reply Id: {}", reply_id);
+    // create reply: perform a wrong action (invalid burrow)
+    let response = client
+        .post("/content/replies")
+        .json(&json!({
+            "post_id": post_id,
+            "burrow_id": burrow_id + 10000,
+            "content": "This is a test reply no.2 for post no.1"}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Forbidden);
+    println!("{}", response.into_string().unwrap());
+    // create reply for post no.2: perform a wrong action (post not exist)
+    let response = client
+        .post("/content/replies")
+        .json(&json!({
+            "post_id": post_id + 1,
+            "burrow_id": burrow_id,
+            "content": "This is a test reply no.1 for post no.10000"}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Forbidden);
+    println!("{}", response.into_string().unwrap());
+    // create reply for post no.3, using default burrow
+    let response = client
+        .post("/content/replies")
+        .json(&json!({
+            "post_id": post_id + 2,
+            "burrow_id": burrow_id,
+            "content": "This is a test reply no.1 for post no.1"}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    println!("{}", response.into_string().unwrap());
+    // create reply for post no.1, using new burrow
+    let response = client
+        .post("/content/replies")
+        .json(&json!({
+            "post_id": post_id,
+            "burrow_id": new_burrow_id,
+            "content": "This is a test reply no.1 for post no.1"}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    println!("{}", response.into_string().unwrap());
+
+    // get post collection of a user
+    let response = client
+        .get("/users/collection")
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    println!("{}", response.into_string().unwrap());
+
     // discard new burrow
     let response = client
         .delete(format!("/burrows/{}", new_burrow_id))
@@ -514,23 +656,6 @@ fn test_content() {
     assert_eq!(response.status(), Status::Forbidden);
     println!("{:?}", response.into_string());
 
-    // collect post no.1
-    let response = client
-        .post("/users/relation")
-        .json(&json!({ "ActivateCollection": post_id }))
-        .remote("127.0.0.1:8000".parse().unwrap())
-        .dispatch();
-    assert_eq!(response.status(), Status::Ok);
-    println!("{:?}", response.into_string());
-    // like post no.1
-    let response = client
-        .post("/users/relation")
-        .json(&json!({ "ActivateLike": post_id }))
-        .remote("127.0.0.1:8000".parse().unwrap())
-        .dispatch();
-    assert_eq!(response.status(), Status::Ok);
-    println!("{:?}", response.into_string());
-
     // get post no.1
     let response = client
         .get(format!("/content/posts/{}", post_id))
@@ -538,7 +663,7 @@ fn test_content() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     println!("{}", response.into_string().unwrap());
-    // get post no.2: perform a wrong action (post not exsit)
+    // get post no.2: perform a wrong action (post not exist)
     let response = client
         .get(format!("/content/posts/{}", post_id + 1))
         .remote("127.0.0.1:8000".parse().unwrap())
@@ -560,9 +685,6 @@ fn test_content() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     println!("{}", response.into_string().unwrap());
-
-    // TODO
-    // test trending interface
 
     // update post no.1
     let response = client
@@ -594,4 +716,36 @@ fn test_content() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Forbidden);
+
+    // update reply 1-1
+    let response = client
+        .patch("/content/replies")
+        .json(&json!({
+            "post_id": post_id,
+            "reply_id": reply_id,
+            "content": "This is a updated reply no.1 for post no.1"}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    // update reply: perform a wrong action (reply not exist)
+    let response = client
+        .patch("/content/replies")
+        .json(&json!({
+            "post_id": post_id,
+            "reply_id": reply_id + 100,
+            "content": "This is a updated reply no.1 for post no.1"}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Forbidden);
+    // update reply 1-2: perform a wrong action (invalid burrow)
+    let response = client
+        .patch("/content/replies")
+        .json(&json!({
+            "post_id": post_id,
+            "reply_id": reply_id + 1,
+            "content": "This is a updated reply no.2 for post no.1"}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Forbidden);
+
 }

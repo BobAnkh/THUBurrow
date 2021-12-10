@@ -29,7 +29,7 @@ pub struct PostUpdateInfo {
     pub tag: Vec<String>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct ReplyCreateResponse {
     pub post_id: i64,
     pub reply_id: i32,
