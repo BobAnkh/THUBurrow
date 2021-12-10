@@ -1,7 +1,4 @@
-// use std::collections::HashMap;
 use reqwest::header::HeaderMap;
-// use serde_json::value::Value;
-use serde_json::json;
 use serde::Serialize;
 use crypto::digest::Digest;
 use crypto::sha2::Sha256;
@@ -10,11 +7,16 @@ use crypto::mac::Mac;
 use chrono::Utc;
 use rustc_serialize::hex::ToHex;
 
+pub static SECRET_ID: &str = "AKIDRhhQt50e290bw0nIWUBaiaBVYJo30g5D";
+pub static SECRET_KEY: &str = "rRloZ3GCqDJ9fwwg8KFsEJ7dttb2D7k7";
+
+#[allow(non_snake_case)]
 #[derive(Serialize)]
 struct Template {
     TemplateID: i32,
     TemplateData: String,
 }
+#[allow(non_snake_case)]
 #[derive(Serialize)]
 struct Body {
     FromEmailAddress: String,
@@ -26,8 +28,8 @@ struct Body {
 
 fn gen_auth(param: &Body, timestamp: String) -> String {
     // 密钥参数
-    let secret_id = "AKIDRhhQt50e290bw0nIWUBaiaBVYJo30g5D".to_string();
-    let secret_key = "rRloZ3GCqDJ9fwwg8KFsEJ7dttb2D7k7".to_string();
+    let secret_id = SECRET_ID;
+    let secret_key = SECRET_KEY;
     let host = "ses.tencentcloudapi.com".to_string();
     let date = Utc::now().format("%Y-%m-%d").to_string();
     let service = "ses".to_string();
@@ -101,7 +103,7 @@ fn gen_auth(param: &Body, timestamp: String) -> String {
     )
 }
 
-pub async fn post() -> Result<String, reqwest::Error>{
+pub async fn post(user_email: String, verification_code: i32) -> Result<String, reqwest::Error>{
     // create client
     let client = reqwest::Client::new();
 
@@ -121,12 +123,12 @@ pub async fn post() -> Result<String, reqwest::Error>{
     headers.insert("X-TC-Region", "ap-hongkong".parse().unwrap());
 
     // generate body data
-    let verification_code = 123456;
+    // let verification_code = 123456;
     let body = Body {
         FromEmailAddress: "THUBurrow <noreply@testmail.thuburrow.com>".to_string(),
         ReplyToAddresses: "1194392480@qq.com".to_string(),
         // Destination: vec!["gsr18@mails.tsinghua.edu.cn".to_string()],
-        Destination: vec!["1194392480@qq.com".to_string()],
+        Destination: vec![user_email],
         Template: Template {
             TemplateID: 21517,
             TemplateData: format!("{{\\\"code\\\":{}}}", verification_code),

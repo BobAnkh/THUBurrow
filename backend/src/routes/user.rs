@@ -27,7 +27,6 @@ use crate::pool::{PgDb, PulsarSearchProducerMq, RedisDb};
 use crate::utils::auth::{Auth, CookieOptions};
 use crate::utils::burrow_valid::*;
 use crate::utils::email;
-use crate::utils::send_email;
 
 pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
     rocket.mount(
@@ -40,6 +39,7 @@ pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
             get_burrow,
             user_relation,
             get_user_valid_burrow,
+            // email_verification,
         ],
     )
 }
@@ -87,10 +87,12 @@ pub async fn user_relation(
 #[post("/email", data = "<email_info>", format = "json")]
 pub async fn user_email_activate(
     db: Connection<PgDb>,
+    kvdb: Connection<RedisDb>,
     email_info: Json<UserEmail>,
     mut producer: Connection<PulsarSearchProducerMq>,
 ) -> (Status, Result<String, Json<ErrorResponse>>) {
     let pg_con = db.into_inner();
+    let mut kvdb_con = kvdb.into_inner();
     let email = email_info.into_inner().email;
     if !email::check_email_syntax(&email) {
         return (
@@ -117,7 +119,36 @@ pub async fn user_email_activate(
                     ))),
                 )
             } else {
-                let msg = PulsarSendEmail { email };
+                let msg = PulsarSendEmail { email: email.clone() };
+                let get_redis_result: Result<Option<String>, redis::RedisError> = redis::cmd("GET")
+                    .arg(&email)
+                    .query_async(kvdb_con.as_mut())
+                    .await;
+                match get_redis_result {
+                    Ok(res) => {
+                        if res.is_some() {
+                            let s = res.unwrap();
+                            let values: Vec<&str> = s.split(":").collect();
+                            let op_times = values[1].parse::<usize>().unwrap();
+                            if op_times > SEND_EMAIL_LIMIT {
+                                return (
+                                    Status::BadRequest,
+                                    Err(Json(ErrorResponse::build(
+                                        ErrorCode::RateLimit,
+                                        "Request Send-Email too mant times",
+                                    )))
+                                );
+                            }
+                        }
+                    },
+                    Err(e) => {
+                        log::error!("[SIGN-UP] Database Error: {:?}", e);
+                        return (
+                            Status::InternalServerError,
+                            Err(Json(ErrorResponse::default())),
+                        );
+                    },
+                };
                 match producer
                     .send("persistent://public/default/email", msg)
                     .await
@@ -172,15 +203,6 @@ pub async fn user_sign_up(
             }),
         );
     }
-    let res = send_email::post().await;
-        match res {
-            Ok(res) => {
-                println!("{:#?}", res);
-            },
-            Err(e) => {
-                error!("{:#?}", e);
-            }
-        }
     // check if email address is duplicated, add corresponding error if so
     match User::find()
         .filter(pgdb::user::Column::Email.eq(user.email))
@@ -225,6 +247,10 @@ pub async fn user_sign_up(
             );
         }
     }
+    // check if verification code is correct, return corresponding error if so
+    if user.verification_code.eq("123456") {
+        errors.push("Invalid Verification Code".to_string());
+    }
     // if error exists, refuse to add user
     if !errors.is_empty() {
         (
@@ -235,8 +261,6 @@ pub async fn user_sign_up(
             }),
         )
     } else {
-        // send verification email
-
         // generate salt
         let salt = gen_salt().await;
         // encrypt password
@@ -459,14 +483,6 @@ pub async fn user_log_in(
 
 #[get("/burrows")]
 pub async fn get_burrow(db: Connection<PgDb>, auth: Auth) -> (Status, Json<Vec<BurrowMetadata>>) {
-    // Ok(burrows) => {
-    //     // let mut posts_num = Vec::new();
-    //     let r: Vec<i64> = future::try_join_all(burrows.iter().map(move |burrow| {
-    //         let inner_conn = pg_con.clone();
-    //         GetBurrow::get_post(burrow, inner_conn)
-    //     }))
-    //     .await
-    //     .unwrap();
     let pg_con = db.into_inner();
     match pgdb::user_status::Entity::find_by_id(auth.id)
         .one(&pg_con)
