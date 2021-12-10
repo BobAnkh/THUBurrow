@@ -41,7 +41,6 @@ pub fn rocket_init() -> Rocket<Build> {
         .attach(pool::PulsarSearchProducerMq::init())
         .attach(pool::MinioImageStorage::init())
         .attach(pool::TypesenseSearch::init())
-        .attach(AdHoc::on_ignite("mount_sample", routes::sample::init))
         .attach(AdHoc::on_ignite("mount_routes", routes::routes_init))
         .attach(AdHoc::try_on_ignite(
             "setup_postgresql_tables",
