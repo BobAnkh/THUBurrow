@@ -2,9 +2,9 @@
 extern crate rocket;
 
 pub mod db;
+pub mod models;
 pub mod pgdb;
 pub mod pool;
-pub mod req;
 pub mod routes;
 pub mod setup;
 pub mod utils;
@@ -13,14 +13,16 @@ use rocket::{fairing::AdHoc, Build, Rocket};
 use rocket_db_pools::Database;
 
 #[cfg(debug_assertions)]
-fn log_init() {}
+pub fn log_init() {}
 
 #[cfg(not(debug_assertions))]
-fn log_init() {
+pub fn log_init() {
     let filename = if std::path::Path::new("/etc/backend/conf/log4rs.yml").exists() {
         "/etc/backend/conf/log4rs.yml"
-    } else {
+    } else if std::path::Path::new("/etc/backend/conf/log4rs-default.yml").exists() {
         "/etc/backend/conf/log4rs-default.yml"
+    } else {
+        "conf/log4rs.yml"
     };
     match log4rs::init_file(filename, Default::default()) {
         Ok(_) => (),
@@ -38,6 +40,7 @@ pub fn rocket_init() -> Rocket<Build> {
         .attach(pool::RedisDb::init())
         .attach(pool::PulsarSearchProducerMq::init())
         .attach(pool::MinioImageStorage::init())
+        .attach(pool::TypesenseSearch::init())
         .attach(AdHoc::on_ignite("mount_sample", routes::sample::init))
         .attach(AdHoc::on_ignite("mount_routes", routes::routes_init))
         .attach(AdHoc::try_on_ignite(

@@ -3,31 +3,74 @@ use rocket::http::Status;
 use rocket::serde::json::Json;
 use rocket::{Build, Rocket};
 use rocket_db_pools::Connection;
-use sea_orm::query::*;
 use sea_orm::{entity::*, DbErr};
+use sea_orm::{query::*, DbBackend};
 
-use crate::pgdb;
-use crate::pool::PgDb;
-use crate::req::{
+use crate::models::error::*;
+use crate::models::pulsar::*;
+use crate::models::{
     burrow::*,
     content::{Post, REPLY_PER_PAGE},
 };
+use crate::pgdb;
+use crate::pool::{PgDb, PulsarSearchProducerMq};
 use crate::utils::auth::Auth;
 use crate::utils::burrow_valid::*;
 
 pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
     rocket.mount(
         "/burrows",
-        routes![create_burrow, discard_burrow, show_burrow, update_burrow],
+        routes![
+            create_burrow,
+            discard_burrow,
+            show_burrow,
+            update_burrow,
+            get_total_burrow_count
+        ],
     )
+}
+
+#[get("/total")]
+pub async fn get_total_burrow_count(
+    _auth: Auth,
+    db: Connection<PgDb>,
+) -> (Status, Result<Json<BurrowTotalCount>, Json<ErrorResponse>>) {
+    let pg_con = db.into_inner();
+    match LastBurrowSeq::find_by_statement(Statement::from_sql_and_values(
+        DbBackend::Postgres,
+        r#"SELECT "last_value" FROM "burrow_burrow_id_seq"#,
+        vec![],
+    ))
+    .one(&pg_con)
+    .await
+    {
+        Ok(r) => match r {
+            Some(r) => (Status::Ok, Ok(Json(r.into()))),
+            None => (
+                Status::InternalServerError,
+                Err(Json(ErrorResponse::default())),
+            ),
+        },
+        Err(e) => {
+            log::error!("[TOTAL-BURROW] Database error: {:?}", e);
+            (
+                Status::InternalServerError,
+                Err(Json(ErrorResponse::default())),
+            )
+        }
+    }
 }
 
 #[post("/", data = "<burrow_info>", format = "json")]
 pub async fn create_burrow(
     db: Connection<PgDb>,
     burrow_info: Json<BurrowInfo>,
+    mut producer: Connection<PulsarSearchProducerMq>,
     auth: Auth,
-) -> (Status, Result<Json<BurrowCreateResponse>, String>) {
+) -> (
+    Status,
+    Result<Json<BurrowCreateResponse>, Json<ErrorResponse>>,
+) {
     let pg_con = db.into_inner();
     // check if user has too many burrows, return corresponding error if so
     match pgdb::user_status::Entity::find_by_id(auth.id)
@@ -39,7 +82,10 @@ pub async fn create_burrow(
                 if state.user_state != 0 {
                     return (
                         Status::Forbidden,
-                        Err(String::from("User is not in a valid state")),
+                        Err(Json(ErrorResponse::build(
+                            ErrorCode::UserForbidden,
+                            "User not in a valid state",
+                        ))),
                     );
                 }
                 let now = Utc::now().with_timezone(&FixedOffset::east(8 * 3600));
@@ -52,9 +98,10 @@ pub async fn create_burrow(
                 {
                     return (
                         Status::Forbidden,
-                        Err(String::from(
+                        Err(Json(ErrorResponse::build(
+                            ErrorCode::RateLimit,
                             "User can only create a new burrow every 24 hours",
-                        )),
+                        ))),
                     );
                 }
                 let valid_burrows = get_burrow_list(&state.valid_burrow);
@@ -66,7 +113,10 @@ pub async fn create_burrow(
                     if burrow.title.is_empty() {
                         return (
                             Status::BadRequest,
-                            Err("Burrow title cannot be empty.".to_string()),
+                            Err(Json(ErrorResponse::build(
+                                ErrorCode::EmptyField,
+                                "Burrow title cannot be empty",
+                            ))),
                         );
                     }
                     // fill the row of table 'burrow'
@@ -84,6 +134,12 @@ pub async fn create_burrow(
                             Box::pin(async move {
                                 let res = burrows.insert(txn).await?;
                                 let burrow_id = res.burrow_id.unwrap();
+                                let pulsar_burrow = PulsarSearchBurrowData {
+                                    burrow_id,
+                                    title: res.title.unwrap(),
+                                    description: res.description.unwrap(),
+                                    update_time: now.to_owned(),
+                                };
                                 let uid = res.uid.unwrap();
                                 ust.update_time = Set(now);
                                 ust.valid_burrow = {
@@ -102,6 +158,10 @@ pub async fn create_burrow(
                                     "[Create-Burrow] successfully create burrow {} for user {}",
                                     burrow_id, uid
                                 );
+                                let msg = PulsarSearchData::CreateBurrow(pulsar_burrow);
+                                let _ = producer
+                                    .send("persistent://public/default/search", msg)
+                                    .await;
                                 Ok(BurrowCreateResponse { burrow_id })
                             })
                         })
@@ -110,25 +170,37 @@ pub async fn create_burrow(
                         Ok(resp) => (Status::Ok, Ok(Json(resp))),
                         Err(e) => {
                             error!("Database error: {:?}", e);
-                            (Status::InternalServerError, Err(String::new()))
+                            (
+                                Status::InternalServerError,
+                                Err(Json(ErrorResponse::default())),
+                            )
                         }
                     }
                 } else {
                     info!("[CREATE-BURROW] Owned burrow amount reaches threshold.");
                     (
-                        Status::BadRequest,
-                        Err("Owned burrow amount is up to limit.".to_string()),
+                        Status::Forbidden,
+                        Err(Json(ErrorResponse::build(
+                            ErrorCode::BurrowNumLimit,
+                            "Owned burrow amount is up to limit.",
+                        ))),
                     )
                 }
             }
             None => {
-                error!("[CREATE BURROW] Cannot find user_status by uid.");
-                (Status::InternalServerError, Err(String::new()))
+                info!("[CREATE BURROW] Cannot find user_status by uid.");
+                (
+                    Status::Forbidden,
+                    Err(Json(ErrorResponse::build(ErrorCode::UserNotExist, ""))),
+                )
             }
         },
         Err(e) => {
             error!("[CREATE BURROW] Database Error: {:?}", e.to_string());
-            (Status::InternalServerError, Err(String::new()))
+            (
+                Status::InternalServerError,
+                Err(Json(ErrorResponse::default())),
+            )
         }
     }
 }
@@ -138,7 +210,7 @@ pub async fn discard_burrow(
     db: Connection<PgDb>,
     burrow_id: i64,
     auth: Auth,
-) -> (Status, Result<(), String>) {
+) -> (Status, Result<String, Json<ErrorResponse>>) {
     let pg_con = db.into_inner();
     match pgdb::user_status::Entity::find_by_id(auth.id)
         .one(&pg_con)
@@ -177,10 +249,13 @@ pub async fn discard_burrow(
                         })
                         .await
                     {
-                        Ok(_) => (Status::Ok, Ok(())),
+                        Ok(_) => (Status::Ok, Ok("Success".to_string())),
                         Err(e) => {
                             error!("Database error: {:?}", e);
-                            (Status::InternalServerError, Err(String::new()))
+                            (
+                                Status::InternalServerError,
+                                Err(Json(ErrorResponse::default())),
+                            )
                         }
                     }
                 } else if banned_burrows.contains(&burrow_id) {
@@ -209,10 +284,13 @@ pub async fn discard_burrow(
                         })
                         .await
                     {
-                        Ok(_) => (Status::Ok, Ok(())),
+                        Ok(_) => (Status::Ok, Ok("Success".to_string())),
                         Err(e) => {
                             error!("Database error: {:?}", e);
-                            (Status::InternalServerError, Err(String::new()))
+                            (
+                                Status::InternalServerError,
+                                Err(Json(ErrorResponse::default())),
+                            )
                         }
                     }
                 } else {
@@ -220,22 +298,28 @@ pub async fn discard_burrow(
                         "[DEL-BURROW] Cannot delete burrow: Burrow doesn't belong to current user."
                     );
                     (
-                        Status::BadRequest,
-                        Err(
-                            "Burrow doesn't belong to current user or already discarded."
-                                .to_string(),
-                        ),
+                        Status::Forbidden,
+                        Err(Json(ErrorResponse::build(
+                            ErrorCode::UserForbidden,
+                            "Burrow doesn't belong to current user or already be discarded",
+                        ))),
                     )
                 }
             }
             None => {
-                error!("[DEL-BURROW] Cannot find user_status by uid.");
-                (Status::InternalServerError, Err(String::new()))
+                info!("[DEL-BURROW] Cannot find user_status by uid.");
+                (
+                    Status::Forbidden,
+                    Err(Json(ErrorResponse::build(ErrorCode::UserNotExist, ""))),
+                )
             }
         },
         Err(e) => {
             error!("[DEL-BURROW] Database Error: {:?}", e);
-            (Status::InternalServerError, Err(String::new()))
+            (
+                Status::InternalServerError,
+                Err(Json(ErrorResponse::default())),
+            )
         }
     }
 }
@@ -246,7 +330,10 @@ pub async fn show_burrow(
     burrow_id: i64,
     page: Option<usize>,
     _auth: Auth,
-) -> (Status, Result<Json<BurrowShowResponse>, String>) {
+) -> (
+    Status,
+    Result<Json<BurrowShowResponse>, Json<ErrorResponse>>,
+) {
     let pg_con = db.into_inner();
     let page = page.unwrap_or(0);
     match pgdb::burrow::Entity::find_by_id(burrow_id)
@@ -276,33 +363,49 @@ pub async fn show_burrow(
                     ),
                     Err(e) => {
                         error!("[SHOW-BURROW] Database Error: {:?}", e);
-                        (Status::InternalServerError, Err(String::new()))
+                        (
+                            Status::InternalServerError,
+                            Err(Json(ErrorResponse::default())),
+                        )
                     }
                 }
             }
             None => {
-                error!("[SHOW-BURROW] Cannot find burrow {}", burrow_id);
-                (Status::BadRequest, Err(String::new()))
+                info!("[SHOW-BURROW] Cannot find burrow {}", burrow_id);
+                (
+                    Status::BadRequest,
+                    Err(Json(ErrorResponse::build(ErrorCode::BurrowNotExist, ""))),
+                )
             }
         },
         Err(e) => {
             error!("[SHOW-BURROW] Database Error: {:?}", e);
-            (Status::InternalServerError, Err(String::new()))
+            (
+                Status::InternalServerError,
+                Err(Json(ErrorResponse::default())),
+            )
         }
     }
 }
 
-#[put("/<burrow_id>", data = "<burrow_info>", format = "json")]
+#[patch("/<burrow_id>", data = "<burrow_info>", format = "json")]
 pub async fn update_burrow(
     db: Connection<PgDb>,
     burrow_id: i64,
     burrow_info: Json<BurrowInfo>,
+    mut producer: Connection<PulsarSearchProducerMq>,
     auth: Auth,
-) -> Status {
+) -> (Status, Result<String, Json<ErrorResponse>>) {
     let pg_con = db.into_inner();
     let burrow = burrow_info.into_inner();
     if burrow.title.is_empty() {
-        return Status::BadRequest;
+        return (
+            Status::BadRequest,
+            Err(Json(ErrorResponse::build(
+                ErrorCode::EmptyField,
+                "Burrow title cannot be empty",
+            ))),
+        );
     }
     match pgdb::user_status::Entity::find_by_id(auth.id)
         .one(&pg_con)
@@ -311,37 +414,70 @@ pub async fn update_burrow(
         Ok(opt_ust) => match opt_ust {
             Some(state) => {
                 if state.user_state != 0 {
-                    return Status::Forbidden;
-                }
-                if is_valid_burrow(&state.valid_burrow, &burrow_id) {
+                    (
+                        Status::Forbidden,
+                        Err(Json(ErrorResponse::build(
+                            ErrorCode::UserForbidden,
+                            "User not in a valid state",
+                        ))),
+                    )
+                } else if is_valid_burrow(&state.valid_burrow, &burrow_id) {
                     let burrows = pgdb::burrow::ActiveModel {
                         burrow_id: Set(burrow_id),
-                        title: Set(burrow.title),
-                        description: Set(burrow.description),
+                        title: Set(burrow.title.to_owned()),
+                        description: Set(burrow.description.to_owned()),
                         ..Default::default()
                     };
+                    let now = Utc::now().with_timezone(&FixedOffset::east(8 * 3600));
+                    let pulsar_burrow = PulsarSearchBurrowData {
+                        burrow_id,
+                        title: burrow.title,
+                        description: burrow.description,
+                        update_time: now,
+                    };
                     match burrows.update(&pg_con).await {
-                        Ok(_) => Status::Ok,
+                        Ok(_) => {
+                            let msg = PulsarSearchData::UpdateBurrow(pulsar_burrow);
+                            let _ = producer
+                                .send("persistent://public/default/search", msg)
+                                .await;
+                            (Status::Ok, Ok("Success".to_string()))
+                        }
                         Err(e) => {
                             error!("[UPDATE-BURROW] Database Error: {:?}", e);
-                            Status::InternalServerError
+                            (
+                                Status::InternalServerError,
+                                Err(Json(ErrorResponse::default())),
+                            )
                         }
                     }
                 } else {
                     info!(
                         "[UPDATE-BURROW] Cannot update burrow: Burrow doesn't belong to current user."
                     );
-                    Status::BadRequest
+                    (
+                        Status::Forbidden,
+                        Err(Json(ErrorResponse::build(
+                            ErrorCode::UserForbidden,
+                            "Burrow doesn't belong to current user or already be discarded",
+                        ))),
+                    )
                 }
             }
             None => {
-                error!("[UPDATE-BURROW] Cannot find user_status by uid.");
-                Status::InternalServerError
+                info!("[UPDATE-BURROW] Cannot find user_status by uid.");
+                (
+                    Status::Forbidden,
+                    Err(Json(ErrorResponse::build(ErrorCode::UserNotExist, ""))),
+                )
             }
         },
         Err(e) => {
             error!("[UPDATE-BURROW] Database Error: {:?}", e);
-            Status::InternalServerError
+            (
+                Status::InternalServerError,
+                Err(Json(ErrorResponse::default())),
+            )
         }
     }
 }

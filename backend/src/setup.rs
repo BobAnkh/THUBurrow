@@ -1,10 +1,11 @@
-use crate::pgdb;
-use crate::pool::PgDb;
 use rocket::{fairing, Build, Rocket};
 use rocket_db_pools::Database;
-use sea_orm::query::ConnectionTrait;
-use sea_orm::sea_query::{ColumnDef, Index, PostgresQueryBuilder, SchemaStatementBuilder};
-use sea_orm::{error::*, query::Statement, sea_query, DbConn, ExecResult};
+use sea_orm::query::{ConnectionTrait, Statement};
+use sea_orm::sea_query::{self, ColumnDef, Index, PostgresQueryBuilder, SchemaStatementBuilder};
+use sea_orm::{error::*, DbConn, ExecResult};
+
+use crate::pgdb;
+use crate::pool::PgDb;
 
 async fn build_statement<T>(db: &DbConn, stmt: &T) -> Result<ExecResult, DbErr>
 where

@@ -9,10 +9,11 @@ use sea_orm::{entity::*, ActiveModelTrait};
 use uuid::Uuid;
 
 use crate::db;
-use crate::pool::{PgDb, PulsarSearchProducerMq, RedisDb, RocketPulsarProducer};
-use crate::req::pulsar::*;
-use crate::req::user::*;
-use crate::utils::auth::{self, Auth, AuthTokenError, ValidToken};
+use crate::models::error::*;
+use crate::models::pulsar::*;
+use crate::models::user::*;
+use crate::pool::{PgDb, PulsarSearchProducerMq, RedisDb};
+use crate::utils::auth::{self, Auth, ValidToken};
 
 use chrono::prelude::*;
 use chrono::Local;
@@ -51,13 +52,9 @@ pub async fn sso_test(a: auth::Auth) -> Json<i64> {
 }
 
 #[get("/auth/<name>")]
-async fn auth_name(auth: Result<Auth, AuthTokenError>, name: &str) -> String {
+async fn auth_name(auth: Result<Auth, ErrorResponse>, name: &str) -> String {
     if let Err(e) = auth {
-        match e {
-            AuthTokenError::Invalid => return "Invalid token".to_string(),
-            AuthTokenError::Missing => return "Missing token".to_string(),
-            AuthTokenError::DatabaseErr => return "DatabaseErr token".to_string(),
-        }
+        return format!("{:?}", e);
     }
     format!("Hello, {}!", name)
 }
@@ -101,33 +98,39 @@ async fn auth_new_unauthorized(request: &Request<'_>) -> String {
     }
 }
 
-#[get("/pulsar/<name>")]
-async fn pulsar_produce(pulsar: Connection<PulsarSearchProducerMq>, name: &str) -> String {
-    let mut producer = match pulsar
-        .get_producer("persistent://public/default/search")
-        .await
-    {
-        Ok(producer) => producer,
-        Err(e) => {
-            println!("{:?}", e);
-            return "Error".to_string();
-        }
-    };
+#[get("/pulsar/<burrow_id>")]
+async fn pulsar_produce(
+    mut producer: Connection<PulsarSearchProducerMq>,
+    burrow_id: i64,
+) -> String {
+    // let mut producer = match pulsar
+    //     .get_producer("persistent://public/default/search")
+    //     .await
+    // {
+    //     Ok(producer) => producer,
+    //     Err(e) => {
+    //         println!("{:?}", e);
+    //         return "Error".to_string();
+    //     }
+    // };
     let now = Utc::now().with_timezone(&FixedOffset::east(8 * 3600));
     let data = PulsarSearchBurrowData {
-        burrow_id: 1i64,
-        title: name.to_string(),
-        introduction: name.to_string(),
+        burrow_id,
+        title: format!("This is burrow NO.{}", burrow_id),
+        description: format!("Content of burrow.{}", burrow_id),
         update_time: now,
     };
     let msg = PulsarSearchData::CreateBurrow(data);
-    match producer.send(msg).await {
+    match producer
+        .send("persistent://public/default/search", msg)
+        .await
+    {
         // Ok(r) => match r.await {
         //     Ok(cs) => format!("send data successfully!, {}", cs.producer_id),
         //     Err(e) => format!("Err: {}", e),
         // },
         // Err(e) => format!("Err: {}", e),
-        Ok(_) => format!("send data to pulsar successfully!,{}", name),
+        Ok(_) => format!("send data to pulsar successfully!.NO.{}", burrow_id),
         Err(e) => format!("Err: {}", e),
     }
     // let f1 = r.await?;

@@ -25,7 +25,7 @@ RUN apt update -qq && \
     apt install --no-install-recommends libssl-dev -y && \
     rm -rf /var/lib/apt/lists/*
 COPY --from=builder /app/target/release/backend /usr/local/bin/backend
-COPY --from=builder /app/target/release/consumer /usr/local/bin/consumer
+COPY --from=builder /app/target/release/task_executor /usr/local/bin/task_executor
 COPY --from=builder /app/Rocket.toml /etc/backend/Rocket.toml
 COPY --from=builder /app/conf/log4rs.yml /etc/backend/conf/log4rs-default.yml
 COPY --from=builder /app/docker-entrypoint.sh /

@@ -1,17 +1,16 @@
 use deadpool::managed::{self, Manager, Object, PoolConfig, PoolError};
 use deadpool::Runtime;
+use pulsar::MultiTopicProducer;
 use pulsar::{message::proto, producer, Error as PulsarError, Pulsar, TokioExecutor};
 use reqwest;
 use rocket::State;
 use rocket_db_pools::{rocket::figment::Figment, Config, Database, Error, Pool};
-use s3::BucketConfiguration;
-use sea_orm::{DatabaseConnection, DbErr};
-
-use std::time::Duration;
-
 use s3::bucket::Bucket;
 use s3::creds::Credentials;
 use s3::region::Region;
+use s3::BucketConfiguration;
+use sea_orm::{DatabaseConnection, DbErr};
+use std::time::Duration;
 
 // redis for keydb
 pub trait DeadManager: Manager + Sized + Send + Sync + 'static {
@@ -101,25 +100,35 @@ impl Pool for SeaOrmPool {
 // pulsar
 #[derive(Database)]
 #[database("pulsar-mq")]
-pub struct PulsarSearchProducerMq(PulsarSearchProducerPool);
+pub struct PulsarSearchProducerMq(PulsarProducerPool);
 
-pub struct PulsarSearchProducerPool {
+pub struct PulsarProducerPool {
     pub pulsar: Pulsar<TokioExecutor>,
 }
 
 #[rocket::async_trait]
-impl Pool for PulsarSearchProducerPool {
-    type Connection = Pulsar<TokioExecutor>;
+impl Pool for PulsarProducerPool {
+    type Connection = MultiTopicProducer<TokioExecutor>;
     type Error = PulsarError;
 
     async fn init(figment: &Figment) -> Result<Self, Self::Error> {
         let config: Config = figment.extract().unwrap();
         let pulsar = Pulsar::builder(&config.url, TokioExecutor).build().await?;
-        Ok(PulsarSearchProducerPool { pulsar })
+        Ok(PulsarProducerPool { pulsar })
     }
 
     async fn get(&self) -> Result<Self::Connection, Self::Error> {
-        Ok(self.pulsar.clone())
+        Ok(self
+            .pulsar
+            .producer()
+            .with_options(producer::ProducerOptions {
+                schema: Some(proto::Schema {
+                    r#type: proto::schema::Type::String as i32,
+                    ..Default::default()
+                }),
+                ..Default::default()
+            })
+            .build_multi_topic())
     }
 }
 

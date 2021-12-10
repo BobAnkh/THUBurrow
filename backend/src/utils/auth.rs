@@ -1,21 +1,17 @@
-use crate::pool::RedisDb;
 use crypto::digest::Digest;
 use crypto::sha3::Sha3;
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
+use rocket::http::private::cookie::CookieBuilder;
 use rocket::http::{Cookie, SameSite, Status};
 use rocket::request::{self, FromRequest, Outcome, Request};
 use rocket::State;
 
+use crate::models::error::*;
+use crate::pool::RedisDb;
+
 pub struct Auth {
     pub id: i64,
-}
-
-#[derive(Debug)]
-pub enum AuthTokenError {
-    Missing,
-    Invalid,
-    DatabaseErr,
 }
 
 pub enum ValidToken {
@@ -111,14 +107,8 @@ async fn is_valid<'r>(
                             match refresh_set {
                                 Ok(_) => {
                                     // set cookie to the new token
-                                    let cookie = Cookie::build("token", new_token)
-                                        .domain(".thuburrow.com")
-                                        .path("/")
-                                        .same_site(SameSite::Strict)
-                                        .secure(true)
-                                        .http_only(true)
-                                        .max_age(time::Duration::weeks(1))
-                                        .finish();
+                                    let cookie =
+                                        Cookie::build("token", new_token).cookie_options().finish();
                                     request.cookies().add_private(cookie);
                                     info!("[SSO] set new_token -> id");
                                 }
@@ -176,7 +166,7 @@ pub async fn auth_token<'r>(request: &'r Request<'_>) -> Option<ValidToken> {
 
 #[rocket::async_trait]
 impl<'r> FromRequest<'r> for Auth {
-    type Error = AuthTokenError;
+    type Error = ErrorResponse;
 
     async fn from_request(request: &'r Request<'_>) -> request::Outcome<Self, Self::Error> {
         let auth_result = request
@@ -184,19 +174,46 @@ impl<'r> FromRequest<'r> for Auth {
             .await;
         match auth_result {
             Some(msg) => match msg {
-                ValidToken::Missing => {
-                    Outcome::Failure((Status::Unauthorized, AuthTokenError::Missing))
-                }
-                ValidToken::Invalid => {
-                    Outcome::Failure((Status::Unauthorized, AuthTokenError::Invalid))
-                }
-                ValidToken::DatabaseErr => {
-                    Outcome::Failure((Status::InternalServerError, AuthTokenError::DatabaseErr))
-                }
+                ValidToken::Missing => Outcome::Failure((
+                    Status::Unauthorized,
+                    ErrorResponse::build(
+                        ErrorCode::AuthTokenMissing,
+                        "Authentication token is missing.",
+                    ),
+                )),
+                ValidToken::Invalid => Outcome::Failure((
+                    Status::Unauthorized,
+                    ErrorResponse::build(
+                        ErrorCode::AuthTokenInvalid,
+                        "Authentication token is invalid.",
+                    ),
+                )),
+                ValidToken::DatabaseErr => Outcome::Failure((
+                    Status::InternalServerError,
+                    ErrorResponse::build(ErrorCode::DatabaseErr, ""),
+                )),
                 ValidToken::Refresh(id) => Outcome::Success(Auth { id: *id }),
                 ValidToken::Valid(id) => Outcome::Success(Auth { id: *id }),
             },
-            None => Outcome::Failure((Status::InternalServerError, AuthTokenError::DatabaseErr)),
+            None => Outcome::Failure((
+                Status::InternalServerError,
+                ErrorResponse::build(ErrorCode::DatabaseErr, ""),
+            )),
         }
+    }
+}
+
+pub trait CookieOptions {
+    fn cookie_options(self) -> Self;
+}
+
+impl CookieOptions for CookieBuilder<'_> {
+    fn cookie_options(self) -> Self {
+        self.domain(".thuburrow.com")
+            .path("/")
+            .same_site(SameSite::Strict)
+            .secure(true)
+            .http_only(true)
+            .max_age(time::Duration::weeks(1))
     }
 }

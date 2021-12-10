@@ -1,38 +1,33 @@
 use chrono::{FixedOffset, Utc};
-// use futures::future;
-use rocket::http::Status;
-use rocket::http::{Cookie, CookieJar, SameSite};
+use crypto::digest::Digest;
+use crypto::sha3::Sha3;
+use idgenerator::IdHelper;
+use rand::distributions::Alphanumeric;
+use rand::{thread_rng, Rng};
+use rocket::http::{Cookie, CookieJar, Status};
 use rocket::serde::json::Json;
 use rocket::{Build, Rocket};
 use rocket_db_pools::Connection;
 use sea_orm::sea_query::{Expr, Query};
 use sea_orm::{entity::*, query::*};
 use sea_orm::{DbErr, QueryFilter};
-// , DatabaseConnection};
-
-use crate::pgdb;
-use crate::pgdb::prelude::*;
-use crate::pool::{PgDb, PulsarSearchProducerMq, RedisDb, RocketPulsarProducer};
-use crate::req::pulsar::*;
-use crate::req::{
-    burrow::{BurrowMetadata, BURROW_PER_PAGE},
-    content::{Post, POST_PER_PAGE},
-    user::*,
-};
-use crate::utils::auth::Auth;
-use crate::utils::burrow_valid::*;
-use crate::utils::email;
-use crate::utils::send_email;
-
-use crypto::digest::Digest;
-use crypto::sha3::Sha3;
 use std::collections::HashMap;
 use std::iter;
 
-use idgenerator::IdHelper;
-
-use rand::distributions::Alphanumeric;
-use rand::{thread_rng, Rng};
+use crate::models::{
+    burrow::{BurrowMetadata, BURROW_PER_PAGE},
+    content::{Post, POST_PER_PAGE},
+    error::*,
+    pulsar::*,
+    user::*,
+};
+use crate::pgdb;
+use crate::pgdb::prelude::*;
+use crate::pool::{PgDb, PulsarSearchProducerMq, RedisDb};
+use crate::utils::auth::{Auth, CookieOptions};
+use crate::utils::burrow_valid::*;
+use crate::utils::email;
+use crate::utils::send_email;
 
 pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
     rocket.mount(
@@ -44,6 +39,7 @@ pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
             get_collection,
             get_burrow,
             user_relation,
+            get_user_valid_burrow,
         ],
     )
 }
@@ -60,22 +56,25 @@ async fn gen_salt() -> String {
 #[post("/relation", data = "<relation_info>", format = "json")]
 pub async fn user_relation(
     auth: Auth,
-    pulsar: Connection<PulsarSearchProducerMq>,
+    mut producer: Connection<PulsarSearchProducerMq>,
     relation_info: Json<RelationData>,
 ) -> Status {
     let relation = relation_info.into_inner();
     let msg = relation.to_pulsar(auth.id);
-    let mut producer = match pulsar
-        .get_producer("persistent://public/default/relation")
+    // let mut producer = match pulsar
+    //     .get_producer("persistent://public/default/relation")
+    //     .await
+    // {
+    //     Ok(producer) => producer,
+    //     Err(e) => {
+    //         log::error!("{}", e);
+    //         return Status::InternalServerError;
+    //     }
+    // };
+    match producer
+        .send("persistent://public/default/relation", msg)
         .await
     {
-        Ok(producer) => producer,
-        Err(e) => {
-            log::error!("{}", e);
-            return Status::InternalServerError;
-        }
-    };
-    match producer.send(msg).await {
         Ok(_) => log::info!("send data to pulsar successfully!"),
         Err(e) => {
             log::error!("Err: {}", e);
@@ -83,6 +82,65 @@ pub async fn user_relation(
         }
     }
     Status::Ok
+}
+
+#[post("/email", data = "<email_info>", format = "json")]
+pub async fn user_email_activate(
+    db: Connection<PgDb>,
+    email_info: Json<UserEmail>,
+    mut producer: Connection<PulsarSearchProducerMq>,
+) -> (Status, Result<String, Json<ErrorResponse>>) {
+    let pg_con = db.into_inner();
+    let email = email_info.into_inner().email;
+    if !email::check_email_syntax(&email) {
+        return (
+            Status::BadRequest,
+            Err(Json(ErrorResponse::build(
+                ErrorCode::EmailInvalid,
+                "Invalid Email address",
+            ))),
+        );
+    }
+    // check if email address is duplicated, add corresponding error if so
+    match User::find()
+        .filter(pgdb::user::Column::Email.eq(email.clone()))
+        .one(&pg_con)
+        .await
+    {
+        Ok(res) => {
+            if res.is_some() {
+                (
+                    Status::BadRequest,
+                    Err(Json(ErrorResponse::build(
+                        ErrorCode::EmailDuplicate,
+                        "This Email address is already in use",
+                    ))),
+                )
+            } else {
+                let msg = PulsarSendEmail { email };
+                match producer
+                    .send("persistent://public/default/email", msg)
+                    .await
+                {
+                    Ok(_) => (Status::Ok, Ok("Success".to_string())),
+                    Err(e) => {
+                        log::error!("[SEND-EMAIL] Database error: {:?}", e);
+                        (
+                            Status::InternalServerError,
+                            Err(Json(ErrorResponse::default())),
+                        )
+                    }
+                }
+            }
+        }
+        Err(e) => {
+            log::error!("[SIGN-UP] Database Error: {:?}", e);
+            (
+                Status::InternalServerError,
+                Err(Json(ErrorResponse::default())),
+            )
+        }
+    }
 }
 
 #[post("/sign-up", data = "<user_info>", format = "json")]
@@ -96,9 +154,23 @@ pub async fn user_sign_up(
     // get user info from request
     let user = user_info.into_inner();
     // check if email address is valid, add corresponding error if so
-    if !(email::check_email_syntax(user.email) &&
-         email::check_email_exist(user.email).await.0) {
-            errors.push("Illegal Email Address".to_string());
+    if !email::check_email_syntax(user.email) {
+        return (
+            Status::BadRequest,
+            Json(UserResponse {
+                default_burrow: -1,
+                errors: vec!["Invalid Email Address".to_string()],
+            }),
+        );
+    }
+    if user.username.is_empty() {
+        return (
+            Status::BadRequest,
+            Json(UserResponse {
+                default_burrow: -1,
+                errors: vec!["Empty User Name".to_string()],
+            }),
+        );
     }
     let res = send_email::post().await;
         match res {
@@ -120,14 +192,15 @@ pub async fn user_sign_up(
                 errors.push("Duplicated Email Address".to_string());
             }
         }
-        _ => {
+        Err(e) => {
+            log::error!("[SIGN-UP] Database Error: {:?}", e);
             return (
                 Status::InternalServerError,
                 Json(UserResponse {
                     default_burrow: -1,
                     errors: Vec::new(),
                 }),
-            )
+            );
         }
     }
     // check if username is duplicated, add corresponding error if so
@@ -141,14 +214,15 @@ pub async fn user_sign_up(
                 errors.push("Duplicated Username".to_string());
             }
         }
-        _ => {
+        Err(e) => {
+            log::error!("[SIGN-UP] Database Error: {:?}", e);
             return (
                 Status::InternalServerError,
                 Json(UserResponse {
                     default_burrow: -1,
                     errors: Vec::new(),
                 }),
-            )
+            );
         }
     }
     // if error exists, refuse to add user
@@ -302,6 +376,7 @@ pub async fn user_log_in(
                         }
                     };
                     // get old token and set new token by getset id -> token
+                    // TODO: add time limit to the key?
                     let old_token_get: Result<Option<String>, redis::RedisError> =
                         redis::cmd("GETSET")
                             .arg(matched_user.uid)
@@ -360,14 +435,7 @@ pub async fn user_log_in(
                         }
                     };
                     // build cookie
-                    let cookie = Cookie::build("token", token)
-                        .domain(".thuburrow.com")
-                        .path("/")
-                        .same_site(SameSite::Strict)
-                        .secure(true)
-                        .http_only(true)
-                        .max_age(time::Duration::weeks(1))
-                        .finish();
+                    let cookie = Cookie::build("token", token).cookie_options().finish();
                     // set cookie
                     cookies.add_private(cookie);
                     info!("[LOGIN] User login complete.");
@@ -382,11 +450,14 @@ pub async fn user_log_in(
                 (Status::BadRequest, "Wrong username or password".to_string())
             }
         },
-        _ => (Status::InternalServerError, "".to_string()),
+        Err(e) => {
+            error!("[LOGIN] Database error: {:?}", e);
+            (Status::InternalServerError, "".to_string())
+        }
     }
 }
 
-#[get("/burrow")]
+#[get("/burrows")]
 pub async fn get_burrow(db: Connection<PgDb>, auth: Auth) -> (Status, Json<Vec<BurrowMetadata>>) {
     // Ok(burrows) => {
     //     // let mut posts_num = Vec::new();
@@ -423,12 +494,12 @@ pub async fn get_burrow(db: Connection<PgDb>, auth: Auth) -> (Status, Json<Vec<B
                 }
             }
             None => {
-                error!("[GET-BURROW] Cannot find user_status by uid.");
-                (Status::InternalServerError, Json(Vec::new()))
+                info!("[GET-BURROW] Cannot find user_status by uid.");
+                (Status::Forbidden, Json(Vec::new()))
             }
         },
         Err(e) => {
-            error!("[GET-BURROW] Database Error: {:?}", e.to_string());
+            error!("[GET-BURROW] Database Error: {:?}", e);
             (Status::InternalServerError, Json(Vec::new()))
         }
     }
@@ -544,6 +615,27 @@ pub async fn get_follow(
         }
         Err(e) => {
             error!("[GET-FOLLOW] Database Error: {:?}", e.to_string());
+            (Status::InternalServerError, Json(Vec::new()))
+        }
+    }
+}
+
+#[get("/valid-burrows")]
+pub async fn get_user_valid_burrow(auth: Auth, db: Connection<PgDb>) -> (Status, Json<Vec<i64>>) {
+    let pg_con = db.into_inner();
+    match pgdb::user_status::Entity::find_by_id(auth.id)
+        .one(&pg_con)
+        .await
+    {
+        Ok(opt_state) => match opt_state {
+            Some(state) => (Status::Ok, Json(get_burrow_list(&state.valid_burrow))),
+            None => {
+                info!("[GET-VALID-BURROW] Cannot find user_status by uid.");
+                (Status::Forbidden, Json(Vec::new()))
+            }
+        },
+        Err(e) => {
+            error!("[GET-VALID-BURROW] Database Error: {:?}", e);
             (Status::InternalServerError, Json(Vec::new()))
         }
     }
