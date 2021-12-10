@@ -38,7 +38,7 @@ pub async fn get_total_burrow_count(
     let pg_con = db.into_inner();
     match LastBurrowSeq::find_by_statement(Statement::from_sql_and_values(
         DbBackend::Postgres,
-        r#"SELECT "last_value" FROM "burrow_burrow_id_seq"#,
+        r#"SELECT "last_value" FROM "burrow_burrow_id_seq""#,
         vec![],
     ))
     .one(&pg_con)

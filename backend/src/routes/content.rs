@@ -43,7 +43,7 @@ pub async fn get_total_post_count(
     let pg_con = db.into_inner();
     match LastPostSeq::find_by_statement(Statement::from_sql_and_values(
         DbBackend::Postgres,
-        r#"SELECT "last_value" FROM "content_post_post_id_seq"#,
+        r#"SELECT "last_value" FROM "content_post_post_id_seq""#,
         vec![],
     ))
     .one(&pg_con)
