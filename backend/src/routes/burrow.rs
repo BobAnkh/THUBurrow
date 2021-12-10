@@ -97,7 +97,7 @@ pub async fn create_burrow(
                     > now
                 {
                     return (
-                        Status::Forbidden,
+                        Status::TooManyRequests,
                         Err(Json(ErrorResponse::build(
                             ErrorCode::RateLimit,
                             "User can only create a new burrow every 24 hours",
@@ -190,7 +190,7 @@ pub async fn create_burrow(
             None => {
                 info!("[CREATE BURROW] Cannot find user_status by uid.");
                 (
-                    Status::Forbidden,
+                    Status::BadRequest,
                     Err(Json(ErrorResponse::build(ErrorCode::UserNotExist, ""))),
                 )
             }
@@ -309,7 +309,7 @@ pub async fn discard_burrow(
             None => {
                 info!("[DEL-BURROW] Cannot find user_status by uid.");
                 (
-                    Status::Forbidden,
+                    Status::BadRequest,
                     Err(Json(ErrorResponse::build(ErrorCode::UserNotExist, ""))),
                 )
             }
@@ -373,7 +373,7 @@ pub async fn show_burrow(
             None => {
                 info!("[SHOW-BURROW] Cannot find burrow {}", burrow_id);
                 (
-                    Status::BadRequest,
+                    Status::NotFound,
                     Err(Json(ErrorResponse::build(ErrorCode::BurrowNotExist, ""))),
                 )
             }
@@ -467,7 +467,7 @@ pub async fn update_burrow(
             None => {
                 info!("[UPDATE-BURROW] Cannot find user_status by uid.");
                 (
-                    Status::Forbidden,
+                    Status::BadRequest,
                     Err(Json(ErrorResponse::build(ErrorCode::UserNotExist, ""))),
                 )
             }

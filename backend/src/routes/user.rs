@@ -57,30 +57,23 @@ pub async fn user_relation(
     auth: Auth,
     mut producer: Connection<PulsarSearchProducerMq>,
     relation_info: Json<RelationData>,
-) -> Status {
+) -> (Status, Result<String, Json<ErrorResponse>>) {
     let relation = relation_info.into_inner();
     let msg = relation.to_pulsar(auth.id);
-    // let mut producer = match pulsar
-    //     .get_producer("persistent://public/default/relation")
-    //     .await
-    // {
-    //     Ok(producer) => producer,
-    //     Err(e) => {
-    //         log::error!("{}", e);
-    //         return Status::InternalServerError;
-    //     }
-    // };
     match producer
         .send("persistent://public/default/relation", msg)
         .await
     {
-        Ok(_) => log::info!("send data to pulsar successfully!"),
+        Ok(_) => log::info!("[RELATION] send data to pulsar successfully!"),
         Err(e) => {
-            log::error!("Err: {}", e);
-            return Status::InternalServerError;
+            log::error!("[RELATION] PulsarErr: {:?}", e);
+            return (
+                Status::InternalServerError,
+                Err(Json(ErrorResponse::default())),
+            );
         }
     }
-    Status::Ok
+    (Status::Ok, Ok("Success".to_string()))
 }
 
 #[post("/email", data = "<email_info>", format = "json")]
@@ -146,85 +139,79 @@ pub async fn user_email_activate(
 pub async fn user_sign_up(
     db: Connection<PgDb>,
     user_info: Json<UserInfo<'_>>,
-) -> (Status, Json<UserResponse>) {
+) -> (Status, Result<Json<UserResponse>, Json<ErrorResponse>>) {
     let pg_con = db.into_inner();
-    // create vec of errors
-    let mut errors = Vec::new();
     // get user info from request
     let user = user_info.into_inner();
     // check if email address is valid, add corresponding error if so
     if !email::check_email_syntax(user.email) {
-        return (
-            Status::BadRequest,
-            Json(UserResponse {
-                default_burrow: -1,
-                errors: vec!["Invalid Email Address".to_string()],
-            }),
-        );
-    }
-    if user.username.is_empty() {
-        return (
-            Status::BadRequest,
-            Json(UserResponse {
-                default_burrow: -1,
-                errors: vec!["Empty User Name".to_string()],
-            }),
-        );
-    }
-    // check if email address is duplicated, add corresponding error if so
-    match User::find()
-        .filter(pgdb::user::Column::Email.eq(user.email))
-        .one(&pg_con)
-        .await
-    {
-        Ok(res) => {
-            if res.is_some() {
-                errors.push("Duplicated Email Address".to_string());
-            }
-        }
-        Err(e) => {
-            log::error!("[SIGN-UP] Database Error: {:?}", e);
-            return (
-                Status::InternalServerError,
-                Json(UserResponse {
-                    default_burrow: -1,
-                    errors: Vec::new(),
-                }),
-            );
-        }
-    }
-    // check if username is duplicated, add corresponding error if so
-    match User::find()
-        .filter(pgdb::user::Column::Username.eq(user.username))
-        .one(&pg_con)
-        .await
-    {
-        Ok(res) => {
-            if res.is_some() {
-                errors.push("Duplicated Username".to_string());
-            }
-        }
-        Err(e) => {
-            log::error!("[SIGN-UP] Database Error: {:?}", e);
-            return (
-                Status::InternalServerError,
-                Json(UserResponse {
-                    default_burrow: -1,
-                    errors: Vec::new(),
-                }),
-            );
-        }
-    }
-    // if error exists, refuse to add user
-    if !errors.is_empty() {
         (
             Status::BadRequest,
-            Json(UserResponse {
-                default_burrow: -1,
-                errors,
-            }),
+            Err(Json(ErrorResponse::build(
+                ErrorCode::EmailInvalid,
+                "Invalid Email address.",
+            ))),
+        )
+    } else if user.username.is_empty() {
+        (
+            Status::BadRequest,
+            Err(Json(ErrorResponse::build(
+                ErrorCode::EmptyField,
+                "Empty username.",
+            ))),
         )
     } else {
+        // check if email address is duplicated, add corresponding error if so
+        match User::find()
+            .filter(pgdb::user::Column::Email.eq(user.email))
+            .one(&pg_con)
+            .await
+        {
+            Ok(res) => {
+                if res.is_some() {
+                    return (
+                        Status::BadRequest,
+                        Err(Json(ErrorResponse::build(
+                            ErrorCode::EmailDuplicate,
+                            "Duplicate Email address.",
+                        ))),
+                    );
+                }
+            }
+            Err(e) => {
+                log::error!("[SIGN-UP] Database Error: {:?}", e);
+                return (
+                    Status::InternalServerError,
+                    Err(Json(ErrorResponse::default())),
+                );
+            }
+        }
+        // check if username is duplicated, add corresponding error if so
+        match User::find()
+            .filter(pgdb::user::Column::Username.eq(user.username))
+            .one(&pg_con)
+            .await
+        {
+            Ok(res) => {
+                if res.is_some() {
+                    return (
+                        Status::BadRequest,
+                        Err(Json(ErrorResponse::build(
+                            ErrorCode::UsernameDuplicate,
+                            "Duplicate username.",
+                        ))),
+                    );
+                }
+            }
+            Err(e) => {
+                log::error!("[SIGN-UP] Database Error: {:?}", e);
+                return (
+                    Status::InternalServerError,
+                    Err(Json(ErrorResponse::default())),
+                );
+            }
+        }
+
         // generate salt
         let salt = gen_salt().await;
         // encrypt password
@@ -271,21 +258,12 @@ pub async fn user_sign_up(
             })
             .await
         {
-            Ok(default_burrow) => (
-                Status::Ok,
-                Json(UserResponse {
-                    default_burrow,
-                    errors,
-                }),
-            ),
+            Ok(default_burrow) => (Status::Ok, Ok(Json(UserResponse { default_burrow }))),
             Err(e) => {
                 error!("[SIGN-UP] Database error: {:?}", e);
                 (
                     Status::InternalServerError,
-                    Json(UserResponse {
-                        default_burrow: -1,
-                        errors: Vec::new(),
-                    }),
+                    Err(Json(ErrorResponse::default())),
                 )
             }
         }
@@ -298,7 +276,7 @@ pub async fn user_log_in(
     kvdb: Connection<RedisDb>,
     cookies: &CookieJar<'_>,
     user_info: Json<UserLoginInfo<'_>>,
-) -> (Status, String) {
+) -> (Status, Result<String, Json<ErrorResponse>>) {
     let mut con = kvdb.into_inner();
     // get user info from request
     let user = user_info.into_inner();
@@ -314,7 +292,10 @@ pub async fn user_log_in(
                 let salt = matched_user.salt;
                 if salt.is_empty() {
                     error!("[LOGIN] cannot find user's salt.");
-                    return (Status::InternalServerError, "".to_string());
+                    return (
+                        Status::InternalServerError,
+                        Err(Json(ErrorResponse::default())),
+                    );
                 }
                 // encrypt input password same as sign-up
                 let mut hash_sha3 = Sha3::sha3_256();
@@ -341,9 +322,15 @@ pub async fn user_log_in(
                         .await;
                     match uid_result {
                         Ok(s) => info!("[LOGIN] setex token->id: {:?} -> {}", &token, s),
-                        _ => {
-                            error!("[LOGIN] failed to set token -> id when login.");
-                            return (Status::InternalServerError, "".to_string());
+                        Err(e) => {
+                            error!(
+                                "[LOGIN] failed to set token -> id when login. RedisError: {:?}",
+                                e
+                            );
+                            return (
+                                Status::InternalServerError,
+                                Err(Json(ErrorResponse::default())),
+                            );
                         }
                     };
                     // set refresh_token -> id
@@ -358,9 +345,12 @@ pub async fn user_log_in(
                             "[LOGIN] setex refresh_token->id: {:?} -> {}",
                             &refresh_token, s
                         ),
-                        _ => {
-                            error!("[LOGIN] failed to set refresh_token -> id when login.");
-                            return (Status::InternalServerError, "".to_string());
+                        Err(e) => {
+                            error!("[LOGIN] failed to set refresh_token -> id when login. RedisError: {:?}", e);
+                            return (
+                                Status::InternalServerError,
+                                Err(Json(ErrorResponse::default())),
+                            );
                         }
                     };
                     // get old token and set new token by getset id -> token
@@ -385,9 +375,19 @@ pub async fn user_log_in(
                                 match delete_result {
                                     Ok(1) => info!("[LOGIN] delete token->id"),
                                     Ok(0) => info!("[LOGIN] no token->id found"),
-                                    _ => {
-                                        error!("[LOGIN] failed to delete token -> id when login.");
-                                        return (Status::InternalServerError, "".to_string());
+                                    Ok(_) => {
+                                        error!("[LOGIN] failed to delete refresh_token -> id when login.");
+                                        return (
+                                            Status::InternalServerError,
+                                            Err(Json(ErrorResponse::default())),
+                                        );
+                                    }
+                                    Err(e) => {
+                                        error!("[LOGIN] failed to delete token -> id when login. RedisError: {:?}", e);
+                                        return (
+                                            Status::InternalServerError,
+                                            Err(Json(ErrorResponse::default())),
+                                        );
                                     }
                                 };
                                 // find old refresh_token by hashing old token
@@ -403,11 +403,19 @@ pub async fn user_log_in(
                                 match delete_result {
                                     Ok(1) => info!("[LOGIN] delete ref_token->id"),
                                     Ok(0) => info!("[LOGIN] no ref_token->id found"),
-                                    _ => {
-                                        error!(
-                                            "[LOGIN] failed to delete ref_token -> id when login."
+                                    Ok(_) => {
+                                        error!("[LOGIN] failed to delete refresh_token -> id when login.");
+                                        return (
+                                            Status::InternalServerError,
+                                            Err(Json(ErrorResponse::default())),
                                         );
-                                        return (Status::InternalServerError, "".to_string());
+                                    }
+                                    Err(e) => {
+                                        error!("[LOGIN] failed to delete refresh_token -> id when login. RedisError: {:?}", e);
+                                        return (
+                                            Status::InternalServerError,
+                                            Err(Json(ErrorResponse::default())),
+                                        );
                                     }
                                 };
                                 info!("[LOGIN] set id->token: {} -> {:?}", matched_user.uid, token);
@@ -417,9 +425,15 @@ pub async fn user_log_in(
                                 info!("[LOGIN] set id->token: {} -> {:?}", matched_user.uid, token);
                             }
                         },
-                        _ => {
-                            error!("[LOGIN] failed to set id -> token when login.");
-                            return (Status::InternalServerError, "".to_string());
+                        Err(e) => {
+                            error!(
+                                "[LOGIN] failed to set id -> token when login. RedisError: {:?}",
+                                e
+                            );
+                            return (
+                                Status::InternalServerError,
+                                Err(Json(ErrorResponse::default())),
+                            );
                         }
                     };
                     // build cookie
@@ -427,26 +441,47 @@ pub async fn user_log_in(
                     // set cookie
                     cookies.add_private(cookie);
                     info!("[LOGIN] User login complete.");
-                    (Status::Ok, "".to_string())
+                    (Status::Ok, Ok("Success".to_string()))
                 } else {
                     info!("[LOGIN] wrong password.");
-                    (Status::BadRequest, "Wrong username or password".to_string())
+                    (
+                        Status::BadRequest,
+                        Err(Json(ErrorResponse::build(
+                            ErrorCode::CredentialInvalid,
+                            "Wrong username or password.",
+                        ))),
+                    )
                 }
             }
             None => {
                 info!("[LOGIN] username does not exists.");
-                (Status::BadRequest, "Wrong username or password".to_string())
+                (
+                    Status::BadRequest,
+                    Err(Json(ErrorResponse::build(
+                        ErrorCode::CredentialInvalid,
+                        "Wrong username or password.",
+                    ))),
+                )
             }
         },
         Err(e) => {
             error!("[LOGIN] Database error: {:?}", e);
-            (Status::InternalServerError, "".to_string())
+            (
+                Status::InternalServerError,
+                Err(Json(ErrorResponse::default())),
+            )
         }
     }
 }
 
 #[get("/burrows")]
-pub async fn get_burrow(db: Connection<PgDb>, auth: Auth) -> (Status, Json<Vec<BurrowMetadata>>) {
+pub async fn get_burrow(
+    db: Connection<PgDb>,
+    auth: Auth,
+) -> (
+    Status,
+    Result<Json<Vec<BurrowMetadata>>, Json<ErrorResponse>>,
+) {
     // Ok(burrows) => {
     //     // let mut posts_num = Vec::new();
     //     let r: Vec<i64> = future::try_join_all(burrows.iter().map(move |burrow| {
@@ -473,22 +508,31 @@ pub async fn get_burrow(db: Connection<PgDb>, auth: Auth) -> (Status, Json<Vec<B
                 {
                     Ok(burrows) => (
                         Status::Ok,
-                        Json(burrows.iter().map(|burrow| burrow.into()).collect()),
+                        Ok(Json(burrows.iter().map(|burrow| burrow.into()).collect())),
                     ),
                     Err(e) => {
                         error!("[GET_BURROW] failed to get burrow list: {:?}", e);
-                        (Status::InternalServerError, Json(Vec::new()))
+                        (
+                            Status::InternalServerError,
+                            Err(Json(ErrorResponse::default())),
+                        )
                     }
                 }
             }
             None => {
                 info!("[GET-BURROW] Cannot find user_status by uid.");
-                (Status::Forbidden, Json(Vec::new()))
+                (
+                    Status::BadRequest,
+                    Err(Json(ErrorResponse::build(ErrorCode::UserNotExist, ""))),
+                )
             }
         },
         Err(e) => {
             error!("[GET-BURROW] Database Error: {:?}", e);
-            (Status::InternalServerError, Json(Vec::new()))
+            (
+                Status::InternalServerError,
+                Err(Json(ErrorResponse::default())),
+            )
         }
     }
 }
@@ -498,7 +542,7 @@ pub async fn get_collection(
     db: Connection<PgDb>,
     auth: Auth,
     page: Option<u64>,
-) -> (Status, Json<Vec<Post>>) {
+) -> (Status, Result<Json<Vec<Post>>, Json<ErrorResponse>>) {
     let pg_con = db.into_inner();
     let page = page.unwrap_or(0);
     match ContentPost::find()
@@ -525,11 +569,14 @@ pub async fn get_collection(
     {
         Ok(posts) => (
             Status::Ok,
-            Json(posts.iter().map(|post| post.into()).collect()),
+            Ok(Json(posts.iter().map(|post| post.into()).collect())),
         ),
         Err(e) => {
             error!("[GET-FAV] Database Error: {:?}", e);
-            (Status::InternalServerError, Json(Vec::new()))
+            (
+                Status::InternalServerError,
+                Err(Json(ErrorResponse::default())),
+            )
         }
     }
 }
@@ -539,7 +586,10 @@ pub async fn get_follow(
     db: Connection<PgDb>,
     auth: Auth,
     page: Option<usize>,
-) -> (Status, Json<Vec<UserGetFollowResponse>>) {
+) -> (
+    Status,
+    Result<Json<Vec<UserGetFollowResponse>>, Json<ErrorResponse>>,
+) {
     let pg_con = db.into_inner();
     let page = page.unwrap_or(0);
     match pgdb::user_follow::Entity::find()
@@ -561,7 +611,7 @@ pub async fn get_follow(
                     if burrows.len() == results.len() {
                         (
                             Status::Ok,
-                            Json(
+                            Ok(Json(
                                 burrows
                                     .iter()
                                     .map(|burrow| {
@@ -574,14 +624,14 @@ pub async fn get_follow(
                                         is_update,
                                     })
                                     .collect(),
-                            ),
+                            )),
                         )
                     } else {
                         let hm: HashMap<i64, bool> =
                             results.iter().map(|r| (r.burrow_id, r.is_update)).collect();
                         (
                             Status::Ok,
-                            Json(
+                            Ok(Json(
                                 burrows
                                     .iter()
                                     .map(|meta| {
@@ -591,40 +641,55 @@ pub async fn get_follow(
                                         UserGetFollowResponse { burrow, is_update }
                                     })
                                     .collect(),
-                            ),
+                            )),
                         )
                     }
                 }
                 Err(e) => {
-                    error!("[GET-FOLLOW] DataBase Error: {:?}", e.to_string());
-                    (Status::InternalServerError, Json(Vec::new()))
+                    error!("[GET-FOLLOW] Database Error: {:?}", e);
+                    (
+                        Status::InternalServerError,
+                        Err(Json(ErrorResponse::default())),
+                    )
                 }
             }
         }
         Err(e) => {
-            error!("[GET-FOLLOW] Database Error: {:?}", e.to_string());
-            (Status::InternalServerError, Json(Vec::new()))
+            error!("[GET-FOLLOW] Database Error: {:?}", e);
+            (
+                Status::InternalServerError,
+                Err(Json(ErrorResponse::default())),
+            )
         }
     }
 }
 
 #[get("/valid-burrows")]
-pub async fn get_user_valid_burrow(auth: Auth, db: Connection<PgDb>) -> (Status, Json<Vec<i64>>) {
+pub async fn get_user_valid_burrow(
+    auth: Auth,
+    db: Connection<PgDb>,
+) -> (Status, Result<Json<Vec<i64>>, Json<ErrorResponse>>) {
     let pg_con = db.into_inner();
     match pgdb::user_status::Entity::find_by_id(auth.id)
         .one(&pg_con)
         .await
     {
         Ok(opt_state) => match opt_state {
-            Some(state) => (Status::Ok, Json(get_burrow_list(&state.valid_burrow))),
+            Some(state) => (Status::Ok, Ok(Json(get_burrow_list(&state.valid_burrow)))),
             None => {
                 info!("[GET-VALID-BURROW] Cannot find user_status by uid.");
-                (Status::Forbidden, Json(Vec::new()))
+                (
+                    Status::BadRequest,
+                    Err(Json(ErrorResponse::build(ErrorCode::UserNotExist, ""))),
+                )
             }
         },
         Err(e) => {
             error!("[GET-VALID-BURROW] Database Error: {:?}", e);
-            (Status::InternalServerError, Json(Vec::new()))
+            (
+                Status::InternalServerError,
+                Err(Json(ErrorResponse::default())),
+            )
         }
     }
 }

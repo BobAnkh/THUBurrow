@@ -93,7 +93,7 @@ pub async fn create_post(
         return (
             Status::BadRequest,
             Err(Json(ErrorResponse::build(
-                ErrorCode::WrongField,
+                ErrorCode::SectionInvalid,
                 "Wrong Post Section.",
             ))),
         );
@@ -105,7 +105,7 @@ pub async fn create_post(
             None => {
                 log::info!("[UPDATE-POST] Cannot find user_status by uid.");
                 (
-                    Status::Forbidden,
+                    Status::BadRequest,
                     Err(Json(ErrorResponse::build(ErrorCode::UserNotExist, ""))),
                 )
             }
@@ -229,13 +229,19 @@ pub async fn read_post(
     db: Connection<PgDb>,
     post_id: i64,
     page: Option<usize>,
-) -> (Status, Result<Json<PostPage>, String>) {
+) -> (Status, Result<Json<PostPage>, Json<ErrorResponse>>) {
     let pg_con = db.into_inner();
     let page = page.unwrap_or(0);
     // check if the post not exists, add corresponding error if so
     match ContentPost::find_by_id(post_id).one(&pg_con).await {
         Ok(r) => match r {
-            None => (Status::BadRequest, Err("Post not exists".to_string())),
+            None => (
+                Status::NotFound,
+                Err(Json(ErrorResponse::build(
+                    ErrorCode::PostNotExist,
+                    format!("Cannot find post {}", post_id),
+                ))),
+            ),
             Some(post_info) => {
                 let reply_pages = ContentReply::find()
                     .filter(pgdb::content_reply::Column::PostId.eq(post_id))
@@ -245,7 +251,10 @@ pub async fn read_post(
                     Ok(reply_info) => reply_info,
                     Err(e) => {
                         log::error!("[READ-POST] Database error: {:?}", e);
-                        return (Status::InternalServerError, Err(String::new()));
+                        return (
+                            Status::InternalServerError,
+                            Err(Json(ErrorResponse::default())),
+                        );
                     }
                 };
                 // get post metadata
@@ -263,7 +272,10 @@ pub async fn read_post(
                         DbErr::RecordNotFound(_) => false,
                         _ => {
                             log::error!("[READ-POST] Database error: {:?}", e);
-                            return (Status::InternalServerError, Err(String::new()));
+                            return (
+                                Status::InternalServerError,
+                                Err(Json(ErrorResponse::default())),
+                            );
                         }
                     },
                 };
@@ -290,7 +302,10 @@ pub async fn read_post(
         },
         Err(e) => {
             log::error!("[READ-POST] Database error: {:?}", e);
-            (Status::InternalServerError, Err(String::new()))
+            (
+                Status::InternalServerError,
+                Err(Json(ErrorResponse::default())),
+            )
         }
     }
 }
@@ -302,21 +317,33 @@ pub async fn update_post(
     post_id: i64,
     post_info: Json<PostUpdateInfo>,
     mut producer: Connection<PulsarSearchProducerMq>,
-) -> (Status, String) {
+) -> (Status, Result<String, Json<ErrorResponse>>) {
     let pg_con = db.into_inner();
     let content = post_info.into_inner();
     let now = Utc::now().with_timezone(&FixedOffset::east(8 * 3600));
     // check if the post not exists, add corresponding error if so
     match ContentPost::find_by_id(post_id).one(&pg_con).await {
         Ok(r) => match r {
-            None => (Status::BadRequest, "Post not exists".to_string()),
+            None => (
+                Status::NotFound,
+                Err(Json(ErrorResponse::build(
+                    ErrorCode::PostNotExist,
+                    format!("Cannot find post {}", post_id),
+                ))),
+            ),
             Some(post_info) => {
                 match UserStatus::find_by_id(auth.id).one(&pg_con).await {
                     Ok(opt_state) => match opt_state {
                         Some(state) => {
                             // check if this user create the post
                             if state.user_state != 0 {
-                                (Status::Forbidden, "User invalid".to_string())
+                                (
+                                    Status::Forbidden,
+                                    Err(Json(ErrorResponse::build(
+                                        ErrorCode::UserForbidden,
+                                        "User not in a valid state",
+                                    ))),
+                                )
                             } else if is_valid_burrow(&state.valid_burrow, &post_info.burrow_id) {
                                 let section = content.section.join(",");
                                 let tag = content.tag.join(",");
@@ -343,35 +370,50 @@ pub async fn update_post(
                                         let _ = producer
                                             .send("persistent://public/default/search", msg)
                                             .await;
-                                        (Status::Ok, "Success".to_string())
+                                        (Status::Ok, Ok("Success".to_string()))
                                     }
                                     Err(e) => {
                                         log::error!("[UPDATE-POST] Database error: {:?}", e);
-                                        (Status::InternalServerError, String::new())
+                                        (
+                                            Status::InternalServerError,
+                                            Err(Json(ErrorResponse::default())),
+                                        )
                                     }
                                 }
                             } else {
                                 (
                                     Status::Forbidden,
-                                    "Not allowed to update this post".to_string(),
+                                    Err(Json(ErrorResponse::build(
+                                        ErrorCode::BurrowInvalid,
+                                        "Not allowed to update this post",
+                                    ))),
                                 )
                             }
                         }
                         None => {
                             log::info!("[UPDATE-POST] Cannot find user_status by uid.");
-                            (Status::Forbidden, String::new())
+                            (
+                                Status::BadRequest,
+                                Err(Json(ErrorResponse::build(ErrorCode::UserNotExist, ""))),
+                            )
                         }
                     },
                     Err(e) => {
                         log::error!("[UPDATE-POST] Database error: {:?}", e);
-                        (Status::InternalServerError, String::new())
+                        (
+                            Status::InternalServerError,
+                            Err(Json(ErrorResponse::default())),
+                        )
                     }
                 }
             }
         },
         Err(e) => {
             log::error!("[UPDATE-POST] Database error: {:?}", e);
-            (Status::InternalServerError, String::new())
+            (
+                Status::InternalServerError,
+                Err(Json(ErrorResponse::default())),
+            )
         }
     }
 }
@@ -382,13 +424,19 @@ pub async fn delete_post(
     db: Connection<PgDb>,
     post_id: i64,
     mut producer: Connection<PulsarSearchProducerMq>,
-) -> (Status, String) {
+) -> (Status, Result<String, Json<ErrorResponse>>) {
     let pg_con = db.into_inner();
     let now = Utc::now().with_timezone(&FixedOffset::east(8 * 3600));
     // check if the post not exists, add corresponding error if so
     match ContentPost::find_by_id(post_id).one(&pg_con).await {
         Ok(r) => match r {
-            None => (Status::BadRequest, "Post not exists".to_string()),
+            None => (
+                Status::NotFound,
+                Err(Json(ErrorResponse::build(
+                    ErrorCode::PostNotExist,
+                    format!("Cannot find post {}", post_id),
+                ))),
+            ),
             Some(post_info) => {
                 //  check if time is within limit, if so, allow user to delete
                 if post_info
@@ -399,7 +447,10 @@ pub async fn delete_post(
                 {
                     return (
                         Status::Forbidden,
-                        "Can only delete post in 2 minutes".to_string(),
+                        Err(Json(ErrorResponse::build(
+                            ErrorCode::UserForbidden,
+                            "Can only delete post within 2 minutes.",
+                        ))),
                     );
                 }
                 match UserStatus::find_by_id(auth.id).one(&pg_con).await {
@@ -429,35 +480,50 @@ pub async fn delete_post(
                                         let _ = producer
                                             .send("persistent://public/default/search", msg)
                                             .await;
-                                        (Status::Ok, "Success".to_string())
+                                        (Status::Ok, Ok("Success".to_string()))
                                     }
                                     Err(e) => {
                                         log::error!("[DELETE-POST] Database error: {:?}", e);
-                                        (Status::InternalServerError, String::new())
+                                        (
+                                            Status::InternalServerError,
+                                            Err(Json(ErrorResponse::default())),
+                                        )
                                     }
                                 }
                             } else {
                                 (
                                     Status::Forbidden,
-                                    "Not allowed to delete this post".to_string(),
+                                    Err(Json(ErrorResponse::build(
+                                        ErrorCode::BurrowInvalid,
+                                        "Not allowed to delete this post",
+                                    ))),
                                 )
                             }
                         }
                         None => {
                             log::info!("[DELETE-POST] Cannot find user_status by uid.");
-                            (Status::Forbidden, "".to_string())
+                            (
+                                Status::BadRequest,
+                                Err(Json(ErrorResponse::build(ErrorCode::UserNotExist, ""))),
+                            )
                         }
                     },
                     Err(e) => {
                         log::error!("[DELETE-POST] Database error: {:?}", e);
-                        (Status::InternalServerError, String::new())
+                        (
+                            Status::InternalServerError,
+                            Err(Json(ErrorResponse::default())),
+                        )
                     }
                 }
             }
         },
         Err(e) => {
             log::error!("[DELETE-POST] Database error: {:?}", e);
-            (Status::InternalServerError, String::new())
+            (
+                Status::InternalServerError,
+                Err(Json(ErrorResponse::default())),
+            )
         }
     }
 }
@@ -467,7 +533,7 @@ pub async fn read_post_list(
     auth: Auth,
     db: Connection<PgDb>,
     page: Option<usize>,
-) -> (Status, Result<Json<ListPage>, String>) {
+) -> (Status, Result<Json<ListPage>, Json<ErrorResponse>>) {
     let pg_con = db.into_inner();
     let page = page.unwrap_or(0);
     let post_pages = ContentPost::find()
@@ -477,7 +543,10 @@ pub async fn read_post_list(
         Ok(post_info) => post_info,
         Err(e) => {
             log::error!("[READ-POST] Database error: {:?}", e);
-            return (Status::InternalServerError, Err(String::new()));
+            return (
+                Status::InternalServerError,
+                Err(Json(ErrorResponse::default())),
+            );
         }
     };
     // check if the user collect and like the posts
@@ -499,7 +568,10 @@ pub async fn read_post_list(
         Ok(hm) => hm,
         Err(e) => {
             log::error!("[READ-POST-LIST] Database Error: {:?}", e.to_string());
-            return (Status::InternalServerError, Err(String::new()));
+            return (
+                Status::InternalServerError,
+                Err(Json(ErrorResponse::default())),
+            );
         }
     };
     let collection_res = match pgdb::user_collection::Entity::find()
@@ -521,7 +593,10 @@ pub async fn read_post_list(
         Ok(hm) => hm,
         Err(e) => {
             log::error!("[READ-POST-LIST] Database Error: {:?}", e.to_string());
-            return (Status::InternalServerError, Err(String::new()));
+            return (
+                Status::InternalServerError,
+                Err(Json(ErrorResponse::default())),
+            );
         }
     };
     let post_page: Vec<PostDisplay> = post_info
@@ -545,7 +620,10 @@ pub async fn create_reply(
     db: Connection<PgDb>,
     reply_info: Json<ReplyInfo>,
     mut producer: Connection<PulsarSearchProducerMq>,
-) -> (Status, Result<Json<ReplyCreateResponse>, String>) {
+) -> (
+    Status,
+    Result<Json<ReplyCreateResponse>, Json<ErrorResponse>>,
+) {
     let pg_con = db.into_inner();
     // get content info from request
     let content = reply_info.into_inner();
@@ -553,15 +631,30 @@ pub async fn create_reply(
         Ok(ust) => match ust {
             None => {
                 log::info!("[UPDATE-POST] Cannot find user_status by uid.");
-                (Status::Forbidden, Err("User not exists".to_string()))
+                (
+                    Status::BadRequest,
+                    Err(Json(ErrorResponse::build(ErrorCode::UserNotExist, ""))),
+                )
             }
             Some(user_state_info) => {
                 if user_state_info.user_state != 0 {
-                    (Status::Forbidden, Err("User invalid".to_string()))
+                    (
+                        Status::Forbidden,
+                        Err(Json(ErrorResponse::build(
+                            ErrorCode::UserForbidden,
+                            "User not in a valid state",
+                        ))),
+                    )
                 } else if is_valid_burrow(&user_state_info.valid_burrow, &content.burrow_id) {
                     match ContentPost::find_by_id(content.post_id).one(&pg_con).await {
                         Ok(r) => match r {
-                            None => (Status::Forbidden, Err("Post not exists".to_string())),
+                            None => (
+                                Status::NotFound,
+                                Err(Json(ErrorResponse::build(
+                                    ErrorCode::PostNotExist,
+                                    format!("Cannot find post {}", content.post_id),
+                                ))),
+                            ),
                             Some(post_info) => {
                                 let post_id = post_info.post_id;
                                 match pg_con
@@ -629,24 +722,36 @@ pub async fn create_reply(
                                     ),
                                     Err(e) => {
                                         log::error!("[CREATE-POST] Database error: {:?}", e);
-                                        (Status::InternalServerError, Err(String::new()))
+                                        (
+                                            Status::InternalServerError,
+                                            Err(Json(ErrorResponse::default())),
+                                        )
                                     }
                                 }
                             }
                         },
                         Err(e) => {
                             log::error!("[CREATE-POST] Database error: {:?}", e);
-                            (Status::InternalServerError, Err(String::new()))
+                            (
+                                Status::InternalServerError,
+                                Err(Json(ErrorResponse::default())),
+                            )
                         }
                     }
                 } else {
-                    (Status::Forbidden, Err("Burrow invalid".to_string()))
+                    (
+                        Status::Forbidden,
+                        Err(Json(ErrorResponse::build(ErrorCode::BurrowInvalid, ""))),
+                    )
                 }
             }
         },
         Err(e) => {
             log::error!("[CREATE-POST] Database error: {:?}", e);
-            (Status::InternalServerError, Err(String::new()))
+            (
+                Status::InternalServerError,
+                Err(Json(ErrorResponse::default())),
+            )
         }
     }
 }
@@ -657,7 +762,7 @@ pub async fn update_reply(
     db: Connection<PgDb>,
     reply_update_info: Json<ReplyUpdateInfo>,
     mut producer: Connection<PulsarSearchProducerMq>,
-) -> (Status, String) {
+) -> (Status, Result<String, Json<ErrorResponse>>) {
     let pg_con = db.into_inner();
     // get content info from request
     let content = reply_update_info.into_inner();
@@ -665,11 +770,20 @@ pub async fn update_reply(
         Ok(ust) => match ust {
             None => {
                 log::info!("[UPDATE-POST] Cannot find user_status by uid.");
-                (Status::Forbidden, String::new())
+                (
+                    Status::BadRequest,
+                    Err(Json(ErrorResponse::build(ErrorCode::UserNotExist, ""))),
+                )
             }
             Some(user_state_info) => {
                 if user_state_info.user_state != 0 {
-                    (Status::Forbidden, "User invalid".to_string())
+                    (
+                        Status::Forbidden,
+                        Err(Json(ErrorResponse::build(
+                            ErrorCode::UserForbidden,
+                            "User not in a valid state",
+                        ))),
+                    )
                 } else {
                     // if is_valid_burrow(&user_state_info.valid_burrow, &content.burrow_id)
                     match ContentReply::find_by_id((content.post_id, content.reply_id))
@@ -677,7 +791,16 @@ pub async fn update_reply(
                         .await
                     {
                         Ok(r) => match r {
-                            None => (Status::Forbidden, "Reply not exists".to_string()),
+                            None => (
+                                Status::NotFound,
+                                Err(Json(ErrorResponse::build(
+                                    ErrorCode::PostNotExist,
+                                    format!(
+                                        "Cannot find reply {}-{}",
+                                        content.post_id, content.reply_id
+                                    ),
+                                ))),
+                            ),
                             Some(reply_info) => {
                                 if is_valid_burrow(
                                     &user_state_info.valid_burrow,
@@ -728,20 +851,29 @@ pub async fn update_reply(
                                     })
                                     .await
                                     {
-                                        Ok(_) => (Status::Ok, "Success".to_string()),
+                                        Ok(_) => (Status::Ok, Ok("Success".to_string())),
                                         Err(e) => {
                                             log::error!("[UPDATE-REPLY] Database error: {:?}", e);
-                                            (Status::InternalServerError, String::new())
+                                            (Status::InternalServerError, Err(Json(ErrorResponse::default())))
                                         }
                                     }
                                 } else {
-                                    (Status::Forbidden, "Burrow invalid".to_string())
+                                    (
+                                        Status::Forbidden,
+                                        Err(Json(ErrorResponse::build(
+                                            ErrorCode::BurrowInvalid,
+                                            "",
+                                        ))),
+                                    )
                                 }
                             }
                         },
                         Err(e) => {
                             log::error!("[UPDATE-REPLY] Database error: {:?}", e);
-                            (Status::InternalServerError, String::new())
+                            (
+                                Status::InternalServerError,
+                                Err(Json(ErrorResponse::default())),
+                            )
                         }
                     }
                 }
@@ -749,7 +881,10 @@ pub async fn update_reply(
         },
         Err(e) => {
             log::error!("[UPDATE-REPLY] Database error: {:?}", e);
-            (Status::InternalServerError, String::new())
+            (
+                Status::InternalServerError,
+                Err(Json(ErrorResponse::default())),
+            )
         }
     }
 }
