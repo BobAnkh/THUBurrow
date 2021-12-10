@@ -10,6 +10,77 @@ use rocket::State;
 use crate::models::error::*;
 use crate::pool::RedisDb;
 
+/// Usage of Auth
+///
+/// # Example
+///
+/// ```ignore
+/// use rocket::Request;
+/// use rocket::{Build, Rocket};
+/// use crate::models::error::*;
+/// use crate::utils::auth::{self, Auth, ValidToken};
+/// pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
+///     rocket
+///         .mount(
+///             "/sample",
+///             routes![
+///                 auth_name,
+///                 auth_new,
+///             ],
+///         )
+///         .register(
+///             "/sample/auth/new",
+///             catchers![auth_new_bad_request, auth_new_unauthorized],
+///         )
+/// }
+///
+/// #[get("/auth/<name>")]
+/// async fn auth_name(auth: Result<Auth, ErrorResponse>, name: &str) -> String {
+///     if let Err(e) = auth {
+///         return format!("{:?}", e);
+///     }
+///     format!("Hello, {}!", name)
+/// }
+///
+/// #[get("/auth/new/<name>")]
+/// async fn auth_new(auth: Auth, name: &str) -> String {
+///     format!("Hello, {}, your id is {}!", name, auth.id)
+/// }
+///
+/// #[catch(400)]
+/// async fn auth_new_bad_request(request: &Request<'_>) -> String {
+///     let user_result = request
+///         .local_cache_async(async { auth::auth_token(request).await })
+///         .await;
+///     match user_result {
+///         Some(e) => match e {
+///             ValidToken::Invalid => "Invalid token".to_string(),
+///             ValidToken::Missing => "Missing token".to_string(),
+///             ValidToken::DatabaseErr => "DatabaseErr token".to_string(),
+///             ValidToken::Valid(id) => format!("User Id found: {}", id),
+///             ValidToken::Refresh(id) => format!("User Id found: {}", id),
+///         },
+///         None => "Valid token".to_string(),
+///     }
+/// }
+///
+/// #[catch(401)]
+/// async fn auth_new_unauthorized(request: &Request<'_>) -> String {
+///     let user_result = request
+///         .local_cache_async(async { auth::auth_token(request).await })
+///         .await;
+///     match user_result {
+///         Some(e) => match e {
+///             ValidToken::Invalid => "Invalid token".to_string(),
+///             ValidToken::Missing => "Missing token".to_string(),
+///             ValidToken::DatabaseErr => "DatabaseErr token".to_string(),
+///             ValidToken::Valid(id) => format!("User Id found: {}", id),
+///             ValidToken::Refresh(id) => format!("User Id found: {}", id),
+///         },
+///         None => "Valid token".to_string(),
+///     }
+/// }
+/// ```
 pub struct Auth {
     pub id: i64,
 }
