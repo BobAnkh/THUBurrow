@@ -6,11 +6,17 @@ pub enum ErrorCode {
     AuthTokenMissing,
     AuthTokenInvalid,
     BurrowNotExist,
+    BurrowNumLimit,
+    BurrowInvalid,
     PostNotExist,
     ReplyNotExist,
-    SearchEmptyTag,
-    InvalidEmail,
-    DuplicateEmail,
+    EmailInvalid,
+    EmailDuplicate,
+    RateLimit,
+    UserForbidden,
+    UserNotExist,
+    EmptyField,
+    WrongField,
     None,
 }
 
@@ -29,7 +35,7 @@ impl ErrorResponse {
     pub fn new() -> Self {
         ErrorResponse {
             error: ErrorMessage {
-                code: ErrorCode::None,
+                code: ErrorCode::DatabaseErr,
                 message: String::from(""),
             },
         }

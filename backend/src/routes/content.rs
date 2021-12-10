@@ -53,14 +53,14 @@ pub async fn get_total_post_count(
             Some(r) => (Status::Ok, Ok(Json(r.into()))),
             None => (
                 Status::InternalServerError,
-                Err(Json(ErrorResponse::build(ErrorCode::DatabaseErr, ""))),
+                Err(Json(ErrorResponse::default())),
             ),
         },
         Err(e) => {
             log::error!("[TOTAL-POST] Database error: {:?}", e);
             (
                 Status::InternalServerError,
-                Err(Json(ErrorResponse::build(ErrorCode::DatabaseErr, ""))),
+                Err(Json(ErrorResponse::default())),
             )
         }
     }
@@ -72,16 +72,31 @@ pub async fn create_post(
     db: Connection<PgDb>,
     post_info: Json<PostInfo>,
     mut producer: Connection<PulsarSearchProducerMq>,
-) -> (Status, Result<Json<PostCreateResponse>, String>) {
+) -> (
+    Status,
+    Result<Json<PostCreateResponse>, Json<ErrorResponse>>,
+) {
     let pg_con = db.into_inner();
     // get content info from request
     let content = post_info.into_inner();
     // check if title, author and section is empty
     if content.title.is_empty() {
-        return (Status::BadRequest, Err("Empty Title".to_string()));
+        return (
+            Status::BadRequest,
+            Err(Json(ErrorResponse::build(
+                ErrorCode::EmptyField,
+                "Empty post title.",
+            ))),
+        );
     }
     if content.section.is_empty() || content.section.len() > MAX_SECTION {
-        return (Status::BadRequest, Err("Wrong Section".to_string()));
+        return (
+            Status::BadRequest,
+            Err(Json(ErrorResponse::build(
+                ErrorCode::WrongField,
+                "Wrong Post Section.",
+            ))),
+        );
     }
     // TODO: check if section is valid
     // check if user has been banned
@@ -89,11 +104,20 @@ pub async fn create_post(
         Ok(ust) => match ust {
             None => {
                 log::info!("[UPDATE-POST] Cannot find user_status by uid.");
-                (Status::Forbidden, Err(String::new()))
+                (
+                    Status::Forbidden,
+                    Err(Json(ErrorResponse::build(ErrorCode::UserNotExist, ""))),
+                )
             }
             Some(user_state_info) => {
                 if user_state_info.user_state != 0 {
-                    (Status::Forbidden, Err("User invalid".to_string()))
+                    (
+                        Status::Forbidden,
+                        Err(Json(ErrorResponse::build(
+                            ErrorCode::UserForbidden,
+                            "User not in a valid state",
+                        ))),
+                    )
                 } else if is_valid_burrow(&user_state_info.valid_burrow, &content.burrow_id) {
                     match pg_con
                         .transaction::<_, i64, DbErr>(|txn| {
@@ -175,17 +199,26 @@ pub async fn create_post(
                         Ok(post_id) => (Status::Ok, Ok(Json(PostCreateResponse { post_id }))),
                         Err(e) => {
                             log::error!("[CREATE-POST] Database error: {:?}", e);
-                            (Status::InternalServerError, Err(String::new()))
+                            (
+                                Status::InternalServerError,
+                                Err(Json(ErrorResponse::default())),
+                            )
                         }
                     }
                 } else {
-                    (Status::Forbidden, Err("Burrow invalid".to_string()))
+                    (
+                        Status::Forbidden,
+                        Err(Json(ErrorResponse::build(ErrorCode::BurrowInvalid, ""))),
+                    )
                 }
             }
         },
         Err(e) => {
             log::error!("[CREATE-POST] Database error: {:?}", e);
-            (Status::InternalServerError, Err(String::new()))
+            (
+                Status::InternalServerError,
+                Err(Json(ErrorResponse::default())),
+            )
         }
     }
 }

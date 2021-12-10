@@ -95,7 +95,7 @@ pub async fn user_email_activate(
         return (
             Status::BadRequest,
             Err(Json(ErrorResponse::build(
-                ErrorCode::InvalidEmail,
+                ErrorCode::EmailInvalid,
                 "Invalid Email address",
             ))),
         );
@@ -111,7 +111,7 @@ pub async fn user_email_activate(
                 (
                     Status::BadRequest,
                     Err(Json(ErrorResponse::build(
-                        ErrorCode::DuplicateEmail,
+                        ErrorCode::EmailDuplicate,
                         "This Email address is already in use",
                     ))),
                 )
@@ -126,7 +126,7 @@ pub async fn user_email_activate(
                         log::error!("[SEND-EMAIL] Database error: {:?}", e);
                         (
                             Status::InternalServerError,
-                            Err(Json(ErrorResponse::build(ErrorCode::DatabaseErr, ""))),
+                            Err(Json(ErrorResponse::default())),
                         )
                     }
                 }
@@ -136,7 +136,7 @@ pub async fn user_email_activate(
             log::error!("[SIGN-UP] Database Error: {:?}", e);
             (
                 Status::InternalServerError,
-                Err(Json(ErrorResponse::build(ErrorCode::DatabaseErr, ""))),
+                Err(Json(ErrorResponse::default())),
             )
         }
     }
@@ -445,7 +445,7 @@ pub async fn user_log_in(
     }
 }
 
-#[get("/burrow")]
+#[get("/burrows")]
 pub async fn get_burrow(db: Connection<PgDb>, auth: Auth) -> (Status, Json<Vec<BurrowMetadata>>) {
     // Ok(burrows) => {
     //     // let mut posts_num = Vec::new();
@@ -608,7 +608,7 @@ pub async fn get_follow(
     }
 }
 
-#[get("/valid-burrow")]
+#[get("/valid-burrows")]
 pub async fn get_user_valid_burrow(auth: Auth, db: Connection<PgDb>) -> (Status, Json<Vec<i64>>) {
     let pg_con = db.into_inner();
     match pgdb::user_status::Entity::find_by_id(auth.id)
