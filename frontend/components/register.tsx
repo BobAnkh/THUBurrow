@@ -103,11 +103,11 @@ export default function Register({ switchform }: Iprops) {
       username: userName,
       password: passWord,
       email: email,
-      verification_code: 1234,
+      verification_code: '111111',
     };
     try {
       const res = await axios.post(
-        `${process.env.NEXT_PUBLIC_BASEURL}/6381347`,
+        `${process.env.NEXT_PUBLIC_BASEURL}/users/sign-up`,
         data
       );
       message.success('注册成功');
