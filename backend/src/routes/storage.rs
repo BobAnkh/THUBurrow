@@ -1,7 +1,7 @@
 use chrono::{FixedOffset, Utc};
 use crypto::digest::Digest;
 use crypto::md5::Md5;
-use rocket::http::Status;
+use rocket::http::{Status, ContentType};
 use rocket::serde::json::Json;
 use rocket::{Build, Rocket};
 use rocket_db_pools::Connection;
@@ -93,7 +93,7 @@ async fn download_image(
     db: Connection<PgDb>,
     bucket: Connection<MinioImageStorage>,
     filename: &str,
-) -> (Status, Result<Vec<u8>, Json<ErrorResponse>>) {
+) -> (Status, (ContentType, Result<Vec<u8>, Json<ErrorResponse>>)) {
     info!("[IMAGE] User {} id downloading image.", auth.id);
     // get a file
     let (data, code) = bucket.get_object(filename).await.unwrap();
@@ -107,11 +107,11 @@ async fn download_image(
                 ..Default::default()
             };
             let _ = record.update(&pg_con).await;
-            (Status::Ok, Ok(data))
+            (Status::Ok, (ContentType::JPEG, Ok(data)))
         }
         _ => (
             Status::NotFound,
-            Err(Json(ErrorResponse::build(ErrorCode::FileNotExist, ""))),
+            (ContentType::JSON, Err(Json(ErrorResponse::build(ErrorCode::FileNotExist, "")))),
         ),
     }
 }
