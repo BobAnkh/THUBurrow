@@ -22,7 +22,7 @@ RUN cargo build --release
 FROM debian:buster-slim
 
 RUN apt update -qq && \
-    apt install --no-install-recommends libssl-dev -y && \
+    apt install --no-install-recommends libssl-dev curl -y && \
     rm -rf /var/lib/apt/lists/*
 COPY --from=builder /app/target/release/backend /usr/local/bin/backend
 COPY --from=builder /app/target/release/task_executor /usr/local/bin/task_executor

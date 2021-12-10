@@ -95,7 +95,7 @@ pub async fn user_email_activate(
         return (
             Status::BadRequest,
             Err(Json(ErrorResponse::build(
-                ErrorCode::InvalidEmail,
+                ErrorCode::EmailInvalid,
                 "Invalid Email address",
             ))),
         );
@@ -111,7 +111,7 @@ pub async fn user_email_activate(
                 (
                     Status::BadRequest,
                     Err(Json(ErrorResponse::build(
-                        ErrorCode::DuplicateEmail,
+                        ErrorCode::EmailDuplicate,
                         "This Email address is already in use",
                     ))),
                 )
@@ -126,7 +126,7 @@ pub async fn user_email_activate(
                         log::error!("[SEND-EMAIL] Database error: {:?}", e);
                         (
                             Status::InternalServerError,
-                            Err(Json(ErrorResponse::build(ErrorCode::DatabaseErr, ""))),
+                            Err(Json(ErrorResponse::default())),
                         )
                     }
                 }
@@ -136,7 +136,7 @@ pub async fn user_email_activate(
             log::error!("[SIGN-UP] Database Error: {:?}", e);
             (
                 Status::InternalServerError,
-                Err(Json(ErrorResponse::build(ErrorCode::DatabaseErr, ""))),
+                Err(Json(ErrorResponse::default())),
             )
         }
     }

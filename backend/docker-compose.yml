@@ -26,6 +26,11 @@ services:
       ROCKET_SECRET_KEY: ${ROCKET_SECRET_KEY}
       ROCKET_ADDRESS: "0.0.0.0"
       VIRTUAL_HOST: ${BACKEND_HOST}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
 
   pgdb:
     image: postgres

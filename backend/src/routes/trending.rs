@@ -1,10 +1,12 @@
 use rocket::http::Status;
+use rocket::serde::json::Json;
 use rocket::{Build, Rocket};
 use rocket_db_pools::Connection;
 use sea_orm::sea_query::Expr;
 use sea_orm::{entity::*, DatabaseConnection, PaginatorTrait, QueryFilter, QueryOrder};
 
 use crate::models::content::*;
+use crate::models::error::*;
 use crate::pgdb::{content_post, prelude::*};
 use crate::pool::{PgDb, RedisDb};
 use crate::utils::auth::Auth;
@@ -18,7 +20,7 @@ pub async fn read_trending(
     _auth: Auth,
     db: Connection<PgDb>,
     kvdb: Connection<RedisDb>,
-) -> (Status, String) {
+) -> (Status, Result<String, Json<ErrorResponse>>) {
     let mut kv_conn = kvdb.into_inner();
     let redis_result: Result<Option<String>, redis::RedisError> = redis::cmd("GET")
         .arg("trending")
@@ -30,18 +32,27 @@ pub async fn read_trending(
                 log::info!("Cannot find trending, generate new one");
                 let pg_con = db.into_inner();
                 match select_trending(&pg_con, kv_conn.as_mut()).await {
-                    Ok(trending) => (Status::Ok, trending),
-                    Err(e) => (Status::InternalServerError, e),
+                    Ok(trending) => (Status::Ok, Ok(trending)),
+                    Err(e) => {
+                        log::error!("[TRENDING] Database Error: {}", e);
+                        (
+                            Status::InternalServerError,
+                            Err(Json(ErrorResponse::default())),
+                        )
+                    }
                 }
             }
             Some(trending) => {
                 log::info!("Find trending");
-                (Status::Ok, trending)
+                (Status::Ok, Ok(trending))
             }
         },
         Err(e) => {
-            log::error!("[TRENDING] Err: {}", e);
-            (Status::InternalServerError, format!("{}", e))
+            log::error!("[TRENDING] Database Error: {:?}", e);
+            (
+                Status::InternalServerError,
+                Err(Json(ErrorResponse::default())),
+            )
         }
     }
 }
