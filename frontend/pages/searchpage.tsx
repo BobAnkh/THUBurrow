@@ -23,7 +23,7 @@ import {
   Params,
   PostListItemDataType,
   BurrowListItemDataType,
-} from '../req/search/data.d';
+} from '../models/search/data.d';
 import PBListContent from '../components/pbListContent/post-or-burrow-list';
 import styles from '../styles/search.module.css';
 import GlobalHeader from '../components/header/header';
