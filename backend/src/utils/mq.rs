@@ -785,7 +785,8 @@ pub async fn pulsar_email() -> Result<(), pulsar::Error> {
                         verification_code = "233333";
                         if op_times <= SEND_EMAIL_LIMIT {
                             op_times = op_times + 1;
-                            email_send.post(data.email.clone(), verification_code);
+                            email_send::post(data.email.clone(), verification_code.parse::<i32>().unwrap()).await;
+                            // **TODO match this later**
                             log::info!("[PULSAR-EMAIL] Email send success");
                         } else {
                             log::info!("[PULSAR-EMAIL] User sent too many emails, refuse to send");
