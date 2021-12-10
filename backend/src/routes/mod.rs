@@ -1,7 +1,6 @@
 pub mod burrow;
 pub mod content;
 pub mod health;
-pub mod sample;
 pub mod search;
 pub mod storage;
 pub mod trending;

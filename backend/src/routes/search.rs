@@ -62,7 +62,7 @@ async fn search(
                         }
                     }
                     None => (
-                        Status::BadRequest,
+                        Status::NotFound,
                         Err(Json(ErrorResponse::build(
                             ErrorCode::BurrowNotExist,
                             format!("Cannot find burrow {}", burrow_id),
@@ -82,7 +82,7 @@ async fn search(
             match ContentPost::find_by_id(post_id).one(&pg_con).await {
                 Ok(r) => match r {
                     None => (
-                        Status::BadRequest,
+                        Status::NotFound,
                         Err(Json(ErrorResponse::build(
                             ErrorCode::PostNotExist,
                             format!("Cannot find post {}", post_id),
