@@ -134,11 +134,12 @@ pub struct SearchReplyHit {
 #[derive(Serialize, Deserialize)]
 pub struct SearchParam {
     pub collection: String,
-    pub query_by: Option<String>,
-    pub filter_by: Option<String>,
-    pub sort_by: Option<String>,
-    pub group_by: Option<String>,
-    pub highlight_fields: Option<String>,
+    pub q: String,
+    pub query_by: String,
+    pub filter_by: String,
+    pub sort_by: String,
+    pub group_by: String,
+    pub highlight_fields: String,
 }
 
 #[derive(Serialize, Deserialize)]

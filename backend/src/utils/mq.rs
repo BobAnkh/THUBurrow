@@ -162,7 +162,7 @@ async fn create_typesense_collections() -> Result<(), reqwest::Error> {
     let collection_replies = json!({
         "name": "replies",
         "fields": [
-            {"name": "post_id", "type": "int64", "index": false , "optional": true},
+            {"name": "post_id", "type": "int64", "index": false , "optional": true, "facet":true},
             {"name": "reply_id", "type": "int32", "index": false , "optional": true},
             {"name": "burrow_id", "type": "int64", "index": false , "optional": true},
             {"name": "content", "type": "string", "locale": "zh"},
