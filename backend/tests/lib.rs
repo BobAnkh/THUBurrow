@@ -755,5 +755,4 @@ fn test_content() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Forbidden);
-
 }

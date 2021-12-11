@@ -132,8 +132,11 @@ async fn get_images(
             let results: Vec<Vec<(String, u64)>> = list
                 .iter()
                 .map(|item| {
-                    let r: Vec<(String, u64)> =
-                        item.contents.iter().map(|c| (c.key.to_owned(), c.size)).collect();
+                    let r: Vec<(String, u64)> = item
+                        .contents
+                        .iter()
+                        .map(|c| (c.key.to_owned(), c.size))
+                        .collect();
                     r
                 })
                 .collect();
