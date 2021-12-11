@@ -320,6 +320,25 @@ pub async fn update_post(
 ) -> (Status, Result<String, Json<ErrorResponse>>) {
     let pg_con = db.into_inner();
     let content = post_info.into_inner();
+    // check if title, author and section is empty
+    if content.title.is_empty() {
+        return (
+            Status::BadRequest,
+            Err(Json(ErrorResponse::build(
+                ErrorCode::EmptyField,
+                "Empty post title.",
+            ))),
+        );
+    }
+    if content.section.is_empty() || content.section.len() > MAX_SECTION {
+        return (
+            Status::BadRequest,
+            Err(Json(ErrorResponse::build(
+                ErrorCode::SectionInvalid,
+                "Wrong Post Section.",
+            ))),
+        );
+    }
     let now = Utc::now().with_timezone(&FixedOffset::east(8 * 3600));
     // check if the post not exists, add corresponding error if so
     match ContentPost::find_by_id(post_id).one(&pg_con).await {
@@ -457,7 +476,15 @@ pub async fn delete_post(
                     Ok(opt_state) => match opt_state {
                         Some(state) => {
                             // check if this user create the post
-                            if is_valid_burrow(&state.valid_burrow, &post_info.burrow_id) {
+                            if state.user_state != 0 {
+                                (
+                                    Status::Forbidden,
+                                    Err(Json(ErrorResponse::build(
+                                        ErrorCode::UserForbidden,
+                                        "User not in a valid state",
+                                    ))),
+                                )
+                            } else if is_valid_burrow(&state.valid_burrow, &post_info.burrow_id) {
                                 // delete data in content_subject
                                 let delete_post: pgdb::content_post::ActiveModel = post_info.into();
                                 match pg_con

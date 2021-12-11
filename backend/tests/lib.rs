@@ -166,7 +166,7 @@ fn test_burrow() {
             "title": "Burrow test"}))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
-    assert_eq!(response.status(), Status::Forbidden);
+    assert_eq!(response.status(), Status::TooManyRequests);
     println!("{}", response.into_string().unwrap());
     // let response = client
     //     .post("/burrows")
@@ -268,12 +268,12 @@ fn test_burrow() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     println!("{}", response.into_string().unwrap());
-    // show burrow: perform a wrong action (cannot find the burrow)
+    // show burrow: perform a wrong action (burrow not exist)
     let response = client
         .get(format!("/burrows/{}", burrow_id + 10000))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
-    assert_eq!(response.status(), Status::BadRequest);
+    assert_eq!(response.status(), Status::NotFound);
     println!("{}", response.into_string().unwrap());
 
     // update burrow
@@ -573,6 +573,14 @@ fn test_content() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
 
+    // get total post count
+    let response = client
+        .get("/content/posts/total")
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    println!("{}", response.into_string().unwrap());
+
     // create reply for post no.1, using default burrow
     let response = client
         .post("/content/replies")
@@ -608,7 +616,7 @@ fn test_content() {
             "content": "This is a test reply no.1 for post no.10000"}))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
-    assert_eq!(response.status(), Status::Forbidden);
+    assert_eq!(response.status(), Status::NotFound);
     println!("{}", response.into_string().unwrap());
     // create reply for post no.3, using default burrow
     let response = client
@@ -668,7 +676,7 @@ fn test_content() {
         .get(format!("/content/posts/{}", post_id + 1))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
-    assert_eq!(response.status(), Status::BadRequest);
+    assert_eq!(response.status(), Status::NotFound);
     println!("{}", response.into_string().unwrap());
     // get post no.3
     let response = client
@@ -705,7 +713,7 @@ fn test_content() {
             "tag": ["TestTag"]}))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
-    assert_eq!(response.status(), Status::BadRequest);
+    assert_eq!(response.status(), Status::NotFound);
     // update post no.4: perform a wrong action (invalid burrow)
     let response = client
         .patch(format!("/content/posts/{}", post_id + 3))
@@ -736,7 +744,7 @@ fn test_content() {
             "content": "This is a updated reply no.1 for post no.1"}))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
-    assert_eq!(response.status(), Status::Forbidden);
+    assert_eq!(response.status(), Status::NotFound);
     // update reply 1-2: perform a wrong action (invalid burrow)
     let response = client
         .patch("/content/replies")
