@@ -9,12 +9,11 @@ use std::collections::HashMap;
 use std::env;
 use tokio::time::Duration;
 
+use super::email::check_email_exist;
+use super::email_send;
 use crate::models::{pulsar::*, search::*, user::SEND_EMAIL_LIMIT};
 use crate::pgdb::{content_post, prelude::*, user_collection, user_follow, user_like};
 use crate::routes::trending::select_trending;
-use super::email_send;
-use super::email::check_email_exist;
-
 
 lazy_static! {
     static ref TYPESENSE_API_KEY: String = {
@@ -780,23 +779,22 @@ pub async fn pulsar_email() -> Result<(), pulsar::Error> {
                     if res.is_some() {
                         let s = res.unwrap();
                         let values: Vec<&str> = s.split(":").collect();
-                        op_times = values[1].parse::<usize>().unwrap();
+                        println!("{:?}", values);
+                        op_times = values[0].parse::<usize>().unwrap();
                         // **TODO: Generate verification code**
                         verification_code = "233333";
-                        if op_times <= SEND_EMAIL_LIMIT {
-                            op_times = op_times + 1;
-                            email_send::post(data.email.clone(), verification_code.parse::<i32>().unwrap()).await;
-                            // **TODO match this later**
-                            log::info!("[PULSAR-EMAIL] Email send success");
-                        } else {
+                        if op_times > SEND_EMAIL_LIMIT {
                             log::info!("[PULSAR-EMAIL] User sent too many emails, refuse to send");
+                            continue;
+                        } else {
+                            op_times = op_times + 1;
                         }
                     }
-                },
+                }
                 Err(e) => {
                     log::error!("[PULSAR-EMAIL] Redis get failed {:?}", e);
                     continue;
-                },
+                }
             };
             let set_redis_result: Result<String, redis::RedisError> = redis::cmd("SETEX")
                 .arg(&data.email)
@@ -805,7 +803,23 @@ pub async fn pulsar_email() -> Result<(), pulsar::Error> {
                 .query_async(&mut kv_conn)
                 .await;
             match set_redis_result {
-                Ok(_) => log::info!("[PULSAR-EMAIL] Redis set success"),
+                Ok(_) => {
+                    log::info!("[PULSAR-EMAIL] Redis set success");
+                    match email_send::post(
+                        data.email.clone(),
+                        verification_code.parse::<i32>().unwrap(),
+                    )
+                    .await {
+                        Ok(res) => {
+                            println!("{}", res);
+                        },
+                        Err(e) => {
+                            println!("{}", e);
+                        },
+                    };
+
+                    log::info!("[PULSAR-EMAIL] Email send success");
+                }
                 Err(e) => log::error!("[PULSAR-EMAIL] Redis set failed {:?}", e),
             }
         } else {

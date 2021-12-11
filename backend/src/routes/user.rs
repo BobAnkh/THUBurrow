@@ -27,6 +27,7 @@ use crate::pool::{PgDb, PulsarSearchProducerMq, RedisDb};
 use crate::utils::auth::{Auth, CookieOptions};
 use crate::utils::burrow_valid::*;
 use crate::utils::email;
+// use crate::utils::email_send;
 
 pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
     rocket.mount(
@@ -39,7 +40,8 @@ pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
             get_burrow,
             user_relation,
             get_user_valid_burrow,
-            // email_verification,
+            user_email_activate,
+            // clear_redis,
         ],
     )
 }
@@ -77,6 +79,17 @@ pub async fn user_relation(
     (Status::Ok, Ok("Success".to_string()))
 }
 
+// #[get("/clear")]
+// pub async fn clear_redis(kvdb: Connection<RedisDb>) {
+//     let email = "gsr18@mails.tsinghua.edu.cn".to_string();
+//     let mut kvdb_con = kvdb.into_inner();
+//     let _: Result<String, redis::RedisError> = redis::cmd("SET")
+//         .arg(&email)
+//         .arg("0".to_string() + ":" + "666666")
+//         .query_async(kvdb_con.as_mut())
+//         .await;
+// }
+
 #[post("/email", data = "<email_info>", format = "json")]
 pub async fn user_email_activate(
     db: Connection<PgDb>,
@@ -112,7 +125,6 @@ pub async fn user_email_activate(
                     ))),
                 )
             } else {
-                let msg = PulsarSendEmail { email: email.clone() };
                 let get_redis_result: Result<Option<String>, redis::RedisError> = redis::cmd("GET")
                     .arg(&email)
                     .query_async(kvdb_con.as_mut())
@@ -122,26 +134,36 @@ pub async fn user_email_activate(
                         if res.is_some() {
                             let s = res.unwrap();
                             let values: Vec<&str> = s.split(":").collect();
-                            let op_times = values[1].parse::<usize>().unwrap();
+                            let op_times = values[0].parse::<usize>().unwrap();
+                            println!("op_times: {}", op_times);
                             if op_times > SEND_EMAIL_LIMIT {
                                 return (
                                     Status::BadRequest,
                                     Err(Json(ErrorResponse::build(
                                         ErrorCode::RateLimit,
-                                        "Request Send-Email too mant times",
-                                    )))
+                                        "Request Send-Email too many times",
+                                    ))),
                                 );
                             }
                         }
-                    },
+                    }
                     Err(e) => {
-                        log::error!("[SIGN-UP] Database Error: {:?}", e);
+                        log::error!("[SEND-EMAIL] Database Error: {:?}", e);
                         return (
                             Status::InternalServerError,
                             Err(Json(ErrorResponse::default())),
                         );
-                    },
+                    }
                 };
+                // match email_send::post(email.clone(), 666666).await {
+                //     Ok(res) => {
+                //         println!("{}", res);
+                //     },
+                //     Err(e) => {
+                //         println!("{}", e);
+                //     },
+                // };
+                let msg = PulsarSendEmail { email };
                 match producer
                     .send("persistent://public/default/email", msg)
                     .await
@@ -170,9 +192,11 @@ pub async fn user_email_activate(
 #[post("/sign-up", data = "<user_info>", format = "json")]
 pub async fn user_sign_up(
     db: Connection<PgDb>,
+    kvdb: Connection<RedisDb>,
     user_info: Json<UserInfo<'_>>,
 ) -> (Status, Result<Json<UserResponse>, Json<ErrorResponse>>) {
     let pg_con = db.into_inner();
+    let mut kvdb_con = kvdb.into_inner();
     // get user info from request
     let user = user_info.into_inner();
     // check if email address is valid, add corresponding error if so
@@ -244,15 +268,44 @@ pub async fn user_sign_up(
             }
         }
         // check if verification code is correct, return corresponding error if so
-        if user.verification_code.eq("123456") {
-            return (
-                Status::BadRequest,
-                Err(Json(ErrorResponse::build(
-                    ErrorCode::CredentialInvalid,
-                    "Invalid verification code.",
-                )))
-            )
-        }
+        let get_redis_result: Result<Option<String>, redis::RedisError> = redis::cmd("GET")
+            .arg(&user.email)
+            .query_async(kvdb_con.as_mut())
+            .await;
+        match get_redis_result {
+            Ok(res) => match res {
+                Some(s) => {
+                    let values: Vec<&str> = s.split(":").collect();
+                    let code = values[1];
+                    if !user.verification_code.eq(code) {
+                        return (
+                            Status::BadRequest,
+                            Err(Json(ErrorResponse::build(
+                                ErrorCode::CredentialInvalid,
+                                "Invalid verification code.",
+                            ))),
+                        );
+                    }
+                }
+                None => {
+                    return (
+                        Status::BadRequest,
+                        Err(Json(ErrorResponse::build(
+                            ErrorCode::CredentialInvalid,
+                            "Invalid verification code.",
+                        ))),
+                    )
+                }
+            },
+            Err(e) => {
+                log::error!("[SIGN-UP] Database Error: {:?}", e);
+                return (
+                    Status::InternalServerError,
+                    Err(Json(ErrorResponse::default())),
+                );
+            }
+        };
+
         // generate salt
         let salt = gen_salt().await;
         // encrypt password
@@ -731,6 +784,6 @@ pub async fn get_user_valid_burrow(
                 Status::InternalServerError,
                 Err(Json(ErrorResponse::default())),
             )
-        },
+        }
     }
 }
