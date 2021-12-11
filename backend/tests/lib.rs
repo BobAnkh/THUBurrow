@@ -24,6 +24,11 @@ fn test_signup() {
         .map(char::from)
         .take(16)
         .collect();
+    let new_name: String = std::iter::repeat(())
+        .map(|()| thread_rng().sample(Alphanumeric))
+        .map(char::from)
+        .take(16)
+        .collect();
     // sign up a user
     let response = client
         .post("/users/sign-up")
@@ -46,13 +51,24 @@ fn test_signup() {
         .dispatch();
     assert_eq!(response.status(), Status::BadRequest);
     println!("{}", response.into_string().unwrap());
-    // sign up a user: perform a wrong action (duplicated name and email)
+    // sign up a user: perform a wrong action (duplicated email)
+    let response = client
+        .post("/users/sign-up")
+        .json(&json!({
+            "username": new_name,
+            "password": "testpassword",
+            "email": format!("{}@mails.tsinghua.edu.cn", name)}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::BadRequest);
+    println!("{}", response.into_string().unwrap());
+    // sign up a user: perform a wrong action (duplicated name)
     let response = client
         .post("/users/sign-up")
         .json(&json!({
             "username": name,
             "password": "testpassword",
-            "email": format!("{}@mails.tsinghua.edu.cn", name)}))
+            "email": format!("{}@mails.tsinghua.edu.cn", new_name)}))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::BadRequest);
@@ -119,6 +135,15 @@ fn test_login_signup() {
         .dispatch();
     assert_eq!(response.status(), Status::BadRequest);
     println!("{}", response.into_string().unwrap());
+    // user log in: find old token
+    let response = client
+        .post("/users/login")
+        .json(&json!({
+            "username": name,
+            "password": "testpassword"}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
 }
 
 #[test]
@@ -158,7 +183,7 @@ fn test_burrow() {
     assert_eq!(response.status(), Status::Ok);
     // println!("{}", response.into_string().unwrap());
 
-    // create burrow: perform a wrong action
+    // create burrow: perform a wrong action (less in 24 hrs)
     let response = client
         .post("/burrows")
         .json(&json!({
@@ -180,23 +205,7 @@ fn test_burrow() {
 
     std::thread::sleep(std::time::Duration::from_secs(5));
 
-    // follow the burrow
-    let response = client
-        .post("/users/relation")
-        .json(&json!({ "ActivateFollow": burrow_id }))
-        .remote("127.0.0.1:8000".parse().unwrap())
-        .dispatch();
-    assert_eq!(response.status(), Status::Ok);
-    println!("{:?}", response.into_string());
-    // get following burrows of a user
-    let response = client
-        .get("/users/follow")
-        .remote("127.0.0.1:8000".parse().unwrap())
-        .dispatch();
-    assert_eq!(response.status(), Status::Ok);
-    println!("{}", response.into_string().unwrap());
-
-    // create burrow: perform a correct action
+    // create burrow (2nd)
     let response = client
         .post("/burrows")
         .json(&json!({
@@ -205,8 +214,18 @@ fn test_burrow() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    // println!("{}", response.into_string().unwrap());
-
+    println!("{}", response.into_string().unwrap());
+    std::thread::sleep(std::time::Duration::from_secs(5));
+    // create burrow: perform a wrong action (empty title)
+    let response = client
+        .post("/burrows")
+        .json(&json!({
+            "description": format!("Empty title burrow of {}", name),
+            "title": ""}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::BadRequest);
+    println!("{}", response.into_string().unwrap());
     // create burrow: perform a wrong action (amount up to limit)
     std::thread::sleep(std::time::Duration::from_secs(5));
     // create burrow (3rd)
@@ -252,6 +271,30 @@ fn test_burrow() {
         .dispatch();
     assert_eq!(response.status(), Status::Forbidden);
     println!("Burrow Id: {}", response.into_string().unwrap());
+
+    // follow burrow 1st
+    let response = client
+        .post("/users/relation")
+        .json(&json!({ "ActivateFollow": burrow_id }))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    println!("{:?}", response.into_string());
+    // follow burrow 2nd
+    let response = client
+        .post("/users/relation")
+        .json(&json!({ "ActivateFollow": burrow_id + 1 }))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    println!("{:?}", response.into_string());
+    // get following burrows of a user
+    let response = client
+        .get("/users/follow")
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    println!("{}", response.into_string().unwrap());
 
     // get total burrow count
     let response = client
@@ -421,7 +464,7 @@ fn test_content() {
         .dispatch();
     assert_eq!(response.status(), Status::BadRequest);
     println!("{}", response.into_string().unwrap());
-    // create post: perform a wrong action (empty section)
+    // create post: perform a wrong action (invalid section)
     let response = client
         .post("/content/posts")
         .json(&json!({
@@ -481,6 +524,13 @@ fn test_content() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     println!("{:?}", response.into_string());
+    // delete post: perform a wrong action (post not exist)
+    let response = client
+        .delete(format!("/content/posts/{}", post_id + 10000))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::NotFound);
+    println!("{:?}", response.into_string());
     std::thread::sleep(std::time::Duration::from_secs(5));
     // delete post 3: perform a wrong action (out of time limit)
     let response = client
@@ -521,6 +571,13 @@ fn test_content() {
             "section": ["TestSection"],
             "tag": ["NoTag"],
             "content": "This is a test post no.6"}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+
+    // get trending
+    let response = client
+        .get("/trending")
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
@@ -566,7 +623,7 @@ fn test_content() {
     assert_eq!(response.status(), Status::Ok);
     println!("{}", response.into_string().unwrap());
 
-    // test trending interface
+    // get trending: trending already exist
     let response = client
         .get("/trending")
         .remote("127.0.0.1:8000".parse().unwrap())
@@ -685,6 +742,13 @@ fn test_content() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     println!("{}", response.into_string().unwrap());
+    // get post no.4
+    let response = client
+        .get(format!("/content/posts/{}", post_id + 3))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    println!("{}", response.into_string().unwrap());
 
     // get post list
     let response = client
@@ -714,6 +778,26 @@ fn test_content() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::NotFound);
+    // update post no.3: perform a wrong action (empty title)
+    let response = client
+        .patch(format!("/content/posts/{}", post_id))
+        .json(&json!({
+            "title": "",
+            "section": ["NewTestSection"],
+            "tag": ["TestTag"]}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::BadRequest);
+    // update post no.3: perform a wrong action (invalid section)
+    let response = client
+        .patch(format!("/content/posts/{}", post_id))
+        .json(&json!({
+            "title": format!("New post no.3 of {}", name),
+            "section": [],
+            "tag": ["TestTag"]}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::BadRequest);
     // update post no.4: perform a wrong action (invalid burrow)
     let response = client
         .patch(format!("/content/posts/{}", post_id + 3))
