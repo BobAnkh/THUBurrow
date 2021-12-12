@@ -47,9 +47,9 @@ fn test_user() {
     let response = client
         .post("/users/sign-up")
         .json(&json!({
-            "username": name,
+            "username": new_name,
             "password": "testpassword",
-            "email": format!("{}@mails.tsignhua.edu.cn", name),
+            "email": format!("{}@mails.tsignhua.edu.cn", new_name),
             "verification_code": "666666"}))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
