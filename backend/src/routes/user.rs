@@ -148,7 +148,7 @@ pub async fn user_email_activate(
                         }
                     }
                     Err(e) => {
-                        log::error!("[SEND-EMAIL] Database Error: {:?}", e);
+                        log::error!("[SIGN-UP] Database Error: {:?}", e);
                         return (
                             Status::InternalServerError,
                             Err(Json(ErrorResponse::default())),
@@ -170,7 +170,7 @@ pub async fn user_email_activate(
                 {
                     Ok(_) => (Status::Ok, Ok("Success".to_string())),
                     Err(e) => {
-                        log::error!("[SEND-EMAIL] Database error: {:?}", e);
+                        log::error!("[SIGN-UP] Database error: {:?}", e);
                         (
                             Status::InternalServerError,
                             Err(Json(ErrorResponse::default())),
@@ -282,7 +282,7 @@ pub async fn user_sign_up(
                             Status::BadRequest,
                             Err(Json(ErrorResponse::build(
                                 ErrorCode::CredentialInvalid,
-                                "Invalid verification code.",
+                                "Invalid verification code: Wrong verification code.",
                             ))),
                         );
                     }
@@ -292,7 +292,7 @@ pub async fn user_sign_up(
                         Status::BadRequest,
                         Err(Json(ErrorResponse::build(
                             ErrorCode::CredentialInvalid,
-                            "Invalid verification code.",
+                            "Invalid verification code: Cannot find email -> code in redis.",
                         ))),
                     )
                 }
