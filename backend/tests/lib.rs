@@ -336,6 +336,7 @@ fn test_burrow() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
+    // TODO
     println!("{}", response.into_string().unwrap());
     // show burrow: perform a wrong action (burrow not exist)
     let response = client
@@ -819,7 +820,10 @@ fn test_content() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Forbidden);
-    println!("{:?}", response.into_string());
+    assert_eq!(
+        response.into_json::<ErrorResponse>().unwrap(),
+        ErrorResponse::build(ErrorCode::BurrowInvalid, "Not allowed to delete this post")
+    );
 
     // 19. test read_post
     // get post no.1
