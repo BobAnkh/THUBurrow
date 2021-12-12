@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import type { NextPage, GetStaticProps } from 'next';
+import type { NextPage } from 'next';
 import { StarTwoTone, LikeTwoTone } from '@ant-design/icons';
 import styles from './burrow.module.css';
 
@@ -16,13 +16,14 @@ import {
   Card,
   Tag,
 } from 'antd';
-import Link from 'next/link';
 import { MessageOutlined, LikeOutlined, StarOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/router';
-import moment from 'moment';
 import 'antd/dist/antd.css';
 import axios, { AxiosError } from 'axios';
-import { TYPES } from '@babel/types';
+import GlobalHeader from '../../components/header/header';
+
+axios.defaults.withCredentials = true;
+axios.defaults.headers.post['Content-Type'] = 'application/json';
 
 const { Header, Content, Footer } = Layout;
 const { TextArea } = Input;
@@ -35,43 +36,10 @@ const IconText = (props: any) => (
 );
 
 function showtag1(tag: string) {
-    return <Tag>{tag}</Tag>;
-  }
-  const showtag = (value: Array<string>) => {
-    return value.map(showtag1);
-  };
-
-const onFinish = async (values: any) => {
-  const time = moment().format('YYYY-MM-DD HH:mm:ss');
-  const data = {
-    ...values,
-    author: 'yonghu',
-    create_time: time,
-    modified_time: '',
-    anomymous: false,
-    section: 'daily',
-    tag1: 'zai',
-    tag2: 'zuo',
-    tag3: 'le',
-  };
-  try {
-    const res = await axios.post(
-      `${process.env.NEXT_PUBLIC_BASEURL}/content/post`,
-      {
-        ...data,
-      },
-      { headers: { 'Content-Type': 'application/json' } }
-    );
-    const json = await res.data;
-    if (json.error) {
-      message.error('发帖失败');
-    } else {
-      message.success('发帖成功');
-      window.location.reload();
-    }
-  } catch (e) {
-    message.error('发帖失败');
-  }
+  return <Tag>{tag}</Tag>;
+}
+const showtag = (value: Array<string>) => {
+  return value.map(showtag1);
 };
 
 const onFinishFailed = (errorInfo: any) => {
@@ -92,9 +60,7 @@ const Burrow: NextPage = () => {
   const [isHost, setIsHost] = useState(true);
   const [editing, setEditing] = useState(false);
   const [descriptionTemp, setDescriptionTemp] = useState('');
-  const [menuMode, setMenuMode] = useState<'inline' | 'horizontal'>(
-    'horizontal'
-  );
+
   const [changeLike, setChangeLike] = useState(initialchange1);
   const [changeCol, setChangeCol] = useState(initialchange2);
   const [likeNum, setLikeNum] = useState(initialnum1);
@@ -134,7 +100,6 @@ const Burrow: NextPage = () => {
   };
 
   const ConfirmEdit = () => {
-    console.log(descriptionTemp);
     setDescription(descriptionTemp);
     setEditing(false);
   };
@@ -217,26 +182,8 @@ const Burrow: NextPage = () => {
   return (
     <Layout>
       <Header style={{ position: 'fixed', zIndex: 1, width: '100%' }}>
-        <div className='logo' />
-        <Menu
-          theme='dark'
-          mode={menuMode}
-          defaultSelectedKeys={['home']}
-          selectedKeys={[site]}
-        >
-          <Menu.Item key='home'>
-            <Link href='/home'>首页</Link>
-          </Menu.Item>
-          <Menu.Item key='message'>
-            <Link href='/message'>消息</Link>
-          </Menu.Item>
-          <Menu.Item key='trending'>
-            <Link href='/trending'>热榜</Link>
-          </Menu.Item>
-          <Menu.Item key='search'>
-            <Link href='/searchpage'>搜索</Link>
-          </Menu.Item>
-        </Menu>
+        <title>{`# ${bid} 地洞`}</title>
+        <GlobalHeader />
       </Header>
       <Content
         className='site-Layout'
@@ -386,44 +333,17 @@ const Burrow: NextPage = () => {
                   ]}
                 >
                   <List.Item.Meta
-                    title={<a href={`post/${item.post_id}`}>{item.title}&emsp;<Tag color="yellow">{item.section}</Tag></a>}
+                    title={
+                      <a href={`post/${item.post_id}`}>
+                        {item.title}&emsp;
+                        <Tag color='yellow'>{item.section}</Tag>
+                      </a>
+                    }
                   />
                   {showtag(item.tag)}
                 </List.Item>
               )}
             />
-
-            <Form
-              labelCol={{ span: 5 }}
-              wrapperCol={{ span: 14 }}
-              layout='horizontal'
-              onFinish={onFinish}
-              onFinishFailed={onFinishFailed}
-              style={{
-                margin: 'auto',
-                padding: '10px',
-              }}
-            >
-              <Form.Item
-                label='标题'
-                name='title'
-                rules={[{ required: true, message: '标题不能为空' }]}
-              >
-                <Input placeholder='请输入标题' />
-              </Form.Item>
-              <Form.Item
-                label='内容'
-                name='content'
-                rules={[{ required: true, message: '第一层洞不能为空' }]}
-              >
-                <TextArea rows={4} />
-              </Form.Item>
-              <Form.Item wrapperCol={{ offset: 11, span: 16 }}>
-                <Button type='primary' htmlType='submit'>
-                  发布
-                </Button>
-              </Form.Item>
-            </Form>
           </Card>
         </div>
       </Content>

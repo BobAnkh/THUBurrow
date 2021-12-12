@@ -4,6 +4,9 @@ import 'antd/dist/antd.css';
 import { Form, Input, Select, Row, Col, Checkbox, Button, message } from 'antd';
 import axios from 'axios';
 
+axios.defaults.withCredentials = true;
+axios.defaults.headers.post['Content-Type'] = 'application/json';
+
 type RegisProps = {};
 const { Option } = Select;
 
@@ -51,7 +54,6 @@ export default function Register({ switchform }: Iprops) {
     const data = {
       email: email + suffix,
     };
-    console.log(data);
     try {
       const res = await axios.post(
         `${process.env.NEXT_PUBLIC_BASEURL}/users/email`,
