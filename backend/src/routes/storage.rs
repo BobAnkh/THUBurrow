@@ -1,7 +1,7 @@
 use chrono::{FixedOffset, Utc};
 use crypto::digest::Digest;
 use crypto::md5::Md5;
-use rocket::http::{Status, ContentType};
+use rocket::http::{ContentType, Status};
 use rocket::serde::json::Json;
 use rocket::{Build, Rocket};
 use rocket_db_pools::Connection;
@@ -111,7 +111,10 @@ async fn download_image(
         }
         _ => (
             Status::NotFound,
-            (ContentType::JSON, Err(Json(ErrorResponse::build(ErrorCode::FileNotExist, "")))),
+            (
+                ContentType::JSON,
+                Err(Json(ErrorResponse::build(ErrorCode::FileNotExist, ""))),
+            ),
         ),
     }
 }

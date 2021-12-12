@@ -1,4 +1,5 @@
 mod common;
+use backend::models::error::*;
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 use rocket::http::Status;
@@ -12,12 +13,11 @@ fn test_connected() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    // println!("{}", response.into_string().unwrap());
     assert_eq!(response.into_string().unwrap(), "Ok");
 }
 
 #[test]
-fn test_signup() {
+fn test_user() {
     let client = common::get_client().lock();
     let name: String = std::iter::repeat(())
         .map(|()| thread_rng().sample(Alphanumeric))
@@ -29,13 +29,16 @@ fn test_signup() {
         .map(char::from)
         .take(16)
         .collect();
+
+    // 1. test user_sign_up
     // sign up a user
     let response = client
         .post("/users/sign-up")
         .json(&json!({
             "username": name,
             "password": "testpassword",
-            "email": format!("{}@mails.tsinghua.edu.cn", name)}))
+            "email": format!("{}@mails.tsinghua.edu.cn", name),
+            "verification_code": "666666"}))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
@@ -46,65 +49,62 @@ fn test_signup() {
         .json(&json!({
             "username": name,
             "password": "testpassword",
-            "email": format!("{}@mails.tsignhua.edu.cn", name)}))
+            "email": format!("{}@mails.tsignhua.edu.cn", name),
+            "verification_code": "666666"}))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::BadRequest);
-    println!("{}", response.into_string().unwrap());
-    // sign up a user: perform a wrong action (duplicated email)
-    let response = client
-        .post("/users/sign-up")
-        .json(&json!({
-            "username": new_name,
-            "password": "testpassword",
-            "email": format!("{}@mails.tsinghua.edu.cn", name)}))
-        .remote("127.0.0.1:8000".parse().unwrap())
-        .dispatch();
-    assert_eq!(response.status(), Status::BadRequest);
-    println!("{}", response.into_string().unwrap());
-    // sign up a user: perform a wrong action (duplicated name)
-    let response = client
-        .post("/users/sign-up")
-        .json(&json!({
-            "username": name,
-            "password": "testpassword",
-            "email": format!("{}@mails.tsinghua.edu.cn", new_name)}))
-        .remote("127.0.0.1:8000".parse().unwrap())
-        .dispatch();
-    assert_eq!(response.status(), Status::BadRequest);
-    println!("{}", response.into_string().unwrap());
+    assert_eq!(
+        response.into_json::<ErrorResponse>().unwrap(),
+        ErrorResponse::build(ErrorCode::EmailInvalid, "Invalid Email address.",)
+    );
     // sign up a user: perform a wrong action (user name is empty)
     let response = client
         .post("/users/sign-up")
         .json(&json!({
             "username": "",
             "password": "testpassword",
-            "email": format!("{}@mails.tsinghua.edu.cn", name)}))
+            "email": format!("{}@mails.tsinghua.edu.cn", name),
+            "verification_code": "666666"}))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::BadRequest);
-    println!("{}", response.into_string().unwrap());
-}
-
-#[test]
-fn test_login_signup() {
-    let client = common::get_client().lock();
-    let name: String = std::iter::repeat(())
-        .map(|()| thread_rng().sample(Alphanumeric))
-        .map(char::from)
-        .take(16)
-        .collect();
-    // sign up a user
+    assert_eq!(
+        response.into_json::<ErrorResponse>().unwrap(),
+        ErrorResponse::build(ErrorCode::EmptyField, "Empty username.",)
+    );
+    // sign up a user: perform a wrong action (duplicated email)
+    let response = client
+        .post("/users/sign-up")
+        .json(&json!({
+            "username": new_name,
+            "password": "testpassword",
+            "email": format!("{}@mails.tsinghua.edu.cn", name),
+            "verification_code": "666666"}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::BadRequest);
+    assert_eq!(
+        response.into_json::<ErrorResponse>().unwrap(),
+        ErrorResponse::build(ErrorCode::EmailDuplicate, "Duplicate Email address.",)
+    );
+    // sign up a user: perform a wrong action (duplicated name)
     let response = client
         .post("/users/sign-up")
         .json(&json!({
             "username": name,
             "password": "testpassword",
-            "email": format!("{}@mails.tsinghua.edu.cn", name)}))
+            "email": format!("{}@mails.tsinghua.edu.cn", new_name),
+            "verification_code": "666666"}))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
-    assert_eq!(response.status(), Status::Ok);
-    println!("{}", response.into_string().unwrap());
+    assert_eq!(response.status(), Status::BadRequest);
+    assert_eq!(
+        response.into_json::<ErrorResponse>().unwrap(),
+        ErrorResponse::build(ErrorCode::UsernameDuplicate, "Duplicate username.",)
+    );
+
+    // 2. test user_log_in
     // user log in
     let response = client
         .post("/users/login")
@@ -114,27 +114,7 @@ fn test_login_signup() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    // println!("{}", response.into_string().unwrap());
-    // user log in: perform a wrong action (user not exist)
-    let response = client
-        .post("/users/login")
-        .json(&json!({
-            "username": "usernotexist",
-            "password": "testpassword"}))
-        .remote("127.0.0.1:8000".parse().unwrap())
-        .dispatch();
-    assert_eq!(response.status(), Status::BadRequest);
-    println!("{}", response.into_string().unwrap());
-    // user log in: perform a wrong action (wrong password)
-    let response = client
-        .post("/users/login")
-        .json(&json!({
-            "username": name,
-            "password": "wrongpassword"}))
-        .remote("127.0.0.1:8000".parse().unwrap())
-        .dispatch();
-    assert_eq!(response.status(), Status::BadRequest);
-    println!("{}", response.into_string().unwrap());
+    assert_eq!(response.into_string().unwrap(), "Success");
     // user log in: find old token
     let response = client
         .post("/users/login")
@@ -144,6 +124,33 @@ fn test_login_signup() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
+    assert_eq!(response.into_string().unwrap(), "Success");
+    // user log in: perform a wrong action (user not exist)
+    let response = client
+        .post("/users/login")
+        .json(&json!({
+            "username": "usernotexist",
+            "password": "testpassword"}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::BadRequest);
+    assert_eq!(
+        response.into_json::<ErrorResponse>().unwrap(),
+        ErrorResponse::build(ErrorCode::CredentialInvalid, "Wrong username or password.",)
+    );
+    // user log in: perform a wrong action (wrong password)
+    let response = client
+        .post("/users/login")
+        .json(&json!({
+            "username": name,
+            "password": "wrongpassword"}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::BadRequest);
+    assert_eq!(
+        response.into_json::<ErrorResponse>().unwrap(),
+        ErrorResponse::build(ErrorCode::CredentialInvalid, "Wrong username or password.",)
+    );
 }
 
 #[test]
@@ -163,7 +170,8 @@ fn test_burrow() {
         .json(&json!({
             "username": name,
             "password": "testpassword",
-            "email": format!("{}@mails.tsinghua.edu.cn", name)}))
+            "email": format!("{}@mails.tsinghua.edu.cn", name),
+            "verification_code": "666666"}))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
@@ -279,7 +287,7 @@ fn test_burrow() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    println!("{:?}", response.into_string());
+    assert_eq!(response.into_string().unwrap(), "Success");
     // follow burrow 2nd
     let response = client
         .post("/users/relation")
@@ -287,7 +295,7 @@ fn test_burrow() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    println!("{:?}", response.into_string());
+    assert_eq!(response.into_string().unwrap(), "Success");
     // get following burrows of a user
     let response = client
         .get("/users/follow")
@@ -405,7 +413,8 @@ fn test_content() {
         .json(&json!({
             "username": name,
             "password": "testpassword",
-            "email": format!("{}@mails.tsinghua.edu.cn", name)}))
+            "email": format!("{}@mails.tsinghua.edu.cn", name),
+            "verification_code": "666666"}))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
@@ -432,7 +441,7 @@ fn test_content() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    println!("{:?}", response.into_string());
+    assert_eq!(response.into_string().unwrap(), "Success");
 
     // create post 1
     let response = client
@@ -561,7 +570,7 @@ fn test_content() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    println!("{:?}", response.into_string());
+    assert_eq!(response.into_string().unwrap(), "Success");
     // create post 4 with new_burrow_id
     let response = client
         .post("/content/posts")
@@ -589,7 +598,7 @@ fn test_content() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    println!("{:?}", response.into_string());
+    assert_eq!(response.into_string().unwrap(), "Success");
     // collect post no.2 (post no.2 not exist)
     let response = client
         .post("/users/relation")
@@ -597,7 +606,7 @@ fn test_content() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    println!("{:?}", response.into_string());
+    assert_eq!(response.into_string().unwrap(), "Success");
     // collect post no.3
     let response = client
         .post("/users/relation")
@@ -605,7 +614,7 @@ fn test_content() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    println!("{:?}", response.into_string());
+    assert_eq!(response.into_string().unwrap(), "Success");
     // like post no.1
     let response = client
         .post("/users/relation")
@@ -613,7 +622,7 @@ fn test_content() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    println!("{:?}", response.into_string());
+    assert_eq!(response.into_string().unwrap(), "Success");
 
     // get following burrows of a user
     let response = client

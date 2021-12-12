@@ -458,6 +458,7 @@ pub async fn delete_post(
             ),
             Some(post_info) => {
                 //  check if time is within limit, if so, allow user to delete
+                // TODO: change it when final release
                 if post_info
                     .create_time
                     .checked_add_signed(Duration::seconds(5))
