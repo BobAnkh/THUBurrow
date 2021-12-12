@@ -13,9 +13,10 @@ use std::collections::HashMap;
 use crate::models::content::*;
 use crate::models::error::*;
 use crate::models::pulsar::*;
+use crate::models::search::SearchPostData;
 use crate::pgdb;
 use crate::pgdb::prelude::*;
-use crate::pool::{PgDb, PulsarSearchProducerMq};
+use crate::pool::{PgDb, PulsarSearchProducerMq, Search, TypesenseSearch};
 use crate::utils::auth::Auth;
 use crate::utils::burrow_valid::is_valid_burrow;
 
@@ -575,30 +576,100 @@ pub async fn delete_post(
     }
 }
 
-#[get("/posts/list?<page>")]
+#[get("/posts/list?<page>&<section>")]
 pub async fn read_post_list(
     auth: Auth,
     db: Connection<PgDb>,
     page: Option<usize>,
+    section: Vec<String>,
+    conn: Connection<TypesenseSearch>,
 ) -> (Status, Result<Json<ListPage>, Json<ErrorResponse>>) {
     let pg_con = db.into_inner();
     let page = page.unwrap_or(0);
-    let post_pages = ContentPost::find()
-        .order_by_desc(pgdb::content_post::Column::PostId)
-        .paginate(&pg_con, POST_PER_PAGE);
-    let post_info = match post_pages.fetch_page(page).await {
-        Ok(post_info) => post_info,
-        Err(e) => {
-            log::error!("[READ-POST] Database error: {:?}", e);
-            return (
-                Status::InternalServerError,
-                Err(Json(ErrorResponse::default())),
+    let client = conn.into_inner();
+    let post_info = if section.is_empty() {
+        let post_pages = ContentPost::find()
+            .order_by_desc(pgdb::content_post::Column::PostId)
+            .paginate(&pg_con, POST_PER_PAGE);
+        let post_info = match post_pages.fetch_page(page).await {
+            Ok(post_info) => post_info,
+            Err(e) => {
+                log::error!("[READ-POST] Database error: {:?}", e);
+                return (
+                    Status::InternalServerError,
+                    Err(Json(ErrorResponse::default())),
+                );
+            }
+        };
+        post_info
+    } else {
+        let page = page + 1;
+        let tags = serde_json::to_string(&section).unwrap();
+        let uri = format!(
+                "/collections/posts/documents/search?q=*&query_by=title&filter_by=section:={}&sort_by=post_id:desc&page={}&per_page=20",
+                tags,page
             );
+        let response = match client.build_get(&uri).send().await {
+            Ok(r) => match r.json::<SearchPostData>().await {
+                Ok(r) => r,
+                Err(e) => {
+                    log::error!("[READ-POST] Database error: {:?}", e);
+                    return (
+                        Status::InternalServerError,
+                        Err(Json(ErrorResponse::default())),
+                    );
+                }
+            },
+            Err(e) => {
+                log::error!("[READ-POST] Database error: {:?}", e);
+                return (
+                    Status::InternalServerError,
+                    Err(Json(ErrorResponse::default())),
+                );
+            }
+        };
+        let post_ids = response
+            .hits
+            .iter()
+            .map(|x| x.document.post_id)
+            .collect::<Vec<_>>();
+        if post_ids.is_empty() {
+            return (
+                Status::Ok,
+                Ok(Json(ListPage {
+                    page: page - 1,
+                    post_page: Vec::new(),
+                })),
+            );
+        }
+        match ContentPost::find()
+            .filter(Condition::all().add(pgdb::content_post::Column::PostId.is_in(post_ids)))
+            .order_by_desc(pgdb::content_post::Column::PostId)
+            .all(&pg_con)
+            .await
+        {
+            Ok(post_info) => post_info,
+            Err(e) => {
+                log::error!("[READ-POST] Database error: {:?}", e);
+                return (
+                    Status::InternalServerError,
+                    Err(Json(ErrorResponse::default())),
+                );
+            }
         }
     };
     // check if the user collect and like the posts
     // TODO: check if the post is banned?
     let post_ids = post_info.iter().map(|r| r.post_id).collect::<Vec<i64>>();
+    if post_ids.is_empty() {
+        return (
+            Status::Ok,
+            Ok(Json(ListPage {
+                page,
+                post_page: Vec::new(),
+            })),
+        );
+    }
     let like_res = match pgdb::user_like::Entity::find()
         .filter(
             Condition::all()
