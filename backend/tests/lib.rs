@@ -17,6 +17,26 @@ fn test_connected() {
 }
 
 #[test]
+fn test_email() {
+    let client = common::get_client().lock();
+    let name: String = std::iter::repeat(())
+        .map(|()| thread_rng().sample(Alphanumeric))
+        .map(char::from)
+        .take(16)
+        .collect();
+    // set verification code
+    let response = client
+        .post("/users/email")
+        .json(&json!({
+            "email": format!("{}@mails.tsinghua.edu.cn", name)
+        }))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    println!("{}", response.into_string().unwrap());
+}
+
+#[test]
 fn test_signup() {
     let client = common::get_client().lock();
     let name: String = std::iter::repeat(())
@@ -32,6 +52,7 @@ fn test_signup() {
         }))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
+    std::thread::sleep(std::time::Duration::from_secs(2));
     // sign up a user
     let response = client
         .post("/users/sign-up")
@@ -102,6 +123,7 @@ fn test_login_signup() {
         }))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
+    std::thread::sleep(std::time::Duration::from_secs(2));
     // sign up a user
     let response = client
         .post("/users/sign-up")
@@ -165,6 +187,7 @@ fn test_burrow() {
         }))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
+    std::thread::sleep(std::time::Duration::from_secs(2));
     // sign up a user
     let response = client
         .post("/users/sign-up")
@@ -390,6 +413,7 @@ fn test_content() {
         }))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
+    std::thread::sleep(std::time::Duration::from_secs(2));
     // sign up a user
     let response = client
         .post("/users/sign-up")

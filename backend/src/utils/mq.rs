@@ -136,9 +136,9 @@ lazy_static! {
         };
         url
     };
-    static ref TEST_MODE: bool =
+    static ref BACKEND_TEST_MODE: bool =
         // **TODO**: set default to 'false' later
-        env::var("TEST_MODE").map(|x| x.parse::<bool>().unwrap()).ok().unwrap_or(true);
+        env::var("BACKEND_TEST_MODE").map(|x| x.parse::<bool>().unwrap()).ok().unwrap_or(true);
 }
 
 async fn create_typesense_collections() -> Result<(), reqwest::Error> {
@@ -797,7 +797,7 @@ pub async fn pulsar_email() -> Result<(), pulsar::Error> {
                 continue;
             }
         };
-        if *TEST_MODE {
+        if *BACKEND_TEST_MODE {
             let verification_code = "666666";
             match get_set_redis(&mut kv_conn, &data.email, verification_code).await {
                 Ok(_) => {
