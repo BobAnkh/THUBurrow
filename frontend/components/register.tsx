@@ -118,17 +118,12 @@ export default function Register({ switchform }: Iprops) {
     const data = {
       username: userName,
       password: passWord,
-<<<<<<< HEAD
       email: email + suffix,
       verification_code: verCode,
-=======
-      email: email,
-      verification_code: '111111',
->>>>>>> ce5f8896ced147bebb650cb1ff884d4413f421b4
     };
     try {
       const res = await axios.post(
-        `${process.env.NEXT_PUBLIC_BASEURL}/users/sign-up`,
+        `${process.env.NEXT_PUBLIC_BASEURL}/6381347`,
         data
       );
       var json = await res.data;
