@@ -1,5 +1,15 @@
-import React, { useState,useEffect } from 'react';
-import { Button, Card, Form, Input, Layout, message, Select, Row, Breadcrumb } from 'antd';
+import React, { useState, useEffect } from 'react';
+import {
+  Button,
+  Card,
+  Form,
+  Input,
+  Layout,
+  message,
+  Select,
+  Row,
+  Breadcrumb,
+} from 'antd';
 import TextArea from 'antd/lib/input/TextArea';
 import axios, { AxiosError } from 'axios';
 import { NextPage } from 'next';
@@ -17,10 +27,14 @@ const Create: NextPage = () => {
   const toOption = (bidList: number[]) => {
     const bidOptionList = [];
     for (let i = 0; i < bidList.length; i++) {
-      bidOptionList.push(<Option key={bidList[i].toString()} value={bidList[i]}>{bidList[i].toString()}</Option>);
+      bidOptionList.push(
+        <Option key={bidList[i].toString()} value={bidList[i]}>
+          {bidList[i].toString()}
+        </Option>
+      );
     }
     return bidOptionList;
-  }
+  };
   useEffect(() => {
     const fetchBid = async () => {
       try {
@@ -40,7 +54,6 @@ const Create: NextPage = () => {
     fetchBid();
   }, []);
   const onFinish = async (values: any) => {
-    console.log(values);
     const data = {
       ...values,
     };
@@ -95,7 +108,7 @@ const Create: NextPage = () => {
             >
               <TextArea rows={4} />
             </Form.Item>
-            <Form.Item label ='详情'>
+            <Form.Item label='详情'>
               <Form.Item
                 name='burrow_id'
                 rules={[
@@ -106,9 +119,7 @@ const Create: NextPage = () => {
                   width: 'calc(50% - 8px)',
                 }}
               >
-                <Select placeholder='洞号'>
-                  { toOption(bidList)}
-                </Select>
+                <Select placeholder='洞号'>{toOption(bidList)}</Select>
               </Form.Item>
               <Form.Item
                 name='section'

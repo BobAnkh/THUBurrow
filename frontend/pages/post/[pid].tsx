@@ -1,22 +1,17 @@
-import type { NextPage, GetStaticProps } from 'next';
+import type { NextPage } from 'next';
 import React, { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/router';
 import {
   Layout,
-  Menu,
   Breadcrumb,
   Form,
   Button,
-  Row,
-  Col,
-  Dropdown,
   Input,
   message,
   Card,
+  Select,
 } from 'antd';
 import {
-  UserOutlined,
   LikeOutlined,
   LikeTwoTone,
   StarOutlined,
@@ -32,6 +27,7 @@ axios.defaults.headers.post['Content-Type'] = 'application/json';
 
 const { Header, Content, Footer } = Layout;
 const { TextArea } = Input;
+const { Option } = Select;
 
 const PostDetial: NextPage = () => {
   const router = useRouter();
@@ -39,7 +35,8 @@ const PostDetial: NextPage = () => {
   const [bid, setBid] = useState(1);
   const [pid, setPid] = useState(1);
   const [replyList, setReplyList] = useState();
-  const [title, setTitle] = useState('test');
+  const [title, setTitle] = useState('');
+  const [bidList, setBidList] = useState([]);
   const [like, setLike] = useState(false);
   const [collection, setCollection] = useState(false);
   const initialchange1 = false;
@@ -68,12 +65,45 @@ const PostDetial: NextPage = () => {
           message.error('请先登录！');
           router.push('/login');
         }
-        console.error(error);
+      }
+    };
+    const fetchBid = async () => {
+      try {
+        const res = await axios.get(
+          `${process.env.NEXT_PUBLIC_BASEURL}/users/valid-burrows`
+        );
+        const bidlist = res.data;
+        setBidList(bidlist);
+      } catch (error) {
+        const err = error as AxiosError;
+        if (err.response?.status == 401) {
+          message.error('请先登录！');
+          router.push('/login');
+        }
       }
     };
     fetchReplyList();
+    fetchBid();
   }, []);
-
+  const toOption = (bidList: number[], bid: number) => {
+    const bidOptionList = [];
+    for (let i = 0; i < bidList.length; i++) {
+      if (bid === bidList[i]) {
+        bidOptionList.push(
+          <Option key={bidList[i].toString()} value={bidList[i]}>
+            {bidList[i].toString() + '(发帖人)'}
+          </Option>
+        );
+      } else {
+        bidOptionList.push(
+          <Option key={bidList[i].toString()} value={bidList[i]}>
+            {bidList[i].toString()}
+          </Option>
+        );
+      }
+    }
+    return bidOptionList;
+  };
   const clickCol = async (pid: number, activate: Boolean) => {
     const newChangeCol: boolean = !changeCol;
     setChangeCol(newChangeCol);
@@ -133,7 +163,7 @@ const PostDetial: NextPage = () => {
     try {
       const res = await axios.post(
         `${process.env.NEXT_PUBLIC_BASEURL}/content/reply`,
-        { ...data, burrow_id: bid, post_id: pid },
+        { ...data, post_id: pid },
         { headers: { 'Content-Type': 'application/json' } }
       );
       const json = await res.data;
@@ -190,7 +220,7 @@ const PostDetial: NextPage = () => {
             onClick={() => {
               clickCol(
                 pid,
-                (!collection && changeCol) || (collection && !changeCol)
+                (collection && changeCol) || (!collection && !changeCol)
               );
             }}
           >
@@ -203,10 +233,7 @@ const PostDetial: NextPage = () => {
             layout='horizontal'
             onFinish={onFinish}
             onFinishFailed={onFinishFailed}
-            style={{
-              margin: 'auto',
-              padding: '10px',
-            }}
+            style={{ padding: '20px' }}
           >
             <Form.Item
               label='回复内容'
@@ -217,6 +244,15 @@ const PostDetial: NextPage = () => {
                 rows={4}
                 placeholder={'友善的沟通是高质量交流的第一步~'}
               />
+            </Form.Item>
+            <Form.Item
+              label='身份'
+              name='burrow_id'
+              rules={[
+                { required: true, message: '请选择要以哪个洞主的身份回复' },
+              ]}
+            >
+              <Select placeholder='洞号'>{toOption(bidList, bid)}</Select>
             </Form.Item>
             <Form.Item wrapperCol={{ offset: 11, span: 16 }}>
               <Button

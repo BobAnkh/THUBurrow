@@ -39,7 +39,6 @@ const followedBurrowColumns: ColumnsType<FollowedBurrowInfo> = [
     title: '洞号',
     dataIndex: 'id',
     render: (text, record, index) => {
-      console.log(text, record.update);
       return record.update ? <Badge dot>{text}</Badge> : <Badge>{text}</Badge>;
     },
   },

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import type { NextPage} from 'next';
+import type { NextPage } from 'next';
 import { StarTwoTone, LikeTwoTone } from '@ant-design/icons';
 import styles from './burrow.module.css';
 
@@ -36,11 +36,11 @@ const IconText = (props: any) => (
 );
 
 function showtag1(tag: string) {
-    return <Tag>{tag}</Tag>;
-  }
-  const showtag = (value: Array<string>) => {
-    return value.map(showtag1);
-  };
+  return <Tag>{tag}</Tag>;
+}
+const showtag = (value: Array<string>) => {
+  return value.map(showtag1);
+};
 
 const onFinishFailed = (errorInfo: any) => {
   if (errorInfo.values.title == undefined) message.error('标题不能为空！');
@@ -100,7 +100,6 @@ const Burrow: NextPage = () => {
   };
 
   const ConfirmEdit = () => {
-    console.log(descriptionTemp);
     setDescription(descriptionTemp);
     setEditing(false);
   };
@@ -334,7 +333,12 @@ const Burrow: NextPage = () => {
                   ]}
                 >
                   <List.Item.Meta
-                    title={<a href={`post/${item.post_id}`}>{item.title}&emsp;<Tag color="yellow">{item.section}</Tag></a>}
+                    title={
+                      <a href={`post/${item.post_id}`}>
+                        {item.title}&emsp;
+                        <Tag color='yellow'>{item.section}</Tag>
+                      </a>
+                    }
                   />
                   {showtag(item.tag)}
                 </List.Item>

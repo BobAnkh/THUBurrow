@@ -54,7 +54,6 @@ export default function Register({ switchform }: Iprops) {
     const data = {
       email: email + suffix,
     };
-    console.log(data);
     try {
       const res = await axios.post(
         `${process.env.NEXT_PUBLIC_BASEURL}/users/email`,
