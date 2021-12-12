@@ -25,6 +25,7 @@ import {
 import ReplyList from '../../components/reply-list';
 import '../../node_modules/antd/dist/antd.css';
 import axios, { AxiosError } from 'axios';
+import GlobalHeader from '../../components/header/header';
 
 axios.defaults.withCredentials = true;
 axios.defaults.headers.post['Content-Type'] = 'application/json';
@@ -34,9 +35,6 @@ const { TextArea } = Input;
 
 const PostDetial: NextPage = () => {
   const router = useRouter();
-  const [menuMode, setMenuMode] = useState<'inline' | 'horizontal'>(
-    'horizontal'
-  );
   const [page, setPage] = useState(1);
   const [bid, setBid] = useState(1);
   const [pid, setPid] = useState(1);
@@ -154,59 +152,11 @@ const PostDetial: NextPage = () => {
     message.error(errorInfo);
   };
 
-  const site = router.pathname.split('/')[1];
-  const menu = (
-    <Menu
-      id='nav'
-      key='nav'
-      theme='dark'
-      mode={menuMode}
-      defaultSelectedKeys={['home']}
-      selectedKeys={[site]}
-    >
-      <Menu.Item key='home'>
-        <Link href='/home'>首页</Link>
-      </Menu.Item>
-      <Menu.Item key='message'>
-        <Link href='/message'>消息</Link>
-      </Menu.Item>
-      <Menu.Item key='trending'>
-        <Link href='/trending'>热榜</Link>
-      </Menu.Item>
-      <Menu.Item key='search'>
-        <Link href='/searchpage'>搜索</Link>
-      </Menu.Item>
-    </Menu>
-  );
-  const UserMenu = (
-    <Menu>
-      <Menu.Item>
-        <Link href='/profile'>个人信息</Link>
-      </Menu.Item>
-      <Menu.Divider />
-      <Menu.Item
-        onClick={() => {
-          localStorage.removeItem('token');
-          window.location.reload();
-        }}
-      >
-        退出
-      </Menu.Item>
-    </Menu>
-  );
   return (
     <Layout className='layout'>
       <Header>
         <title>{title}</title>
-        <Row>
-          <div className='logo' />
-          <Col offset={2}>{menu}</Col>
-          <Col offset={16} span={1}>
-            <Dropdown overlay={UserMenu} placement='bottomCenter'>
-              <Button icon={<UserOutlined />} />
-            </Dropdown>
-          </Col>
-        </Row>
+        <GlobalHeader />
       </Header>
       <Content style={{ padding: '0 50px' }}>
         <Breadcrumb style={{ margin: '16px 0' }}>
