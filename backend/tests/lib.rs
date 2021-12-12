@@ -51,7 +51,9 @@ fn test_signup() {
         .json(&json!({
             "username": name,
             "password": "testpassword",
-            "email": format!("{}@mails.tsignhua.edu.cn", name)}))
+            "email": format!("{}@mails.tsignhua.edu.cn", name),
+            "verification_code": "666666",
+        }))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::BadRequest);
@@ -62,7 +64,9 @@ fn test_signup() {
         .json(&json!({
             "username": name,
             "password": "testpassword",
-            "email": format!("{}@mails.tsinghua.edu.cn", name)}))
+            "email": format!("{}@mails.tsinghua.edu.cn", name),
+            "verification_code": "666666",
+        }))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::BadRequest);
@@ -73,7 +77,9 @@ fn test_signup() {
         .json(&json!({
             "username": "",
             "password": "testpassword",
-            "email": format!("{}@mails.tsinghua.edu.cn", name)}))
+            "email": format!("{}@mails.tsinghua.edu.cn", name),
+            "verification_code": "666666",
+        }))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::BadRequest);
@@ -102,7 +108,9 @@ fn test_login_signup() {
         .json(&json!({
             "username": name,
             "password": "testpassword",
-            "email": format!("{}@mails.tsinghua.edu.cn", name)}))
+            "email": format!("{}@mails.tsinghua.edu.cn", name),
+            "verification_code": "666666",
+        }))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
@@ -163,7 +171,9 @@ fn test_burrow() {
         .json(&json!({
             "username": name,
             "password": "testpassword",
-            "email": format!("{}@mails.tsinghua.edu.cn", name)}))
+            "email": format!("{}@mails.tsinghua.edu.cn", name),
+            "verification_code": "666666",
+        }))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
@@ -386,7 +396,9 @@ fn test_content() {
         .json(&json!({
             "username": name,
             "password": "testpassword",
-            "email": format!("{}@mails.tsinghua.edu.cn", name)}))
+            "email": format!("{}@mails.tsinghua.edu.cn", name),
+            "verification_code": "666666",
+        }))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
