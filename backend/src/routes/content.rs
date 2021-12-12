@@ -98,6 +98,15 @@ pub async fn create_post(
             ))),
         );
     }
+    if content.tag.len() > MAX_TAG {
+        return (
+            Status::BadRequest,
+            Err(Json(ErrorResponse::build(
+                ErrorCode::SectionInvalid,
+                "Wrong Post Tag.",
+            ))),
+        );
+    }
     // TODO: check if section is valid
     // check if user has been banned
     match UserStatus::find_by_id(auth.id).one(&pg_con).await {
@@ -336,6 +345,15 @@ pub async fn update_post(
             Err(Json(ErrorResponse::build(
                 ErrorCode::SectionInvalid,
                 "Wrong Post Section.",
+            ))),
+        );
+    }
+    if content.tag.len() > MAX_TAG {
+        return (
+            Status::BadRequest,
+            Err(Json(ErrorResponse::build(
+                ErrorCode::SectionInvalid,
+                "Wrong Post Tag.",
             ))),
         );
     }

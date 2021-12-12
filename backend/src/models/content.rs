@@ -6,6 +6,7 @@ use std::convert::From;
 pub static POST_PER_PAGE: usize = 20;
 pub static REPLY_PER_PAGE: usize = 20;
 pub static MAX_SECTION: usize = 3;
+pub static MAX_TAG: usize = 10;
 
 #[derive(Debug, FromQueryResult)]
 pub struct LastPostSeq {

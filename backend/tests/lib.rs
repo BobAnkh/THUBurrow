@@ -189,8 +189,9 @@ fn test_burrow() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    // println!("{}", response.into_string().unwrap());
+    assert_eq!(response.into_string().unwrap(), "Success");
 
+    // 3. test create_burrow
     // create burrow: perform a wrong action (less in 24 hrs)
     let response = client
         .post("/burrows")
@@ -200,7 +201,13 @@ fn test_burrow() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::TooManyRequests);
-    println!("{}", response.into_string().unwrap());
+    assert_eq!(
+        response.into_json::<ErrorResponse>().unwrap(),
+        ErrorResponse::build(
+            ErrorCode::RateLimit,
+            "User can only create a new burrow every 24 hours",
+        )
+    );
     // let response = client
     //     .post("/burrows")
     //     .json(&json!({
@@ -210,9 +217,7 @@ fn test_burrow() {
     //     .dispatch();
     // assert_eq!(response.status(), Status::Forbidden);
     // println!("{}", response.into_string().unwrap());
-
     std::thread::sleep(std::time::Duration::from_secs(5));
-
     // create burrow (2nd)
     let response = client
         .post("/burrows")
@@ -233,7 +238,10 @@ fn test_burrow() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::BadRequest);
-    println!("{}", response.into_string().unwrap());
+    assert_eq!(
+        response.into_json::<ErrorResponse>().unwrap(),
+        ErrorResponse::build(ErrorCode::EmptyField, "Burrow title cannot be empty",)
+    );
     // create burrow: perform a wrong action (amount up to limit)
     std::thread::sleep(std::time::Duration::from_secs(5));
     // create burrow (3rd)
@@ -245,7 +253,7 @@ fn test_burrow() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    println!("Burrow Id: {}", response.into_string().unwrap());
+    println!("{}", response.into_string().unwrap());
     std::thread::sleep(std::time::Duration::from_secs(5));
     // create burrow (4th)
     let response = client
@@ -256,7 +264,7 @@ fn test_burrow() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    println!("Burrow Id: {}", response.into_string().unwrap());
+    println!("{}", response.into_string().unwrap());
     std::thread::sleep(std::time::Duration::from_secs(5));
     // create burrow (5th)
     let response = client
@@ -267,7 +275,7 @@ fn test_burrow() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    println!("Burrow Id: {}", response.into_string().unwrap());
+    println!("{}", response.into_string().unwrap());
     std::thread::sleep(std::time::Duration::from_secs(5));
     // create burrow: perform a wrong action (6th)
     let response = client
@@ -278,7 +286,13 @@ fn test_burrow() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Forbidden);
-    println!("Burrow Id: {}", response.into_string().unwrap());
+    assert_eq!(
+        response.into_json::<ErrorResponse>().unwrap(),
+        ErrorResponse::build(
+            ErrorCode::BurrowNumLimit,
+            "Owned burrow amount is up to limit.",
+        )
+    );
 
     // follow burrow 1st
     let response = client
@@ -296,6 +310,8 @@ fn test_burrow() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     assert_eq!(response.into_string().unwrap(), "Success");
+
+    // 4. test get_follow
     // get following burrows of a user
     let response = client
         .get("/users/follow")
@@ -304,6 +320,7 @@ fn test_burrow() {
     assert_eq!(response.status(), Status::Ok);
     println!("{}", response.into_string().unwrap());
 
+    // 5. test get_total_burrow_count
     // get total burrow count
     let response = client
         .get("/burrows/total")
@@ -312,6 +329,7 @@ fn test_burrow() {
     assert_eq!(response.status(), Status::Ok);
     println!("{}", response.into_string().unwrap());
 
+    // 6. test show_burrow
     // show burrow
     let response = client
         .get(format!("/burrows/{}", burrow_id))
@@ -325,8 +343,12 @@ fn test_burrow() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::NotFound);
-    println!("{}", response.into_string().unwrap());
+    assert_eq!(
+        response.into_json::<ErrorResponse>().unwrap(),
+        ErrorResponse::build(ErrorCode::BurrowNotExist, "")
+    );
 
+    // 7. test update_burrow
     // update burrow
     let response = client
         .patch(format!("/burrows/{}", burrow_id))
@@ -336,7 +358,7 @@ fn test_burrow() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    // update burrow: perform a wrong action (missing burrow title)
+    // update burrow: perform a wrong action (empty burrow title)
     let response = client
         .patch(format!("/burrows/{}", burrow_id))
         .json(&json!({
@@ -345,7 +367,10 @@ fn test_burrow() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::BadRequest);
-
+    assert_eq!(
+        response.into_json::<ErrorResponse>().unwrap(),
+        ErrorResponse::build(ErrorCode::EmptyField, "Burrow title cannot be empty",)
+    );
     // show burrow (after update)
     let response = client
         .get(format!("/burrows/{}", burrow_id))
@@ -354,6 +379,7 @@ fn test_burrow() {
     assert_eq!(response.status(), Status::Ok);
     println!("{}", response.into_string().unwrap());
 
+    // 8. test get_burrow
     // get burrow of a user
     let response = client
         .get("/users/burrows")
@@ -362,6 +388,7 @@ fn test_burrow() {
     assert_eq!(response.status(), Status::Ok);
     println!("Burrow ids are: {}", response.into_string().unwrap());
 
+    // 9. test get_user_valid_burrow
     // get valid burrow of a user
     let response = client
         .get("/users/valid-burrows")
@@ -370,20 +397,27 @@ fn test_burrow() {
     assert_eq!(response.status(), Status::Ok);
     println!("Burrow ids are: {}", response.into_string().unwrap());
 
+    // 10. test discard_burrow
     // discard burrow
     let response = client
         .delete(format!("/burrows/{}", burrow_id))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    println!("{:?}", response.into_string());
+    assert_eq!(response.into_string().unwrap(), "Success");
     // discard burrow: perform a wrong action (already discard)
     let response = client
         .delete(format!("/burrows/{}", burrow_id))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Forbidden);
-    println!("{}", response.into_string().unwrap());
+    assert_eq!(
+        response.into_json::<ErrorResponse>().unwrap(),
+        ErrorResponse::build(
+            ErrorCode::UserForbidden,
+            "Burrow doesn't belong to current user or already be discarded",
+        )
+    );
 
     // update burrow: perform a wrong action (invalid burrow)
     let response = client
@@ -394,6 +428,13 @@ fn test_burrow() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::BadRequest);
+    assert_eq!(
+        response.into_json::<ErrorResponse>().unwrap(),
+        ErrorResponse::build(
+            ErrorCode::UserForbidden,
+            "Burrow doesn't belong to current user or already be discarded",
+        )
+    );
 }
 
 #[test]
@@ -432,7 +473,7 @@ fn test_content() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    // println!("{}", response.into_string().unwrap());
+    assert_eq!(response.into_string().unwrap(), "Success");
 
     // follow the burrow
     let response = client
