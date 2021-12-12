@@ -1,32 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import styles from '../styles/register.module.css';
 import 'antd/dist/antd.css';
-import {
-  Form,
-  Input,
-  InputNumber,
-  Cascader,
-  Select,
-  Row,
-  Col,
-  Checkbox,
-  Button,
-  AutoComplete,
-  Space,
-  message,
-} from 'antd';
-import {
-  SettingOutlined,
-  UserOutlined,
-  LockOutlined,
-  EyeInvisibleOutlined,
-  EyeTwoTone,
-  AudioOutlined,
-} from '@ant-design/icons';
-import { thisExpression } from '@babel/types';
+import { Form, Input, Select, Row, Col, Checkbox, Button, message } from 'antd';
 import axios from 'axios';
-
-const { Search } = Input;
 
 type RegisProps = {};
 const { Option } = Select;
@@ -53,10 +29,43 @@ export default function Register({ switchform }: Iprops) {
   const [passWord, setPassWord] = useState('');
   const [email, setEmail] = useState('');
   const [suffix, setSuffix] = useState('@mails.tsinghua.edu.cn');
-  const [count, setCount] = useState(5);
-  const [counting, setCounting] = useState(false);
+  const [btnBool, setbtnBool] = useState(false);
+  const [btnText, setbtnText] = useState('发送验证码');
+  const [verCode, setVerCode] = useState('');
 
-  function sendCode() {}
+  async function sendCode() {
+    let maxTime = 5;
+    const timer = setInterval(() => {
+      if (maxTime > 0) {
+        --maxTime;
+        setbtnBool(true);
+        setbtnText('重新获取' + maxTime);
+      } else {
+        setbtnBool(false);
+        setbtnText('发送验证码');
+        clearInterval(timer);
+      }
+    }, 1000);
+    const data = {
+      email: email + suffix,
+    };
+    console.log(data);
+    try {
+      const res = await axios.post(
+        `${process.env.NEXT_PUBLIC_BASEURL}/users/email`,
+        data
+      );
+      var json = await res.data;
+      if (json.error) {
+        message.success('发送验证码成功');
+      } else {
+        message.error('发送验证码失败');
+      }
+    } catch (e) {
+      message.error('发送验证码失败');
+      alert(e);
+    }
+  }
 
   function handleSuffix(value: any) {
     setSuffix(value);
@@ -98,22 +107,34 @@ export default function Register({ switchform }: Iprops) {
     }
   }
 
+  function handleVerCode(event: any) {
+    if (event && event.target && event.target.value) {
+      let value = event.target.value;
+      setVerCode(value);
+    }
+  }
+
   async function onFinish() {
     const data = {
       username: userName,
       password: passWord,
-      email: email,
-      verification_code: 1234,
+      email: email + suffix,
+      verification_code: verCode,
     };
     try {
       const res = await axios.post(
         `${process.env.NEXT_PUBLIC_BASEURL}/6381347`,
         data
       );
-      message.success('注册成功');
-      window.location.href = '../login';
+      var json = await res.data;
+      if (json.error) {
+        message.error('注册失败');
+      } else {
+        message.success('注册成功');
+        window.location.href = '../login';
+      }
     } catch (e) {
-      message.error('登陆失败');
+      message.error('注册失败');
       alert(e);
     }
   }
@@ -140,6 +161,7 @@ export default function Register({ switchform }: Iprops) {
                     placeholder='Username'
                     onChange={(event) => handleUsrName(event)}
                     className={styles.inputBox}
+                    name='Username'
                   />
                 </Col>
               </Row>
@@ -166,6 +188,7 @@ export default function Register({ switchform }: Iprops) {
                     placeholder='password'
                     onChange={(event) => handlePassWord(event)}
                     className={styles.inputBox}
+                    name='Password'
                   />
                 </Col>
               </Row>
@@ -183,6 +206,7 @@ export default function Register({ switchform }: Iprops) {
                   <Input.Password
                     placeholder='password'
                     className={styles.inputBox}
+                    name='Password_Confirm'
                   />
                 </Col>
               </Row>
@@ -209,6 +233,7 @@ export default function Register({ switchform }: Iprops) {
                     addonAfter={selectAfter}
                     onChange={(event) => handleEmail(event)}
                     className={styles.inputBox}
+                    name='Email'
                   />
                 </Col>
               </Row>
@@ -217,17 +242,20 @@ export default function Register({ switchform }: Iprops) {
               <Row>
                 <Col span={6}>邮箱验证码:</Col>
                 <Col span={12}>
-                  <Input />
+                  <Input
+                    name='Email_Confirm'
+                    onChange={(event) => handleVerCode(event)}
+                  />
                 </Col>
                 <Col span={6}>
                   <Button
                     type='primary'
                     className={styles.send}
-                    disabled={counting ? true : false}
+                    disabled={btnBool}
                     block
                     onClick={sendCode}
                   >
-                    {counting ? count + '秒后重发' : '获取验证码'}
+                    {btnText}
                   </Button>
                 </Col>
               </Row>
