@@ -105,6 +105,7 @@ export default function Register({ switchform }: Iprops) {
       username: userName,
       password: passWord,
       email: email,
+      verification_code: '111111',
     };
     try {
       const res = await axios.post(

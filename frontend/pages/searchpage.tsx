@@ -23,7 +23,7 @@ import React from 'react';
 import {
   PostListItemDataType,
   BurrowListItemDataType,
-} from '../req/search/data.d';
+} from '../models/search/data.d';
 import styles from '../styles/search.module.css';
 import GlobalHeader from '../components/header/header';
 import { Input } from 'antd';

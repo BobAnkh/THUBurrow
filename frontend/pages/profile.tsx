@@ -95,7 +95,6 @@ const UserPage: NextPage = () => {
   const [burrowList, setBurrowList] = useState([]);
   const [followedList, setFollowedList] = useState([]);
   const [page, setPage] = useState(1);
-  const [postNum, setPostNum] = useState(1);
   const [postList, setPostList] = useState([]);
   const [menuMode, setMenuMode] = useState<'inline' | 'horizontal'>(
     'horizontal'
@@ -111,9 +110,7 @@ const UserPage: NextPage = () => {
           }
         );
         const postlist = res.data.list_page.post_page;
-        const postnum = res.data.list_page.post_num;
         setPostList(postlist);
-        setPostNum(postnum);
       } catch (error) {
         const err = error as AxiosError;
         if (err.response?.status == 401) {
@@ -231,7 +228,7 @@ const UserPage: NextPage = () => {
           />
         </Card>
         <Card title='收藏的帖子'>
-          <PostList listData={postList} postNum={postNum} setPage={setPage} />
+          <PostList listData={postList} setPage={setPage} />
         </Card>
       </Content>
     </Layout>
