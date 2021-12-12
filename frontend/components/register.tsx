@@ -48,6 +48,8 @@ type Iprops = {
   switchform: any;
 };
 
+const validate_password = /^(?![0-9]+$)(?![a-zA-Z]+$)[0-9A-Za-z-_]{6,20}$/;
+
 export default function Register({ switchform }: Iprops) {
   const [userName, setUserName] = useState('');
   const [passWord, setPassWord] = useState('');
@@ -120,6 +122,7 @@ export default function Register({ switchform }: Iprops) {
 
   return (
     <div className={styles.background}>
+      <title>注册</title>
       <div className={styles.container}>
         <div className={styles.header}>
           <h4 className={styles.column}>注册</h4>
@@ -148,6 +151,10 @@ export default function Register({ switchform }: Iprops) {
               name='password'
               rules={[
                 { required: true, message: 'Please input your password!' },
+                {
+                  pattern: validate_password,
+                  message: '请输入字母和数字的6到20位组合',
+                },
                 ({ getFieldValue }) => ({
                   validator(role, value) {
                     let password_value = getFieldValue('password_confirm');

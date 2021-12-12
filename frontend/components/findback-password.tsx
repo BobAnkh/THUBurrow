@@ -7,9 +7,8 @@ import { Form, Input, Row, Col, Button } from 'antd';
 type Iprops = {
   switchform: any;
 };
-//密码验证
-export const validate_password =
-  /^(?![0-9]+$)(?![a-zA-Z]+$)[0-9A-Za-z-_]{6,20}$/;
+
+const validate_password = /^(?![0-9]+$)(?![a-zA-Z]+$)[0-9A-Za-z-_]{6,20}$/;
 
 export default function FindbackPassword({ switchform }: Iprops) {
   async function onFinish(values: any) {}
@@ -28,11 +27,13 @@ export default function FindbackPassword({ switchform }: Iprops) {
       } else {
         setbtnBool(false);
         setbtnText('发送验证码');
+        clearInterval(timer);
       }
     }, 1000);
   }
   return (
     <div className={styles.background}>
+      <title>找回密码</title>
       <div className={styles.container}>
         <div className={styles.header}>
           <h4 className={styles.column}>找回密码</h4>
@@ -125,7 +126,6 @@ export default function FindbackPassword({ switchform }: Iprops) {
                     if (!value || getFieldValue('password') === value) {
                       return Promise.resolve();
                     }
-
                     return Promise.reject(new Error('两次密码不一致'));
                   },
                 }),
