@@ -53,7 +53,7 @@ fn test_signup() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     println!("{}", response.into_string().unwrap());
-    std::thread::sleep(std::time::Duration::from_secs(2));
+    std::thread::sleep(std::time::Duration::from_secs(20));
     // sign up a user
     let response = client
         .post("/users/sign-up")
