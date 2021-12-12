@@ -14,6 +14,7 @@ import {
   Button,
   Input,
   Card,
+  Tag,
 } from 'antd';
 import Link from 'next/link';
 import { MessageOutlined, LikeOutlined, StarOutlined } from '@ant-design/icons';
@@ -32,6 +33,13 @@ const IconText = (props: any) => (
     {props.text}
   </Space>
 );
+
+function showtag1(tag: string) {
+    return <Tag>{tag}</Tag>;
+  }
+  const showtag = (value: Array<string>) => {
+    return value.map(showtag1);
+  };
 
 const onFinish = async (values: any) => {
   const time = moment().format('YYYY-MM-DD HH:mm:ss');
@@ -378,8 +386,9 @@ const Burrow: NextPage = () => {
                   ]}
                 >
                   <List.Item.Meta
-                    title={<a href={`post/${item.post_id}`}>{item.title}</a>}
+                    title={<a href={`post/${item.post_id}`}>{item.title}&emsp;<Tag color="yellow">{item.section}</Tag></a>}
                   />
+                  {showtag(item.tag)}
                 </List.Item>
               )}
             />
