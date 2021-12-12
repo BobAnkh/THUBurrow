@@ -1,37 +1,40 @@
-export interface Params {
-  id: number;
-  tag: string;
-  keyword: string;
-  order: string;
-  area: string;
-}
 export interface PostListItemDataType {
-  document: {
-    post_id: string;
-    title: string;
-    url: string;
-    updated_time: string;
-    created_time: string;
-    star: number;
-    like: number;
-    dislike: number;
-    description: [];
-    message: number;
-    introduction: string;
-  };
+  post_id: number;
+  title: string;
+  update_time: string;
+
+  section: [];
+  tag: [];
+
+  created_time?: string;
+  collection_num?: number;
+  like_num?: number;
+  dislike?: number;
+  description?: [];
+  message?: number;
+  introduction?: string;
   highlights?: [{ field: string; snippet: string }];
 }
 export interface BurrowListItemDataType {
-  document: {
-    burrow_id: string;
-    title: string;
-    url: string;
-    updated_time: string;
-    created_time: string;
-    status: boolean; //洞是否废弃
-    star: number;
-    post_number: number;
-    introduction: string;
-  };
+  burrow_id?: number;
+  title: string;
+  description: string;
+  update_time: string;
+
+  posts?: [
+    {
+      title: string;
+      like_num: string;
+      collection_num: string;
+      post_len: string;
+      updata_time: string;
+      tag: [];
+    }
+  ];
+
+  status?: boolean;
+  star?: number;
+  like?: number;
+
   highlights?: [{ field: string; snippet: string }];
 }
