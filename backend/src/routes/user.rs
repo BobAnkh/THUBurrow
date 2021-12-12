@@ -133,7 +133,7 @@ pub async fn user_email_activate(
                     Ok(res) => {
                         if res.is_some() {
                             let s = res.unwrap();
-                            let values: Vec<&str> = s.split(":").collect();
+                            let values: Vec<&str> = s.split(':').collect();
                             let op_times = values[0].parse::<usize>().unwrap();
                             println!("op_times: {}", op_times);
                             if op_times > SEND_EMAIL_LIMIT {
@@ -275,7 +275,7 @@ pub async fn user_sign_up(
         match get_redis_result {
             Ok(res) => match res {
                 Some(s) => {
-                    let values: Vec<&str> = s.split(":").collect();
+                    let values: Vec<&str> = s.split(':').collect();
                     let code = values[1];
                     if !user.verification_code.eq(code) {
                         return (

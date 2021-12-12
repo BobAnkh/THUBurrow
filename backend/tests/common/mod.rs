@@ -12,6 +12,7 @@ pub fn get_client() -> &'static Mutex<Client> {
         rt.spawn(generate_trending());
         rt.spawn(pulsar_relation());
         rt.spawn(pulsar_typesense());
+        rt.spawn(pulsar_email());
         // let _ = vec![
         //     tokio::spawn(pulsar_relation()),
         //     tokio::spawn(pulsar_typesense()),

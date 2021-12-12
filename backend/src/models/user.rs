@@ -1,6 +1,6 @@
+use super::burrow::BurrowMetadata;
 use rocket::serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use super::burrow::BurrowMetadata;
 
 pub static SEND_EMAIL_LIMIT: usize = 3;
 
@@ -39,3 +39,38 @@ pub struct UserGetFollowResponse {
     pub burrow: BurrowMetadata,
     pub is_update: bool,
 }
+
+// pub struct UserGetFavResponse {
+//     pub post_id: i64,
+//     pub title: String,
+//     pub tags: String,
+//     pub burrow_id: i64,
+//     pub burrow_name: String,
+// }
+
+// pub struct GetBatch {}
+// impl GetBatch {
+//     async fn get_post(
+//         burrow: &pgdb::burrow::Model,
+//         inner_conn: DatabaseConnection,
+//     ) -> Result<i64, Box<dyn std::error::Error>> {
+//         let post_num: i64 = match ContentPost::find()
+//             .filter(pgdb::content_post::Column::BurrowId.eq(burrow.burrow_id))
+//             .all(&inner_conn)
+//             .await
+//         {
+//             Ok(posts) => match posts.len().try_into() {
+//                 Ok(n) => n,
+//                 Err(e) => {
+//                     error!("[GET-BURROW] TryInto Error: {:?}", e.to_string());
+//                     -1
+//                 }
+//             },
+//             Err(e) => {
+//                 error!("[GET-BURROW] Database Error: {:?}", e.to_string());
+//                 -1
+//             }
+//         };
+//         Ok(post_num)
+//     }
+// }

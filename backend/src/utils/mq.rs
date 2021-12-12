@@ -136,6 +136,9 @@ lazy_static! {
         };
         url
     };
+    static ref TEST_MODE: bool =
+        // **TODO**: set default to 'false' later
+        env::var("TEST_MODE").map(|x| x.parse::<bool>().unwrap()).ok().unwrap_or(true);
 }
 
 async fn create_typesense_collections() -> Result<(), reqwest::Error> {
@@ -729,6 +732,35 @@ pub async fn generate_trending() -> redis::RedisResult<()> {
     }
 }
 
+async fn get_set_redis(
+    kv_conn: &mut redis::aio::Connection,
+    email: &str,
+    verification_code: &str,
+) -> Result<String, redis::RedisError> {
+    let get_res: Option<String> = redis::cmd("GET").arg(email).query_async(kv_conn).await?;
+    let mut op_times = match get_res {
+        Some(res) => {
+            let values: Vec<&str> = res.split(':').collect();
+            values[0].parse::<usize>().unwrap()
+        }
+        None => 0,
+    };
+    op_times += 1;
+    // check request rate
+    if op_times > SEND_EMAIL_LIMIT {
+        let e = (redis::ErrorKind::ExtensionError, "RateLimit").into();
+        return Err(e);
+    } else {
+        let _: String = redis::cmd("SETEX")
+            .arg(email)
+            .arg(14400i32)
+            .arg(op_times.to_string() + ":" + verification_code)
+            .query_async(kv_conn)
+            .await?;
+    }
+    Ok("Success".to_string())
+}
+
 pub async fn pulsar_email() -> Result<(), pulsar::Error> {
     // setup pulsar consumer
     let redis_addr: String = REDIS_ADDR.to_owned();
@@ -765,62 +797,55 @@ pub async fn pulsar_email() -> Result<(), pulsar::Error> {
                 continue;
             }
         };
-        if check_email_exist(&data.email).await.0 {
-            let mut op_times: usize = 1;
-            // **TODO: Generate verification code**
-            let mut verification_code = "666666";
-            let get_redis_result: Result<Option<String>, redis::RedisError> = redis::cmd("GET")
-                .arg(&data.email)
-                .query_async(&mut kv_conn)
-                .await;
-            match get_redis_result {
-                Ok(res) => {
-                    log::info!("[PULSAR-EMAIL] Redis get success");
-                    if res.is_some() {
-                        let s = res.unwrap();
-                        let values: Vec<&str> = s.split(":").collect();
-                        println!("{:?}", values);
-                        op_times = values[0].parse::<usize>().unwrap();
-                        // **TODO: Generate verification code**
-                        verification_code = "233333";
-                        if op_times > SEND_EMAIL_LIMIT {
-                            log::info!("[PULSAR-EMAIL] User sent too many emails, refuse to send");
-                            continue;
-                        } else {
-                            op_times = op_times + 1;
-                        }
-                    }
-                }
-                Err(e) => {
-                    log::error!("[PULSAR-EMAIL] Redis get failed {:?}", e);
-                    continue;
-                }
-            };
-            let set_redis_result: Result<String, redis::RedisError> = redis::cmd("SETEX")
-                .arg(&data.email)
-                .arg(14400i32)
-                .arg(op_times.to_string() + ":" + verification_code)
-                .query_async(&mut kv_conn)
-                .await;
-            match set_redis_result {
+        if *TEST_MODE {
+            let verification_code = "666666";
+            match get_set_redis(&mut kv_conn, &data.email, verification_code).await {
                 Ok(_) => {
-                    log::info!("[PULSAR-EMAIL] Redis set success");
+                    log::info!("[PULSAR-EMAIL] Redis get & set success");
+                    log::info!("[PULSAR-EMAIL] Email send success");
+                }
+                Err(e) => match e.kind() {
+                    redis::ErrorKind::ExtensionError => {
+                        log::info!("[PULSAR-EMAIL] User sent too many emails, refuse to send");
+                        continue;
+                    }
+                    _ => {
+                        log::error!("[PULSAR-EMAIL] Redis get/set failed {:?}", e);
+                        continue;
+                    }
+                },
+            }
+        } else if check_email_exist(&data.email).await.0 {
+            // **TODO**: generate verification code
+            let verification_code = "666666";
+            match get_set_redis(&mut kv_conn, &data.email, verification_code).await {
+                Ok(_) => {
+                    log::info!("[PULSAR-EMAIL] Redis get & set success");
                     match email_send::post(
                         data.email.clone(),
                         verification_code.parse::<i32>().unwrap(),
                     )
-                    .await {
+                    .await
+                    {
                         Ok(res) => {
-                            println!("{}", res);
-                        },
+                            log::info!("[PULSAR-EMAIL] Email send success, response: {}", res);
+                            // println!("{}", res);
+                        }
                         Err(e) => {
-                            println!("{}", e);
-                        },
+                            log::error!("[PULSAR-EMAIL] Email send failed: {}", e);
+                        }
                     };
-
-                    log::info!("[PULSAR-EMAIL] Email send success");
                 }
-                Err(e) => log::error!("[PULSAR-EMAIL] Redis set failed {:?}", e),
+                Err(e) => match e.kind() {
+                    redis::ErrorKind::ExtensionError => {
+                        log::info!("[PULSAR-EMAIL] User sent too many emails, refuse to send");
+                        continue;
+                    }
+                    _ => {
+                        log::error!("[PULSAR-EMAIL] Redis get/set failed {:?}", e);
+                        continue;
+                    }
+                },
             }
         } else {
             let set_redis_result: Result<String, redis::RedisError> = redis::cmd("SETEX")
@@ -835,6 +860,5 @@ pub async fn pulsar_email() -> Result<(), pulsar::Error> {
             }
         }
     }
-
     Ok(())
 }

@@ -1,11 +1,11 @@
-use reqwest::header::HeaderMap;
-use serde::Serialize;
+use chrono::Utc;
 use crypto::digest::Digest;
-use crypto::sha2::Sha256;
 use crypto::hmac::Hmac;
 use crypto::mac::Mac;
-use chrono::Utc;
+use crypto::sha2::Sha256;
+use reqwest::header::HeaderMap;
 use rustc_serialize::hex::ToHex;
+use serde::Serialize;
 
 pub static SECRET_ID: &str = "";
 pub static SECRET_KEY: &str = "";
@@ -40,9 +40,9 @@ fn gen_auth(param: &Body, timestamp: String) -> String {
     let canonical_querystring = "".to_string();
     let ct = "application/json; charset=utf-8".to_string();
     let payload_str = serde_json::to_string(param).unwrap();
-    let payload_vec: Vec<&str> = payload_str.split(":").collect();
+    let payload_vec: Vec<&str> = payload_str.split(':').collect();
     let payload = payload_vec.join(": ");
-    let payload_vec: Vec<&str> = payload.split(",").collect();
+    let payload_vec: Vec<&str> = payload.split(',').collect();
     let payload = payload_vec.join(", ");
     // println!("{}", payload);
     let canonical_headers = format!("content-type:{}\nhost:{}\n", ct, host);
@@ -50,13 +50,14 @@ fn gen_auth(param: &Body, timestamp: String) -> String {
     let mut hasher = Sha256::new();
     hasher.input_str(&payload);
     let hashed_request_payload = hasher.result_str();
-    let canonical_request = format!("{}\n{}\n{}\n{}\n{}\n{}"
-        , http_request_method
-        , canonical_uri
-        , canonical_querystring
-        , canonical_headers
-        , signed_headers
-        , hashed_request_payload
+    let canonical_request = format!(
+        "{}\n{}\n{}\n{}\n{}\n{}",
+        http_request_method,
+        canonical_uri,
+        canonical_querystring,
+        canonical_headers,
+        signed_headers,
+        hashed_request_payload
     );
     // println!("{}", canonical_request);
 
@@ -65,11 +66,9 @@ fn gen_auth(param: &Body, timestamp: String) -> String {
     let mut hasher = Sha256::new();
     hasher.input_str(&canonical_request);
     let hashed_canonical_request = hasher.result_str();
-    let string_to_sign = format!("{}\n{}\n{}\n{}"
-        , algorithm
-        , timestamp.to_string()
-        , credential_scope
-        , hashed_canonical_request
+    let string_to_sign = format!(
+        "{}\n{}\n{}\n{}",
+        algorithm, timestamp, credential_scope, hashed_canonical_request
     );
     // println!("{}", string_to_sign);
 
@@ -81,7 +80,7 @@ fn gen_auth(param: &Body, timestamp: String) -> String {
         let code = result.code();
         code.to_vec()
     }
-    let key = "TC3".to_string() + &secret_key;
+    let key = "TC3".to_string() + secret_key;
     let secret_date = sign(key.as_bytes(), date.as_bytes());
     // println!("{}", secret_date.to_hex());
     let secret_service = sign(&secret_date, service.as_bytes());
@@ -94,16 +93,13 @@ fn gen_auth(param: &Body, timestamp: String) -> String {
     // println!("{}", signature);
 
     // step 4: 拼接 Authorization
-    format!("{} Credential={}/{}, SignedHeaders={}, Signature={}"
-        , algorithm
-        , secret_id
-        , credential_scope
-        , signed_headers
-        , signature
+    format!(
+        "{} Credential={}/{}, SignedHeaders={}, Signature={}",
+        algorithm, secret_id, credential_scope, signed_headers, signature
     )
 }
 
-pub async fn post(user_email: String, verification_code: i32) -> Result<String, reqwest::Error>{
+pub async fn post(user_email: String, verification_code: i32) -> Result<String, reqwest::Error> {
     // create client
     let client = reqwest::Client::new();
 
@@ -116,7 +112,10 @@ pub async fn post(user_email: String, verification_code: i32) -> Result<String, 
     // let region = "ap-hongkong".to_string();
     // let version = "2020-10-02".to_string();
     headers.insert("Host", "ses.tencentcloudapi.com".parse().unwrap());
-    headers.insert("Content-Type", "application/json; charset=utf-8".parse().unwrap());
+    headers.insert(
+        "Content-Type",
+        "application/json; charset=utf-8".parse().unwrap(),
+    );
     headers.insert("X-TC-Action", "SendEmail".parse().unwrap());
     headers.insert("X-TC-Timestamp", timestamp.parse().unwrap());
     headers.insert("X-TC-Version", "2020-10-02".parse().unwrap());
@@ -136,14 +135,14 @@ pub async fn post(user_email: String, verification_code: i32) -> Result<String, 
     };
 
     let payload_str = serde_json::to_string(&body).unwrap();
-    let payload_vec: Vec<&str> = payload_str.split(":").collect();
+    let payload_vec: Vec<&str> = payload_str.split(':').collect();
     let payload = payload_vec.join(": ");
-    let payload_vec: Vec<&str> = payload.split(",").collect();
+    let payload_vec: Vec<&str> = payload.split(',').collect();
     let payload = payload_vec.join(", ");
 
     // generate authorization, set header
     let auth = gen_auth(&body, timestamp.clone());
-    headers.insert("Authorization",auth.parse().unwrap());
+    headers.insert("Authorization", auth.parse().unwrap());
     // let req = format!("\ncurl -X POST https://{} -H \"Authorization: {}\" -H \"Content-Type: application/json; charset=utf-8\" -H \"Host: {}\" -H \"X-TC-Action: {}\" -H \"X-TC-Timestamp: {}\" -H \"X-TC-Version: {}\" -H \"X-TC-Region: {}\" -d \'{}\'"
     //     , host
     //     , auth
@@ -156,7 +155,12 @@ pub async fn post(user_email: String, verification_code: i32) -> Result<String, 
     // );
     // println!("{}", req);
     // send request
-    let response = client.post("https://ses.tencentcloudapi.com").headers(headers).body(payload).send().await?;
+    let response = client
+        .post("https://ses.tencentcloudapi.com")
+        .headers(headers)
+        .body(payload)
+        .send()
+        .await?;
     // println!("{}", response);
     Ok(response.text().await?)
 }

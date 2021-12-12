@@ -24,13 +24,23 @@ fn test_signup() {
         .map(char::from)
         .take(16)
         .collect();
+    // set verification code
+    client
+        .post("/users/email")
+        .json(&json!({
+            "email": format!("{}@mails.tsinghua.edu.cn", name)
+        }))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
     // sign up a user
     let response = client
         .post("/users/sign-up")
         .json(&json!({
             "username": name,
             "password": "testpassword",
-            "email": format!("{}@mails.tsinghua.edu.cn", name)}))
+            "email": format!("{}@mails.tsinghua.edu.cn", name),
+            "verification_code": "666666",
+        }))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
@@ -78,6 +88,14 @@ fn test_login_signup() {
         .map(char::from)
         .take(16)
         .collect();
+    // set verification code
+    client
+        .post("/users/email")
+        .json(&json!({
+            "email": format!("{}@mails.tsinghua.edu.cn", name)
+        }))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
     // sign up a user
     let response = client
         .post("/users/sign-up")
@@ -131,7 +149,14 @@ fn test_burrow() {
         .map(char::from)
         .take(16)
         .collect();
-
+    // set verification code
+    client
+        .post("/users/email")
+        .json(&json!({
+            "email": format!("{}@mails.tsinghua.edu.cn", name)
+        }))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
     // sign up a user
     let response = client
         .post("/users/sign-up")
@@ -347,7 +372,14 @@ fn test_content() {
         .map(char::from)
         .take(16)
         .collect();
-
+    // set verification code
+    client
+        .post("/users/email")
+        .json(&json!({
+            "email": format!("{}@mails.tsinghua.edu.cn", name)
+        }))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
     // sign up a user
     let response = client
         .post("/users/sign-up")
