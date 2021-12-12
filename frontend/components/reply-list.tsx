@@ -21,11 +21,6 @@ export default function ReplyList({ listData, setPage }: Props) {
         total: 2000,
       }}
       dataSource={listData}
-      footer={
-        <div>
-          <b>THU Burrow</b> footer part
-        </div>
-      }
       renderItem={(item: any) => (
         <List.Item key={item.reply_id}>
           <List.Item.Meta

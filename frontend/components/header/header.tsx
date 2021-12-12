@@ -2,23 +2,9 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import type { NextPage } from 'next';
 import { useRouter } from 'next/router';
-import {
-  Layout,
-  Menu,
-  Breadcrumb,
-  Form,
-  Button,
-  Row,
-  Col,
-  Dropdown,
-  Input,
-  message,
-  Card,
-} from 'antd';
-import { UserOutlined, SearchOutlined } from '@ant-design/icons';
+import { Menu, Button, Row, Col, Dropdown, Input } from 'antd';
+import { UserOutlined, PlusCircleOutlined } from '@ant-design/icons';
 import '../../node_modules/antd/dist/antd.css';
-const { Header, Content, Footer } = Layout;
-const { TextArea } = Input;
 
 const GlobalHeader: NextPage = () => {
   const [menuMode, setMenuMode] = useState<'inline' | 'horizontal'>(
@@ -38,8 +24,8 @@ const GlobalHeader: NextPage = () => {
       <Menu.Item key='home'>
         <Link href='/home'>首页</Link>
       </Menu.Item>
-      <Menu.Item key='message'>
-        <Link href='/message'>消息</Link>
+      <Menu.Item key='create'>
+        <Link href='/create'>发帖</Link>
       </Menu.Item>
       <Menu.Item key='trending'>
         <Link href='/trending'>热榜</Link>
@@ -66,19 +52,29 @@ const GlobalHeader: NextPage = () => {
       </Menu.Item>
     </Menu>
   );
+  const CreateMenu = (
+    <Menu>
+      <Menu.Item>
+        <Link href='/create'>发表帖子</Link>
+      </Menu.Item>
+    </Menu>
+  );
 
   return (
-    <Header>
-      <Row>
-        <div className='logo' />
-        <Col offset={2}>{menu}</Col>
-        <Col offset={16} span={1}>
-          <Dropdown overlay={UserMenu} placement='bottomCenter'>
-            <Button icon={<UserOutlined />} />
-          </Dropdown>
-        </Col>
-      </Row>
-    </Header>
+    <Row>
+      <div className='logo' />
+      <Col offset={2}>{menu}</Col>
+      <Col offset={14}>
+        <Dropdown overlay={UserMenu} placement='bottomCenter'>
+          <Button icon={<UserOutlined />} />
+        </Dropdown>
+      </Col>
+      <Col>
+        <Dropdown overlay={CreateMenu} placement='bottomCenter'>
+          <Button icon={<PlusCircleOutlined />} style={{ margin: '10px' }} />
+        </Dropdown>
+      </Col>
+    </Row>
   );
 };
 
