@@ -430,10 +430,7 @@ fn test_burrow() {
     assert_eq!(response.status(), Status::BadRequest);
     assert_eq!(
         response.into_json::<ErrorResponse>().unwrap(),
-        ErrorResponse::build(
-            ErrorCode::UserForbidden,
-            "Burrow doesn't belong to current user or already be discarded",
-        )
+        ErrorResponse::build(ErrorCode::EmptyField, "Burrow title cannot be empty",)
     );
 }
 
@@ -484,6 +481,7 @@ fn test_content() {
     assert_eq!(response.status(), Status::Ok);
     assert_eq!(response.into_string().unwrap(), "Success");
 
+    // 11. test create_post
     // create post 1
     let response = client
         .post("/content/posts")
@@ -513,7 +511,10 @@ fn test_content() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::BadRequest);
-    println!("{}", response.into_string().unwrap());
+    assert_eq!(
+        response.into_json::<ErrorResponse>().unwrap(),
+        ErrorResponse::build(ErrorCode::EmptyField, "Empty post title.",)
+    );
     // create post: perform a wrong action (invalid section)
     let response = client
         .post("/content/posts")
@@ -522,13 +523,30 @@ fn test_content() {
             "burrow_id": burrow_id,
             "section": [],
             "tag": ["NoTag"],
-            "content": "This is a test post no.3"}))
+            "content": "This is a wrong test post"}))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::BadRequest);
-    println!("{}", response.into_string().unwrap());
-    // TODO
-    // create post: perform a wrong action (invalid section)
+    assert_eq!(
+        response.into_json::<ErrorResponse>().unwrap(),
+        ErrorResponse::build(ErrorCode::SectionInvalid, "Wrong Post Section.",)
+    );
+    // create post: perform a wrong action (invalid tag)
+    let response = client
+        .post("/content/posts")
+        .json(&json!({
+            "title": format!("Third post of {}", name),
+            "burrow_id": burrow_id,
+            "section": ["TestSection"],
+            "tag": ["Tag1", "Tag2", "Tag3", "Tag4", "Tag5", "Tag6", "Tag7", "Tag8", "Tag9", "Tag10", ""],
+            "content": "This is a wrong test post"}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::BadRequest);
+    assert_eq!(
+        response.into_json::<ErrorResponse>().unwrap(),
+        ErrorResponse::build(ErrorCode::SectionInvalid, "Wrong Post Tag.",)
+    );
     // create post: perform a wrong action (invalid burrow)
     let response = client
         .post("/content/posts")
@@ -541,7 +559,10 @@ fn test_content() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Forbidden);
-    println!("{}", response.into_string().unwrap());
+    assert_eq!(
+        response.into_json::<ErrorResponse>().unwrap(),
+        ErrorResponse::build(ErrorCode::BurrowInvalid, "")
+    );
     // create post 2
     let response = client
         .post("/content/posts")
@@ -567,20 +588,27 @@ fn test_content() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
 
+    // 12. test delete_post
     // delete post 2
     let response = client
         .delete(format!("/content/posts/{}", post_id + 1))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    println!("{:?}", response.into_string());
+    assert_eq!(response.into_string().unwrap(), "Success");
     // delete post: perform a wrong action (post not exist)
     let response = client
         .delete(format!("/content/posts/{}", post_id + 10000))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::NotFound);
-    println!("{:?}", response.into_string());
+    assert_eq!(
+        response.into_json::<ErrorResponse>().unwrap(),
+        ErrorResponse::build(
+            ErrorCode::PostNotExist,
+            format!("Cannot find post {}", post_id + 10000),
+        )
+    );
     std::thread::sleep(std::time::Duration::from_secs(5));
     // delete post 3: perform a wrong action (out of time limit)
     let response = client
@@ -588,7 +616,13 @@ fn test_content() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Forbidden);
-    println!("{:?}", response.into_string());
+    assert_eq!(
+        response.into_json::<ErrorResponse>().unwrap(),
+        ErrorResponse::build(
+            ErrorCode::UserForbidden,
+            "Can only delete post within 2 minutes.",
+        )
+    );
 
     // create burrow
     let response = client
@@ -625,12 +659,14 @@ fn test_content() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
 
+    // 13. test trending
     // get trending
     let response = client
         .get("/trending")
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
+    println!("{}", response.into_string().unwrap());
 
     // collect post no.1
     let response = client
@@ -665,6 +701,7 @@ fn test_content() {
     assert_eq!(response.status(), Status::Ok);
     assert_eq!(response.into_string().unwrap(), "Success");
 
+    // 14. test get_follow
     // get following burrows of a user
     let response = client
         .get("/users/follow")
@@ -679,7 +716,9 @@ fn test_content() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
+    println!("{}", response.into_string().unwrap());
 
+    // 15. test get_total_post_count
     // get total post count
     let response = client
         .get("/content/posts/total")
@@ -688,6 +727,7 @@ fn test_content() {
     assert_eq!(response.status(), Status::Ok);
     println!("{}", response.into_string().unwrap());
 
+    // 16. test create_reply
     // create reply for post no.1, using default burrow
     let response = client
         .post("/content/replies")
@@ -713,7 +753,10 @@ fn test_content() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Forbidden);
-    println!("{}", response.into_string().unwrap());
+    assert_eq!(
+        response.into_json::<ErrorResponse>().unwrap(),
+        ErrorResponse::build(ErrorCode::BurrowInvalid, "")
+    );
     // create reply for post no.2: perform a wrong action (post not exist)
     let response = client
         .post("/content/replies")
@@ -724,7 +767,13 @@ fn test_content() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::NotFound);
-    println!("{}", response.into_string().unwrap());
+    assert_eq!(
+        response.into_json::<ErrorResponse>().unwrap(),
+        ErrorResponse::build(
+            ErrorCode::PostNotExist,
+            format!("Cannot find post {}", post_id + 1),
+        )
+    );
     // create reply for post no.3, using default burrow
     let response = client
         .post("/content/replies")
@@ -748,6 +797,7 @@ fn test_content() {
     assert_eq!(response.status(), Status::Ok);
     println!("{}", response.into_string().unwrap());
 
+    // 17. test get_collection
     // get post collection of a user
     let response = client
         .get("/users/collection")
@@ -771,6 +821,7 @@ fn test_content() {
     assert_eq!(response.status(), Status::Forbidden);
     println!("{:?}", response.into_string());
 
+    // 19. test read_post
     // get post no.1
     let response = client
         .get(format!("/content/posts/{}", post_id))
@@ -784,7 +835,13 @@ fn test_content() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::NotFound);
-    println!("{}", response.into_string().unwrap());
+    assert_eq!(
+        response.into_json::<ErrorResponse>().unwrap(),
+        ErrorResponse::build(
+            ErrorCode::PostNotExist,
+            format!("Cannot find post {}", post_id + 1),
+        )
+    );
     // get post no.3
     let response = client
         .get(format!("/content/posts/{}", post_id + 2))
@@ -800,6 +857,7 @@ fn test_content() {
     assert_eq!(response.status(), Status::Ok);
     println!("{}", response.into_string().unwrap());
 
+    // 19. test read_post_list
     // get post list
     let response = client
         .get("/content/posts/list")
@@ -808,6 +866,7 @@ fn test_content() {
     assert_eq!(response.status(), Status::Ok);
     println!("{}", response.into_string().unwrap());
 
+    // 20. test update_post
     // update post no.1
     let response = client
         .patch(format!("/content/posts/{}", post_id))
@@ -818,6 +877,7 @@ fn test_content() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
+    assert_eq!(response.into_string().unwrap(), "Success");
     // update post no.2: perform a wrong action (post not exist)
     let response = client
         .patch(format!("/content/posts/{}", post_id + 1))
@@ -828,6 +888,13 @@ fn test_content() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::NotFound);
+    assert_eq!(
+        response.into_json::<ErrorResponse>().unwrap(),
+        ErrorResponse::build(
+            ErrorCode::PostNotExist,
+            format!("Cannot find post {}", post_id + 1),
+        )
+    );
     // update post no.3: perform a wrong action (empty title)
     let response = client
         .patch(format!("/content/posts/{}", post_id))
@@ -838,6 +905,10 @@ fn test_content() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::BadRequest);
+    assert_eq!(
+        response.into_json::<ErrorResponse>().unwrap(),
+        ErrorResponse::build(ErrorCode::EmptyField, "Empty post title.",)
+    );
     // update post no.3: perform a wrong action (invalid section)
     let response = client
         .patch(format!("/content/posts/{}", post_id))
@@ -848,6 +919,24 @@ fn test_content() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::BadRequest);
+    assert_eq!(
+        response.into_json::<ErrorResponse>().unwrap(),
+        ErrorResponse::build(ErrorCode::SectionInvalid, "Wrong Post Section.",)
+    );
+    // update post no.3: perform a wrong action (invalid tag)
+    let response = client
+        .patch(format!("/content/posts/{}", post_id))
+        .json(&json!({
+            "title": format!("New post no.3 of {}", name),
+            "section": ["TestSection"],
+            "tag": ["Tag1", "Tag2", "Tag3", "Tag4", "Tag5", "Tag6", "Tag7", "Tag8", "Tag9", "Tag10", ""]}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::BadRequest);
+    assert_eq!(
+        response.into_json::<ErrorResponse>().unwrap(),
+        ErrorResponse::build(ErrorCode::SectionInvalid, "Wrong Post Tag.",)
+    );
     // update post no.4: perform a wrong action (invalid burrow)
     let response = client
         .patch(format!("/content/posts/{}", post_id + 3))
@@ -858,7 +947,12 @@ fn test_content() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Forbidden);
+    assert_eq!(
+        response.into_json::<ErrorResponse>().unwrap(),
+        ErrorResponse::build(ErrorCode::BurrowInvalid, "Not allowed to update this post")
+    );
 
+    // 21. test update_reply
     // update reply 1-1
     let response = client
         .patch("/content/replies")
@@ -869,6 +963,7 @@ fn test_content() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
+    assert_eq!(response.into_string().unwrap(), "Success");
     // update reply: perform a wrong action (reply not exist)
     let response = client
         .patch("/content/replies")
@@ -879,6 +974,13 @@ fn test_content() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::NotFound);
+    assert_eq!(
+        response.into_json::<ErrorResponse>().unwrap(),
+        ErrorResponse::build(
+            ErrorCode::PostNotExist,
+            format!("Cannot find reply {}-{}", post_id, reply_id + 100),
+        )
+    );
     // update reply 1-2: perform a wrong action (invalid burrow)
     let response = client
         .patch("/content/replies")
@@ -889,4 +991,8 @@ fn test_content() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Forbidden);
+    assert_eq!(
+        response.into_json::<ErrorResponse>().unwrap(),
+        ErrorResponse::build(ErrorCode::BurrowInvalid, "")
+    );
 }

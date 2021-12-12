@@ -98,6 +98,7 @@ pub async fn create_post(
             ))),
         );
     }
+    // TODO: check if section is valid
     if content.tag.len() > MAX_TAG {
         return (
             Status::BadRequest,
@@ -107,7 +108,7 @@ pub async fn create_post(
             ))),
         );
     }
-    // TODO: check if section is valid
+    // TODO: check if tag duplicates
     // check if user has been banned
     match UserStatus::find_by_id(auth.id).one(&pg_con).await {
         Ok(ust) => match ust {
