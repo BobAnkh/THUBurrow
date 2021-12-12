@@ -64,7 +64,7 @@ fn test_signup() {
         }))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
-    assert_eq!(response.status(), Status::Ok);
+    let status = response.status();
     println!("{}", response.into_string().unwrap());
     // sign up a user: perform a wrong action (illegal email address)
     let response = client
@@ -105,6 +105,7 @@ fn test_signup() {
         .dispatch();
     assert_eq!(response.status(), Status::BadRequest);
     println!("{}", response.into_string().unwrap());
+    assert_eq!(status, Status::Ok);
 }
 
 #[test]
