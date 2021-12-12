@@ -53,7 +53,7 @@ fn test_signup() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     println!("{}", response.into_string().unwrap());
-    std::thread::sleep(std::time::Duration::from_secs(20));
+    std::thread::sleep(std::time::Duration::from_secs(5));
     // sign up a user
     let response = client
         .post("/users/sign-up")
@@ -125,7 +125,7 @@ fn test_login_signup() {
         }))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
-    std::thread::sleep(std::time::Duration::from_secs(2));
+    std::thread::sleep(std::time::Duration::from_secs(5));
     // sign up a user
     let response = client
         .post("/users/sign-up")
@@ -189,7 +189,7 @@ fn test_burrow() {
         }))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
-    std::thread::sleep(std::time::Duration::from_secs(2));
+    std::thread::sleep(std::time::Duration::from_secs(5));
     // sign up a user
     let response = client
         .post("/users/sign-up")
@@ -226,7 +226,7 @@ fn test_burrow() {
             "title": "Burrow test"}))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
-    assert_eq!(response.status(), Status::Forbidden);
+    assert_eq!(response.status(), Status::TooManyRequests);
     println!("{}", response.into_string().unwrap());
     // let response = client
     //     .post("/burrows")
@@ -325,7 +325,7 @@ fn test_burrow() {
         .get(format!("/burrows/{}", burrow_id + 10))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
-    assert_eq!(response.status(), Status::BadRequest);
+    assert_eq!(response.status(), Status::NotFound);
     println!("{}", response.into_string().unwrap());
 
     // update burrow
@@ -391,10 +391,12 @@ fn test_burrow() {
         .patch(format!("/burrows/{}", burrow_id))
         .json(&json!({
             "description": format!("New Third burrow of {}", name),
-            "title": ""}))
+            "title": "new Burrow 3"}))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
-    assert_eq!(response.status(), Status::BadRequest);
+    let status = response.status();
+    println!("{}", response.into_string().unwrap());
+    assert_eq!(status, Status::Forbidden);
 }
 
 #[test]
@@ -415,7 +417,7 @@ fn test_content() {
         }))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
-    std::thread::sleep(std::time::Duration::from_secs(2));
+    std::thread::sleep(std::time::Duration::from_secs(5));
     // sign up a user
     let response = client
         .post("/users/sign-up")
@@ -613,7 +615,7 @@ fn test_content() {
         .get(format!("/content/posts/{}", post_id + 1))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
-    assert_eq!(response.status(), Status::BadRequest);
+    assert_eq!(response.status(), Status::NotFound);
     println!("{}", response.into_string().unwrap());
     // get post no.3
     let response = client
@@ -653,7 +655,7 @@ fn test_content() {
             "tag": ["TestTag"]}))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
-    assert_eq!(response.status(), Status::BadRequest);
+    assert_eq!(response.status(), Status::NotFound);
     // update post no.4: perform a wrong action (invalid burrow)
     let response = client
         .patch(format!("/content/posts/{}", post_id + 3))
