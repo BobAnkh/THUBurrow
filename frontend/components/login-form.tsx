@@ -4,7 +4,7 @@ import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import 'antd/dist/antd.css';
 import styles from '../styles/register.module.css';
 import CryptoJS from 'crypto-js';
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import { assertLiteral } from '@babel/types';
 import { OmitProps } from 'antd/lib/transfer/ListBody';
 
@@ -28,8 +28,14 @@ export default function LoginForm({ switchform }: Iprops) {
       message.success('登录成功,正在跳转到主页...');
       window.location.href = '../home';
     } catch (e) {
+      const err = e as AxiosError;
+      if (err.response?.status == 400) {
+        message.error('用户名或密码错误');
+      }
+      if (err.response?.status == 500) {
+        message.error('服务器错误');
+      }
       message.error('登陆失败');
-      alert(e);
     }
   }
   const toggleForm = () => {
@@ -40,6 +46,7 @@ export default function LoginForm({ switchform }: Iprops) {
   };
   return (
     <div className={styles.background}>
+      <title>登录</title>
       <div className={styles.containerlogin}>
         <div className={styles.header}>
           <h4 className={styles.column}>登录</h4>
