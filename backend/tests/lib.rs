@@ -1,11 +1,10 @@
 mod common;
+use backend::utils::mq::*;
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 use rocket::http::Status;
 use serde_json::json;
 use tokio::runtime::Runtime;
-use backend::utils::mq::*;
-
 
 #[test]
 fn integration_test() {
@@ -40,7 +39,7 @@ fn test_email() {
         .map(char::from)
         .take(16)
         .collect();
-    // set verification code
+    // set verification code: Request Time 1
     let response = client
         .post("/users/email")
         .json(&json!({
@@ -49,6 +48,78 @@ fn test_email() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
+    println!("{}", response.into_string().unwrap());
+    std::thread::sleep(std::time::Duration::from_secs(5));
+    // set verification code: Request Time 2
+    let response = client
+        .post("/users/email")
+        .json(&json!({
+            "email": format!("{}@mails.tsinghua.edu.cn", name)
+        }))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    println!("{}", response.into_string().unwrap());
+    std::thread::sleep(std::time::Duration::from_secs(5));
+    // set verification code: Request Time 3
+    let response = client
+        .post("/users/email")
+        .json(&json!({
+            "email": format!("{}@mails.tsinghua.edu.cn", name)
+        }))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    println!("{}", response.into_string().unwrap());
+    std::thread::sleep(std::time::Duration::from_secs(5));
+    // set verification code: Request Time 4 (RateLimit)
+    let response = client
+        .post("/users/email")
+        .json(&json!({
+            "email": format!("{}@mails.tsinghua.edu.cn", name)
+        }))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::TooManyRequests);
+    println!("{}", response.into_string().unwrap());
+    // set verification code
+    let new_name: String = std::iter::repeat(())
+        .map(|()| thread_rng().sample(Alphanumeric))
+        .map(char::from)
+        .take(16)
+        .collect();
+    let response = client
+        .post("/users/email")
+        .json(&json!({
+            "email": format!("{}@mails.tsinghua.edu.cn", new_name)
+        }))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    println!("{}", response.into_string().unwrap());
+    std::thread::sleep(std::time::Duration::from_secs(5));
+    // sign up a user
+    let response = client
+        .post("/users/sign-up")
+        .json(&json!({
+            "username": new_name,
+            "password": "testpassword",
+            "email": format!("{}@mails.tsinghua.edu.cn", new_name),
+            "verification_code": "666666",
+        }))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    println!("{}", response.into_string().unwrap());
+    // set verification code: perform a wrong action (EmailDuplicate)
+    let response = client
+        .post("/users/email")
+        .json(&json!({
+            "email": format!("{}@mails.tsinghua.edu.cn", new_name)
+        }))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::BadRequest);
     println!("{}", response.into_string().unwrap());
 }
 
@@ -69,18 +140,18 @@ fn test_signup() {
         .dispatch();
     println!("{}", response.into_string().unwrap());
     std::thread::sleep(std::time::Duration::from_secs(5));
-    // sign up a user
+    // sign up a user: perform a wrong action (wrong verification code)
     let response = client
         .post("/users/sign-up")
         .json(&json!({
             "username": name,
             "password": "testpassword",
-            "email": format!("{}@mails.tsinghua.edu.cn", name),
-            "verification_code": "666666",
+            "email": format!("{}@mails.tsignhua.edu.cn", name),
+            "verification_code": "233333",
         }))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
-    let status = response.status();
+    assert_eq!(response.status(), Status::BadRequest);
     println!("{}", response.into_string().unwrap());
     // sign up a user: perform a wrong action (illegal email address)
     let response = client
@@ -89,19 +160,6 @@ fn test_signup() {
             "username": name,
             "password": "testpassword",
             "email": format!("{}@mails.tsignhua.edu.cn", name),
-            "verification_code": "666666",
-        }))
-        .remote("127.0.0.1:8000".parse().unwrap())
-        .dispatch();
-    assert_eq!(response.status(), Status::BadRequest);
-    println!("{}", response.into_string().unwrap());
-    // sign up a user: perform a wrong action (duplicated name and email)
-    let response = client
-        .post("/users/sign-up")
-        .json(&json!({
-            "username": name,
-            "password": "testpassword",
-            "email": format!("{}@mails.tsinghua.edu.cn", name),
             "verification_code": "666666",
         }))
         .remote("127.0.0.1:8000".parse().unwrap())
@@ -121,7 +179,33 @@ fn test_signup() {
         .dispatch();
     assert_eq!(response.status(), Status::BadRequest);
     println!("{}", response.into_string().unwrap());
-    assert_eq!(status, Status::Ok);
+    // sign up a user
+    let response = client
+        .post("/users/sign-up")
+        .json(&json!({
+            "username": name,
+            "password": "testpassword",
+            "email": format!("{}@mails.tsinghua.edu.cn", name),
+            "verification_code": "666666",
+        }))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    println!("{}", response.into_string().unwrap());
+    // sign up a user: perform a wrong action (duplicated name and email)
+    let response = client
+        .post("/users/sign-up")
+        .json(&json!({
+            "username": name,
+            "password": "testpassword",
+            "email": format!("{}@mails.tsinghua.edu.cn", name),
+            "verification_code": "666666",
+        }))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::BadRequest);
+    println!("{}", response.into_string().unwrap());
+
 }
 
 fn test_login_signup() {

@@ -41,7 +41,6 @@ pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
             user_relation,
             get_user_valid_burrow,
             user_email_activate,
-            // clear_redis,
         ],
     )
 }
@@ -129,32 +128,36 @@ pub async fn user_email_activate(
                     .arg(&email)
                     .query_async(kvdb_con.as_mut())
                     .await;
+                let mut op_times;
                 match get_redis_result {
-                    Ok(res) => {
-                        if res.is_some() {
-                            let s = res.unwrap();
-                            let values: Vec<&str> = s.split(':').collect();
-                            let op_times = values[0].parse::<usize>().unwrap();
-                            println!("op_times: {}", op_times);
-                            if op_times > SEND_EMAIL_LIMIT {
-                                return (
-                                    Status::BadRequest,
-                                    Err(Json(ErrorResponse::build(
-                                        ErrorCode::RateLimit,
-                                        "Request Send-Email too many times",
-                                    ))),
-                                );
-                            }
+                    Ok(opt_res) => match opt_res {
+                        Some(res) => {
+                            let values: Vec<&str> = res.split(':').collect();
+                            op_times = values[0].parse::<usize>().unwrap();
                         }
-                    }
+                        None => {
+                            op_times = 0;
+                        }
+                    },
                     Err(e) => {
-                        log::error!("[SIGN-UP] Database Error: {:?}", e);
+                        log::error!("[EMAIL-AC] Database Error: {:?}", e);
                         return (
                             Status::InternalServerError,
                             Err(Json(ErrorResponse::default())),
                         );
                     }
                 };
+                op_times += 1;
+                log::info!("[EMAIL-AC] op_times: {}", op_times);
+                if op_times > SEND_EMAIL_LIMIT {
+                    return (
+                        Status::TooManyRequests,
+                        Err(Json(ErrorResponse::build(
+                            ErrorCode::RateLimit,
+                            "Request Send-Email too many times",
+                        ))),
+                    );
+                }
                 // match email_send::post(email.clone(), 666666).await {
                 //     Ok(res) => {
                 //         println!("{}", res);
@@ -170,7 +173,7 @@ pub async fn user_email_activate(
                 {
                     Ok(_) => (Status::Ok, Ok("Success".to_string())),
                     Err(e) => {
-                        log::error!("[SIGN-UP] Database error: {:?}", e);
+                        log::error!("[EMAIL-AC] Database error: {:?}", e);
                         (
                             Status::InternalServerError,
                             Err(Json(ErrorResponse::default())),
@@ -180,7 +183,7 @@ pub async fn user_email_activate(
             }
         }
         Err(e) => {
-            log::error!("[SIGN-UP] Database Error: {:?}", e);
+            log::error!("[EMAIL-AC] Database Error: {:?}", e);
             (
                 Status::InternalServerError,
                 Err(Json(ErrorResponse::default())),
