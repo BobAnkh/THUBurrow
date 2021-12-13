@@ -123,10 +123,22 @@ mod tests {
     #[tokio::test]
     async fn test_check_email_exist() {
         assert_eq!(check_email_exist("").await.0, false);
-        assert_eq!(check_email_exist("test@mails.tsinghua.edu.cn").await.0, false);
+        assert_eq!(
+            check_email_exist("test@mails.tsinghua.edu.cn").await.0,
+            false
+        );
         assert_eq!(check_email_exist("test@163.com").await.0, false);
-        assert_eq!(check_email_exist("test()@mails.tsinghua.edu.cn").await.0, false);
-        assert_eq!(check_email_exist("sys-learn2018@tsinghua.edu.cn").await.0, true);
-        assert_eq!(check_email_exist("shetuan@mail.tsinghua.edu.cn").await.0, true);
+        assert_eq!(
+            check_email_exist("test()@mails.tsinghua.edu.cn").await.0,
+            false
+        );
+        assert_eq!(
+            check_email_exist("sys-learn2018@tsinghua.edu.cn").await.0,
+            true
+        );
+        assert_eq!(
+            check_email_exist("shetuan@mail.tsinghua.edu.cn").await.0,
+            true
+        );
     }
 }
