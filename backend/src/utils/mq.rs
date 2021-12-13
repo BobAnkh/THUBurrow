@@ -2,6 +2,7 @@ extern crate serde;
 use futures::TryStreamExt;
 use lazy_static::lazy_static;
 use pulsar::{Consumer, Pulsar, SubType, TokioExecutor};
+use rand::Rng;
 use sea_orm::sea_query::Expr;
 use sea_orm::{entity::*, ConnectionTrait, Database, DatabaseConnection, DbErr, QueryFilter};
 use serde_json::json;
@@ -816,8 +817,10 @@ pub async fn pulsar_email() -> Result<(), pulsar::Error> {
                 },
             }
         } else if check_email_exist(&data.email).await.0 {
-            // **TODO**: generate verification code
-            let verification_code = "666666";
+            // generate verification code
+            let verification_code: i32 = rand::thread_rng().gen_range(100000..1000000);
+            // println!("{}", verification_code);
+            let verification_code = &verification_code.to_string();
             match get_set_redis(&mut kv_conn, &data.email, verification_code).await {
                 Ok(_) => {
                     log::info!("[PULSAR-EMAIL] Redis get & set success");
