@@ -1,9 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import type { NextPage } from 'next';
-import { StarTwoTone, LikeTwoTone } from '@ant-design/icons';
-import styles from './burrow.module.css';
-
+import Link from 'next/link';
 import {
+  StarTwoTone,
+  LikeTwoTone,
+  UserOutlined,
+  PlusCircleOutlined,
+} from '@ant-design/icons';
+import styles from '../burrow/burrow.module.css';
+import { TextLoop } from 'react-text-loop-next';
+import {
+  Alert,
   Layout,
   Menu,
   Breadcrumb,
@@ -15,12 +22,14 @@ import {
   Input,
   Card,
   Tag,
+  Col,
+  Dropdown,
+  Row,
 } from 'antd';
 import { MessageOutlined, LikeOutlined, StarOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/router';
 import 'antd/dist/antd.css';
 import axios, { AxiosError } from 'axios';
-import GlobalHeader from '../../components/header/header';
 
 axios.defaults.withCredentials = true;
 axios.defaults.headers.post['Content-Type'] = 'application/json';
@@ -57,8 +66,6 @@ const Burrow: NextPage = () => {
   const [description, setDescription] = useState('Welcome!');
   const [burrowTitle, setBurrowTitle] = useState(0);
   const [page, setPage] = useState(1);
-  const [isHost, setIsHost] = useState(true);
-  const [editing, setEditing] = useState(false);
   const [descriptionTemp, setDescriptionTemp] = useState('');
 
   const [changeLike, setChangeLike] = useState(initialchange1);
@@ -67,20 +74,20 @@ const Burrow: NextPage = () => {
   const [colNum, setColNum] = useState(initialnum2);
 
   const router = useRouter();
-  const { bid } = router.query;
+  const { aid } = router.query;
   const site = router.pathname.split('/')[1];
+  const [menuMode, setMenuMode] = useState<'inline' | 'horizontal'>(
+    'horizontal'
+  );
 
   useEffect(() => {
     try {
       const fetchListData = async () => {
-        const res = await axios.get(
-          `${process.env.NEXT_PUBLIC_BASEURL}/${bid}?page=${page - 1}`
-        );
+        const res = await axios.get('http://127.0.0.1:4523/mock/435762/1');
         const postlist = await res.data;
         setListData(postlist.posts);
         setDescription(postlist.description);
         setBurrowTitle(postlist.title);
-        setIsHost(postlist.isHost);
       };
       fetchListData();
     } catch (e) {
@@ -94,26 +101,6 @@ const Burrow: NextPage = () => {
       }
     }
   }, [router, page]);
-
-  const EditIntro = () => {
-    setEditing(true);
-  };
-
-  const ConfirmEdit = () => {
-    setDescription(descriptionTemp);
-    setEditing(false);
-  };
-
-  const CancelEdit = () => {
-    setEditing(false);
-  };
-
-  const UpdateIntro = (event: any) => {
-    if (event && event.target && event.target.value) {
-      let value = event.target.value;
-      setDescriptionTemp(value);
-    }
-  };
 
   const clickCol = async (pid: number, activate: Boolean, index: number) => {
     let newChangeCol: boolean[] = changeCol;
@@ -179,11 +166,68 @@ const Burrow: NextPage = () => {
     }
   };
 
+  const menu = (
+    <Menu
+      id='nav'
+      key='nav'
+      theme='dark'
+      mode={menuMode}
+      defaultSelectedKeys={['home']}
+      selectedKeys={[site]}
+    >
+      <Menu.Item key='home'>
+        <Link href='/home'>首页</Link>
+      </Menu.Item>
+      <Menu.Item key='create'>
+        <Link href='/create'>发帖</Link>
+      </Menu.Item>
+      <Menu.Item key='trending'>
+        <Link href='/trending'>热榜</Link>
+      </Menu.Item>
+      <Menu.Item key='searchpage'>
+        <Link href='/searchpage'>搜索</Link>
+      </Menu.Item>
+    </Menu>
+  );
+
+  const UserMenu = (
+    <Menu>
+      <Menu.Item>
+        <Link href='/profile'>个人信息</Link>
+      </Menu.Item>
+      <Menu.Divider />
+      <Menu.Item
+        onClick={() => {
+          localStorage.removeItem('token');
+          window.location.reload();
+        }}
+      >
+        退出
+      </Menu.Item>
+    </Menu>
+  );
+
   return (
     <Layout>
       <Header style={{ position: 'fixed', zIndex: 1, width: '100%' }}>
-        <title>{`# ${bid} 地洞`}</title>
-        <GlobalHeader />
+        <title>{`# ${aid} 地洞`}</title>
+        {/* <GlobalHeader /> */}
+        <Row>
+          <div className='logo' />
+          <Col offset={2}>{menu}</Col>
+          <Col offset={14}>
+            <Dropdown overlay={UserMenu} placement='bottomCenter'>
+              <Button icon={<UserOutlined />} />
+            </Dropdown>
+          </Col>
+          <Col>
+            <Button
+              icon={<PlusCircleOutlined />}
+              style={{ margin: '10px' }}
+              disabled={true}
+            />
+          </Col>
+        </Row>
       </Header>
       <Content
         className='site-Layout'
@@ -201,57 +245,33 @@ const Burrow: NextPage = () => {
         >
           <Card>
             <div>
-              <h2>
-                # {bid}&emsp;{burrowTitle}
+              <h2 style={{ color: 'grey' }}>
+                <Alert
+                  banner
+                  type='warning'
+                  showIcon
+                  closeText='Close Now'
+                  message={
+                    <TextLoop mask>
+                      <div>该洞已废弃</div>
+                      <div>仅支持浏览帖子</div>
+                      <div>您无法发表新帖</div>
+                    </TextLoop>
+                  }
+                />
+                <div style={{ margin: '20px 0px 0px 0px' }}>
+                  # {aid}&emsp;{burrowTitle}
+                </div>
               </h2>
               <div className={styles.Descript}>
                 <h3 className={styles.BriefIntro}>简介:</h3>
-                <Button
-                  type='primary'
-                  shape='round'
-                  style={{
-                    float: 'right',
-                    display: isHost && !editing ? 'block' : 'none',
-                  }}
-                  onClick={EditIntro}
-                >
-                  编辑
-                </Button>
                 <div
                   style={{
                     paddingLeft: '35px',
-                    display: editing ? 'none' : 'block',
                   }}
                 >
                   {description}
                 </div>
-                <Form
-                  style={{
-                    paddingLeft: '35px',
-                    display: editing ? 'block' : 'none',
-                  }}
-                >
-                  <TextArea
-                    autoSize={{ minRows: 2, maxRows: 6 }}
-                    className={styles.EditText}
-                    onChange={(event) => UpdateIntro(event)}
-                  />
-                  <Button
-                    className={styles.Cancel}
-                    onClick={CancelEdit}
-                    shape='round'
-                  >
-                    取消
-                  </Button>
-                  <Button
-                    className={styles.Confirm}
-                    type='primary'
-                    shape='round'
-                    onClick={ConfirmEdit}
-                  >
-                    确认
-                  </Button>
-                </Form>
               </div>
             </div>
             <List
