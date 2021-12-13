@@ -51,12 +51,7 @@ const showtag = (value: Array<string>) => {
   return value.map(showtag1);
 };
 
-const onFinishFailed = (errorInfo: any) => {
-  if (errorInfo.values.title == undefined) message.error('标题不能为空！');
-  else message.error('内容不能为空！');
-};
-
-const Burrow: NextPage = () => {
+const Abandoned: NextPage = () => {
   const initialchange1 = new Array(10).fill(false);
   const initialchange2 = new Array(10).fill(false);
   const initialnum1 = new Array(10).fill(0);
@@ -372,4 +367,4 @@ const Burrow: NextPage = () => {
   );
 };
 
-export default Burrow;
+export default Abandoned;
