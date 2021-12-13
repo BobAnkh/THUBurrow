@@ -68,7 +68,7 @@ fn test_signup() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     println!("{}", response.into_string().unwrap());
-    // std::thread::sleep(std::time::Duration::from_secs(5));
+    std::thread::sleep(std::time::Duration::from_secs(5));
     // sign up a user
     let response = client
         .post("/users/sign-up")
@@ -139,7 +139,7 @@ fn test_login_signup() {
         }))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
-    // std::thread::sleep(std::time::Duration::from_secs(10));
+    std::thread::sleep(std::time::Duration::from_secs(5));
     // sign up a user
     let response = client
         .post("/users/sign-up")
