@@ -3,8 +3,25 @@ use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 use rocket::http::Status;
 use serde_json::json;
+use tokio::runtime::Runtime;
+use backend::utils::mq::*;
+
 
 #[test]
+fn integration_test() {
+    let rt = Runtime::new().unwrap();
+    rt.spawn(generate_trending());
+    rt.spawn(pulsar_relation());
+    rt.spawn(pulsar_typesense());
+    rt.spawn(pulsar_email());
+    test_connected();
+    test_email();
+    test_signup();
+    test_login_signup();
+    test_burrow();
+    test_content();
+}
+
 fn test_connected() {
     let client = common::get_client().lock();
     let response = client
@@ -16,7 +33,6 @@ fn test_connected() {
     assert_eq!(response.into_string().unwrap(), "Ok");
 }
 
-#[test]
 fn test_email() {
     let client = common::get_client().lock();
     let name: String = std::iter::repeat(())
@@ -36,7 +52,6 @@ fn test_email() {
     println!("{}", response.into_string().unwrap());
 }
 
-#[test]
 fn test_signup() {
     let client = common::get_client().lock();
     let name: String = std::iter::repeat(())
@@ -53,7 +68,7 @@ fn test_signup() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     println!("{}", response.into_string().unwrap());
-    std::thread::sleep(std::time::Duration::from_secs(5));
+    // std::thread::sleep(std::time::Duration::from_secs(5));
     // sign up a user
     let response = client
         .post("/users/sign-up")
@@ -109,7 +124,6 @@ fn test_signup() {
     assert_eq!(status, Status::Ok);
 }
 
-#[test]
 fn test_login_signup() {
     let client = common::get_client().lock();
     let name: String = std::iter::repeat(())
@@ -125,7 +139,7 @@ fn test_login_signup() {
         }))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
-    std::thread::sleep(std::time::Duration::from_secs(5));
+    // std::thread::sleep(std::time::Duration::from_secs(10));
     // sign up a user
     let response = client
         .post("/users/sign-up")
@@ -171,7 +185,6 @@ fn test_login_signup() {
     println!("{}", response.into_string().unwrap());
 }
 
-#[test]
 fn test_burrow() {
     // get the client
     let client = common::get_client().lock();
@@ -399,7 +412,6 @@ fn test_burrow() {
     assert_eq!(status, Status::Forbidden);
 }
 
-#[test]
 fn test_content() {
     // get the client
     let client = common::get_client().lock();
