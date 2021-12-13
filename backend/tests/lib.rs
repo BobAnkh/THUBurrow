@@ -205,7 +205,6 @@ fn test_signup() {
         .dispatch();
     assert_eq!(response.status(), Status::BadRequest);
     println!("{}", response.into_string().unwrap());
-
 }
 
 fn test_login_signup() {
