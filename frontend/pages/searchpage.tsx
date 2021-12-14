@@ -25,13 +25,13 @@ import Searchpost from '../components/search/search-post';
 import Searchreply from '../components/search/search-reply';
 import Searchpostid from '../components/search/search-postid';
 import { string } from 'prop-types';
-const fakeDataUrl = `${process.env.NEXT_PUBLIC_BASEURL}/search`;
+
 axios.defaults.withCredentials = true;
 axios.defaults.headers.post['Content-Type'] = 'application/json';
 
 const { Option } = Select;
 const { Search } = Input;
-const { Content, Footer } = Layout;
+const { Header, Content, Footer } = Layout;
 const FormItem = Form.Item;
 
 const SearchPage: FC = () => {
@@ -357,20 +357,19 @@ const SearchPage: FC = () => {
 
   return (
     <Layout className='layout'>
-      <title>
-        {search_text.tag.length == 0
-          ? `${search_text.keyword[0]}……搜索`
-          : `${search_text.tag[0]}……搜索`}
-      </title>
-      <GlobalHeader />
+      <Header>
+        <title>
+          {search_text.tag.length == 0
+            ? `${search_text.keyword[0]}……搜索`
+            : `${search_text.tag[0]}……搜索`}
+        </title>
+        <GlobalHeader />
+      </Header>
       <Content style={{ padding: '0 5%' }}>
-        <Breadcrumb style={{ margin: '16px 0' }}>
-          <Breadcrumb.Item>Home</Breadcrumb.Item>
-          <Breadcrumb.Item>List</Breadcrumb.Item>
-          <Breadcrumb.Item>App</Breadcrumb.Item>
-        </Breadcrumb>
-
-        <div className={styles.controlbar} style={{ textAlign: 'center' }}>
+        <div
+          className={styles.controlbar}
+          style={{ textAlign: 'center', margin: '16px 0', padding: '0 5%' }}
+        >
           <Search
             style={{ width: '300px' }}
             addonBefore={selectarea}
