@@ -5,7 +5,7 @@ use rocket::serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 // use crate::pgdb::{self, prelude::*};
-use super::burrow::BurrowMetadata;
+use super::{burrow::BurrowMetadata, content::Post};
 
 #[derive(Serialize, Deserialize)]
 pub struct UserData {
@@ -35,6 +35,12 @@ pub struct UserLoginInfo<'r> {
 #[derive(Serialize, Deserialize)]
 pub struct UserResponse {
     pub default_burrow: i64,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct UserGetCollectionResponse {
+    pub post: Post,
+    pub is_update: bool,
 }
 
 #[derive(Serialize, Deserialize)]
