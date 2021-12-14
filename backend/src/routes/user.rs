@@ -8,7 +8,6 @@ use rocket::http::{Cookie, CookieJar, Status};
 use rocket::serde::json::Json;
 use rocket::{Build, Rocket};
 use rocket_db_pools::Connection;
-use sea_orm::sea_query::{Expr, Query};
 use sea_orm::{entity::*, query::*};
 use sea_orm::{DbErr, QueryFilter};
 use std::collections::HashMap;
@@ -541,44 +540,116 @@ pub async fn get_burrow(
 pub async fn get_collection(
     db: Connection<PgDb>,
     auth: Auth,
-    page: Option<u64>,
-) -> (Status, Result<Json<Vec<Post>>, Json<ErrorResponse>>) {
+    page: Option<usize>,
+) -> (
+    Status,
+    Result<Json<Vec<UserGetCollectionResponse>>, Json<ErrorResponse>>,
+) {
     let pg_con = db.into_inner();
     let page = page.unwrap_or(0);
-    match ContentPost::find()
-        .filter(
-            Condition::any().add(
-                pgdb::content_post::Column::PostId.in_subquery(
-                    Query::select()
-                        .column(pgdb::user_collection::Column::PostId)
-                        .from(UserCollection)
-                        .and_where(Expr::col(pgdb::user_collection::Column::Uid).eq(auth.id))
-                        .order_by_columns(vec![(
-                            pgdb::user_collection::Column::PostId,
-                            Order::Desc,
-                        )])
-                        .limit(POST_PER_PAGE as u64)
-                        .offset(page * POST_PER_PAGE as u64)
-                        .to_owned(),
-                ),
-            ),
-        )
-        .order_by_desc(pgdb::content_post::Column::PostId)
-        .all(&pg_con)
+    match UserCollection::find()
+        .filter(pgdb::user_collection::Column::Uid.eq(auth.id))
+        .order_by_desc(pgdb::user_collection::Column::PostId)
+        .paginate(&pg_con, POST_PER_PAGE)
+        .fetch_page(page)
         .await
     {
-        Ok(posts) => (
-            Status::Ok,
-            Ok(Json(posts.iter().map(|post| post.into()).collect())),
-        ),
+        Ok(results) => {
+            let post_ids = results.iter().map(|r| r.post_id).collect::<Vec<i64>>();
+            match ContentPost::find()
+                .filter(pgdb::content_post::Column::PostId.is_in(post_ids))
+                .order_by_desc(pgdb::content_post::Column::PostId)
+                .all(&pg_con)
+                .await
+            {
+                Ok(posts) => {
+                    if posts.len() == results.len() {
+                        (
+                            Status::Ok,
+                            Ok(Json(
+                                posts
+                                    .iter()
+                                    .map(|post| {
+                                        let p: Post = post.into();
+                                        p
+                                    })
+                                    .zip(results.iter().map(|r| r.is_update))
+                                    .map(|(post, is_update)| UserGetCollectionResponse {
+                                        post,
+                                        is_update,
+                                    })
+                                    .collect(),
+                            )),
+                        )
+                    } else {
+                        let hm: HashMap<i64, bool> =
+                            results.iter().map(|r| (r.post_id, r.is_update)).collect();
+                        (
+                            Status::Ok,
+                            Ok(Json(
+                                posts
+                                    .iter()
+                                    .map(|p| {
+                                        let post: Post = p.into();
+                                        let is_update = *hm.get(&post.post_id).unwrap_or(&false);
+                                        UserGetCollectionResponse { post, is_update }
+                                    })
+                                    .collect(),
+                            )),
+                        )
+                    }
+                }
+                Err(e) => {
+                    error!("[GET-FOLLOW] Database Error: {:?}", e);
+                    (
+                        Status::InternalServerError,
+                        Err(Json(ErrorResponse::default())),
+                    )
+                }
+            }
+        }
         Err(e) => {
-            error!("[GET-FAV] Database Error: {:?}", e);
+            error!("[GET-FOLLOW] Database Error: {:?}", e);
             (
                 Status::InternalServerError,
                 Err(Json(ErrorResponse::default())),
             )
         }
     }
+    // match ContentPost::find()
+    //     .filter(
+    //         Condition::any().add(
+    //             pgdb::content_post::Column::PostId.in_subquery(
+    //                 Query::select()
+    //                     .column(pgdb::user_collection::Column::PostId)
+    //                     .from(UserCollection)
+    //                     .and_where(Expr::col(pgdb::user_collection::Column::Uid).eq(auth.id))
+    //                     .order_by_columns(vec![(
+    //                         pgdb::user_collection::Column::PostId,
+    //                         Order::Desc,
+    //                     )])
+    //                     .limit(POST_PER_PAGE as u64)
+    //                     .offset(page * POST_PER_PAGE as u64)
+    //                     .to_owned(),
+    //             ),
+    //         ),
+    //     )
+    //     .order_by_desc(pgdb::content_post::Column::PostId)
+    //     .all(&pg_con)
+    //     .await
+    // {
+    //     Ok(posts) => (
+    //         Status::Ok,
+    //         Ok(Json(posts.iter().map(|post| post.into()).collect())),
+    //     ),
+    //     Err(e) => {
+    //         error!("[GET-FAV] Database Error: {:?}", e);
+    //         (
+    //             Status::InternalServerError,
+    //             Err(Json(ErrorResponse::default())),
+    //         )
+    //     }
+    // }
 }
 
 #[get("/follow?<page>")]
@@ -592,7 +663,7 @@ pub async fn get_follow(
 ) {
     let pg_con = db.into_inner();
     let page = page.unwrap_or(0);
-    match pgdb::user_follow::Entity::find()
+    match UserFollow::find()
         .filter(pgdb::user_follow::Column::Uid.eq(auth.id))
         .order_by_desc(pgdb::user_follow::Column::BurrowId)
         .paginate(&pg_con, BURROW_PER_PAGE)
@@ -601,7 +672,7 @@ pub async fn get_follow(
     {
         Ok(results) => {
             let burrow_ids = results.iter().map(|r| r.burrow_id).collect::<Vec<i64>>();
-            match pgdb::burrow::Entity::find()
+            match Burrow::find()
                 .filter(pgdb::burrow::Column::BurrowId.is_in(burrow_ids))
                 .order_by_desc(pgdb::burrow::Column::BurrowId)
                 .all(&pg_con)
@@ -670,10 +741,7 @@ pub async fn get_user_valid_burrow(
     db: Connection<PgDb>,
 ) -> (Status, Result<Json<Vec<i64>>, Json<ErrorResponse>>) {
     let pg_con = db.into_inner();
-    match pgdb::user_status::Entity::find_by_id(auth.id)
-        .one(&pg_con)
-        .await
-    {
+    match UserStatus::find_by_id(auth.id).one(&pg_con).await {
         Ok(opt_state) => match opt_state {
             Some(state) => (Status::Ok, Ok(Json(get_burrow_list(&state.valid_burrow)))),
             None => {

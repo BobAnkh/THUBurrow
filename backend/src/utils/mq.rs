@@ -313,7 +313,7 @@ pub async fn pulsar_typesense() -> Result<(), pulsar::Error> {
                 let data: TypesenseReplyData = reply.into();
 
                 match client
-                    .post("/collections/replies/documents")
+                    .build_post("/collections/replies/documents")
                     .json(&data)
                     .send()
                     .await
@@ -477,7 +477,7 @@ pub async fn pulsar_typesense() -> Result<(), pulsar::Error> {
             }
             PulsarSearchData::DeleteBurrow(burrow_id) => {
                 match client
-                    .delete(&format!("/collections/burrows/documents/{}", burrow_id))
+                    .build_delete(&format!("/collections/burrows/documents/{}", burrow_id))
                     .send()
                     .await
                 {
@@ -487,7 +487,7 @@ pub async fn pulsar_typesense() -> Result<(), pulsar::Error> {
             }
             PulsarSearchData::DeletePost(post_id) => {
                 match client
-                    .delete(&format!("/collections/posts/documents/{}", post_id))
+                    .build_delete(&format!("/collections/posts/documents/{}", post_id))
                     .send()
                     .await
                 {
@@ -497,7 +497,7 @@ pub async fn pulsar_typesense() -> Result<(), pulsar::Error> {
             }
             PulsarSearchData::DeleteReply(post_id, reply_id) => {
                 match client
-                    .delete(&format!(
+                    .build_delete(&format!(
                         "/collections/replies/documents/{}-{}",
                         post_id, reply_id
                     ))
