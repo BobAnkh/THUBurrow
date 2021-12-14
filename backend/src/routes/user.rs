@@ -227,7 +227,7 @@ pub async fn user_sign_up(
             username: Set(user.username.to_string()),
             password: Set(password),
             email: Set(user.email.to_string()),
-            create_time: Set(now),
+            create_time: Set(now.to_owned()),
             salt: Set(salt),
         };
 
@@ -235,6 +235,8 @@ pub async fn user_sign_up(
             uid: Set(uid),
             title: Set("Default".to_owned()),
             description: Set("".to_owned()),
+            create_time: Set(now.to_owned()),
+            update_time: Set(now.to_owned()),
             ..Default::default()
         };
         // insert rows in database
