@@ -876,11 +876,12 @@ fn test_content() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     let res = response
-        .into_json::<Vec<backend::models::content::Post>>()
+        .into_json::<Vec<backend::models::user::UserGetCollectionResponse>>()
         .unwrap();
-    assert_eq!(post_id + 2, res[0].post_id);
-    assert_eq!(post_id, res[1].post_id);
-    // TODO: match is_update
+    assert_eq!(post_id + 2, res[0].post.post_id);
+    assert_eq!(true, res[0].is_update);
+    assert_eq!(post_id, res[1].post.post_id);
+    assert_eq!(true, res[0].is_update);
 
     // discard new burrow
     let response = client
