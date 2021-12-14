@@ -19,6 +19,7 @@ use crate::pgdb::prelude::*;
 use crate::pool::{PgDb, PulsarSearchProducerMq, Search, TypesenseSearch};
 use crate::utils::auth::Auth;
 use crate::utils::burrow_valid::is_valid_burrow;
+use crate::utils::tag_duplicate::remove_tag_duplicate;
 
 pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
     rocket.mount(
@@ -109,7 +110,6 @@ pub async fn create_post(
             ))),
         );
     }
-    // TODO: check if tag duplicates
     // check if user has been banned
     match UserStatus::find_by_id(auth.id).one(&pg_con).await {
         Ok(ust) => match ust {
@@ -135,15 +135,16 @@ pub async fn create_post(
                             Box::pin(async move {
                                 // get timestamp
                                 let now = Utc::now().with_timezone(&FixedOffset::east(8 * 3600));
-                                // get tag string
-                                let section = content.section.join(",");
-                                let tag = content.tag.join(",");
+                                // get tag and section string and remove duplicate
+                                let section = remove_tag_duplicate(&content.section).join(",");
+                                let tag = remove_tag_duplicate(&content.tag).join(",");
                                 let content_post = pgdb::content_post::ActiveModel {
                                     title: Set(content.title.to_owned()),
                                     burrow_id: Set(content.burrow_id),
                                     create_time: Set(now.to_owned()),
                                     update_time: Set(now.to_owned()),
                                     section: Set(section.to_owned()),
+                                    // tag: Set(tag.to_owned()),
                                     tag: Set(tag.to_owned()),
                                     ..Default::default()
                                 };
@@ -179,6 +180,17 @@ pub async fn create_post(
                                         "burrow not found".to_string(),
                                     ));
                                 }
+                                UserFollow::update_many()
+                                    .col_expr(
+                                        pgdb::user_follow::Column::IsUpdate,
+                                        Expr::value(true),
+                                    )
+                                    .filter(
+                                        pgdb::user_follow::Column::BurrowId
+                                            .eq(content.burrow_id),
+                                    )
+                                    .exec(txn)
+                                    .await?;
                                 let pulsar_post = PulsarSearchPostData {
                                     post_id,
                                     title: content.title,
@@ -634,6 +646,7 @@ pub async fn read_post_list(
             .map(|x| x.document.post_id)
             .collect::<Vec<_>>();
         if post_ids.is_empty() {
+            log::info!("[READ-POST-LIST] Empty post_ids.");
             return (
                 Status::Ok,
                 Ok(Json(ListPage {
@@ -662,6 +675,7 @@ pub async fn read_post_list(
     // TODO: check if the post is banned?
     let post_ids = post_info.iter().map(|r| r.post_id).collect::<Vec<i64>>();
     if post_ids.is_empty() {
+        log::info!("[READ-POST-LIST] Cannot find post id by this section.");
         return (
             Status::Ok,
             Ok(Json(ListPage {

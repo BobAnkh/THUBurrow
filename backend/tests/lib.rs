@@ -1,11 +1,25 @@
 mod common;
 use backend::models::error::*;
+use backend::utils::mq::*;
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 use rocket::http::Status;
 use serde_json::json;
+use tokio::runtime::Runtime;
 
 #[test]
+fn integration_test() {
+    let rt = Runtime::new().unwrap();
+    rt.spawn(generate_trending());
+    rt.spawn(pulsar_relation());
+    rt.spawn(pulsar_typesense());
+    test_connected();
+    test_user();
+    test_burrow();
+    test_content();
+}
+
+// #[test]
 fn test_connected() {
     let client = common::get_client().lock();
     let response = client
@@ -16,7 +30,7 @@ fn test_connected() {
     assert_eq!(response.into_string().unwrap(), "Ok");
 }
 
-#[test]
+// #[test]
 fn test_user() {
     let client = common::get_client().lock();
     let name: String = std::iter::repeat(())
@@ -153,7 +167,7 @@ fn test_user() {
     );
 }
 
-#[test]
+// #[test]
 fn test_burrow() {
     // get the client
     let client = common::get_client().lock();
@@ -310,7 +324,7 @@ fn test_burrow() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     assert_eq!(response.into_string().unwrap(), "Success");
-
+    std::thread::sleep(std::time::Duration::from_secs(1));
     // 4. test get_follow
     // get following burrows of a user
     let response = client
@@ -318,7 +332,11 @@ fn test_burrow() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    println!("{}", response.into_string().unwrap());
+    let res = response
+        .into_json::<Vec<backend::models::user::UserGetFollowResponse>>()
+        .unwrap();
+    assert_eq!(burrow_id + 1, res[0].burrow.burrow_id);
+    assert_eq!(burrow_id, res[1].burrow.burrow_id);
 
     // 5. test get_total_burrow_count
     // get total burrow count
@@ -336,8 +354,10 @@ fn test_burrow() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    // TODO
-    println!("{}", response.into_string().unwrap());
+    assert_eq!(
+        format!("{{\"title\":\"Default\",\"description\":\"\",\"posts\":[]}}"),
+        response.into_string().unwrap()
+    );
     // show burrow: perform a wrong action (burrow not exist)
     let response = client
         .get(format!("/burrows/{}", burrow_id + 10000))
@@ -354,16 +374,17 @@ fn test_burrow() {
     let response = client
         .patch(format!("/burrows/{}", burrow_id))
         .json(&json!({
-            "description": format!("New Third burrow of {}", name),
-            "title": "New Burrow 3"}))
+            "description": format!("New Default burrow of {}", name),
+            "title": "New Default burrow"}))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
+    assert_eq!(response.into_string().unwrap(), "Success");
     // update burrow: perform a wrong action (empty burrow title)
     let response = client
         .patch(format!("/burrows/{}", burrow_id))
         .json(&json!({
-            "description": format!("New Third burrow of {}", name),
+            "description": format!("New Default burrow of {}", name),
             "title": ""}))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
@@ -378,7 +399,10 @@ fn test_burrow() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    println!("{}", response.into_string().unwrap());
+    assert_eq!(
+        format!("{{\"title\":\"New Default burrow\",\"description\":\"New Default burrow of {}\",\"posts\":[]}}", name),
+        response.into_string().unwrap()
+    );
 
     // 8. test get_burrow
     // get burrow of a user
@@ -387,7 +411,11 @@ fn test_burrow() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    println!("Burrow ids are: {}", response.into_string().unwrap());
+    let res = response
+        .into_json::<Vec<backend::models::burrow::BurrowMetadata>>()
+        .unwrap();
+    assert_eq!(burrow_id + 4, res[0].burrow_id);
+    assert_eq!(burrow_id, res[4].burrow_id);
 
     // 9. test get_user_valid_burrow
     // get valid burrow of a user
@@ -396,7 +424,17 @@ fn test_burrow() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    println!("Burrow ids are: {}", response.into_string().unwrap());
+    assert_eq!(
+        format!(
+            "[{},{},{},{},{}]",
+            burrow_id,
+            burrow_id + 1,
+            burrow_id + 2,
+            burrow_id + 3,
+            burrow_id + 4
+        ),
+        response.into_string().unwrap()
+    );
 
     // 10. test discard_burrow
     // discard burrow
@@ -435,7 +473,7 @@ fn test_burrow() {
     );
 }
 
-#[test]
+// #[test]
 fn test_content() {
     // get the client
     let client = common::get_client().lock();
@@ -461,6 +499,7 @@ fn test_content() {
         .into_json::<backend::models::user::UserResponse>()
         .unwrap();
     let burrow_id = res.default_burrow;
+    println!("Default Burrow id is {}", burrow_id);
 
     // user login
     let response = client
@@ -582,12 +621,24 @@ fn test_content() {
         .json(&json!({
             "title": format!("Sixth post of {}", name),
             "burrow_id": burrow_id,
-            "section": ["TestSection"],
+            "section": ["TestSection", "nsfw", "MaoQTest"],
             "tag": ["NoTag"],
             "content": "This is a test post no.6"}))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
+
+    // get burrow of a user to check post_num
+    let response = client
+        .get("/users/burrows")
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    let res = response
+        .into_json::<Vec<backend::models::burrow::BurrowMetadata>>()
+        .unwrap();
+    assert_eq!(burrow_id, res[0].burrow_id);
+    assert_eq!(3, res[0].post_num);
 
     // 12. test delete_post
     // delete post 2
@@ -659,6 +710,18 @@ fn test_content() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
+    // create post 5 with new_burrow_id and duplicated section and tag
+    let response = client
+        .post("/content/posts")
+        .json(&json!({
+            "title": format!("Sixth post of {}", name),
+            "burrow_id": new_burrow_id,
+            "section": ["TestSection", "TestSection"],
+            "tag": ["NoTag", "NoTag"],
+            "content": "This is a test post no.6"}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
 
     // 13. test trending
     // get trending
@@ -702,14 +765,20 @@ fn test_content() {
     assert_eq!(response.status(), Status::Ok);
     assert_eq!(response.into_string().unwrap(), "Success");
 
-    // 14. test get_follow
-    // get following burrows of a user
+    std::thread::sleep(std::time::Duration::from_secs(1));
+    // get following burrows of a user, check if it's updated
     let response = client
         .get("/users/follow")
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    println!("{}", response.into_string().unwrap());
+    let res = response
+        .into_json::<Vec<backend::models::user::UserGetFollowResponse>>()
+        .unwrap();
+    assert_eq!(new_burrow_id, res[0].burrow.burrow_id);
+    assert_eq!(true, res[0].is_update);
+    assert_eq!(burrow_id, res[1].burrow.burrow_id);
+    assert_eq!(true, res[1].is_update);
 
     // get trending: trending already exist
     let response = client
@@ -719,7 +788,7 @@ fn test_content() {
     assert_eq!(response.status(), Status::Ok);
     println!("{}", response.into_string().unwrap());
 
-    // 15. test get_total_post_count
+    // 14. test get_total_post_count
     // get total post count
     let response = client
         .get("/content/posts/total")
@@ -728,7 +797,7 @@ fn test_content() {
     assert_eq!(response.status(), Status::Ok);
     println!("{}", response.into_string().unwrap());
 
-    // 16. test create_reply
+    // 15. test create_reply
     // create reply for post no.1, using default burrow
     let response = client
         .post("/content/replies")
@@ -798,14 +867,20 @@ fn test_content() {
     assert_eq!(response.status(), Status::Ok);
     println!("{}", response.into_string().unwrap());
 
-    // 17. test get_collection
+    std::thread::sleep(std::time::Duration::from_secs(1));
+    // 16. test get_collection
     // get post collection of a user
     let response = client
         .get("/users/collection")
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    println!("{}", response.into_string().unwrap());
+    let res = response
+        .into_json::<Vec<backend::models::content::Post>>()
+        .unwrap();
+    assert_eq!(post_id + 2, res[0].post_id);
+    assert_eq!(post_id, res[1].post_id);
+    // TODO: match is_update
 
     // discard new burrow
     let response = client
@@ -813,7 +888,7 @@ fn test_content() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    println!("{:?}", response.into_string());
+    assert_eq!(response.into_string().unwrap(), "Success");
     // delete post no.4: perform a wrong action (invalid burrow)
     let response = client
         .delete(format!("/content/posts/{}", post_id + 3))
@@ -825,14 +900,19 @@ fn test_content() {
         ErrorResponse::build(ErrorCode::BurrowInvalid, "Not allowed to delete this post")
     );
 
-    // 19. test read_post
+    // 17. test read_post
     // get post no.1
     let response = client
         .get(format!("/content/posts/{}", post_id))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    println!("{}", response.into_string().unwrap());
+    let res = response
+        .into_json::<backend::models::content::PostPage>()
+        .unwrap();
+    assert_eq!(post_id, res.post_desc.post_id);
+    assert_eq!(format!("First post of {}", name), res.post_desc.title);
+
     // get post no.2: perform a wrong action (post not exist)
     let response = client
         .get(format!("/content/posts/{}", post_id + 1))
@@ -852,16 +932,39 @@ fn test_content() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    println!("{}", response.into_string().unwrap());
+    let res = response
+        .into_json::<backend::models::content::PostPage>()
+        .unwrap();
+    assert_eq!(post_id + 2, res.post_desc.post_id);
+    assert_eq!(
+        vec!["MaoQTest", "TestSection", "nsfw"],
+        res.post_desc.section
+    );
     // get post no.4
     let response = client
         .get(format!("/content/posts/{}", post_id + 3))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    println!("{}", response.into_string().unwrap());
+    let res = response
+        .into_json::<backend::models::content::PostPage>()
+        .unwrap();
+    assert_eq!(post_id + 3, res.post_desc.post_id);
+    assert_eq!(new_burrow_id, res.post_desc.burrow_id);
+    // get post no.5 to test if tag and section is duplicated
+    let response = client
+        .get(format!("/content/posts/{}", post_id + 4))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    let res = response
+        .into_json::<backend::models::content::PostPage>()
+        .unwrap();
+    assert_eq!(post_id + 4, res.post_desc.post_id);
+    assert_eq!(vec!["TestSection"], res.post_desc.section);
+    assert_eq!(vec!["NoTag"], res.post_desc.tag);
 
-    // 19. test read_post_list
+    // 18. test read_post_list
     // get post list
     let response = client
         .get("/content/posts/list")
@@ -869,8 +972,22 @@ fn test_content() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     println!("{}", response.into_string().unwrap());
+    // TODO
+    // // get post list with section
+    // let response = client
+    //     .get(format!("/content/posts/list?page=0&section=nsfw"))
+    //     .remote("127.0.0.1:8000".parse().unwrap())
+    //     .dispatch(); assert_eq!(response.status(), Status::Ok);
+    // println!("{}", response.into_string().unwrap());
+    // // get post list with section
+    // let response = client
+    //     .get(format!("/content/posts/list?section=TestSection"))
+    //     .remote("127.0.0.1:8000".parse().unwrap())
+    //     .dispatch();
+    // assert_eq!(response.status(), Status::Ok);
+    // println!("{}", response.into_string().unwrap());
 
-    // 20. test update_post
+    // 19. test update_post
     // update post no.1
     let response = client
         .patch(format!("/content/posts/{}", post_id))
@@ -956,7 +1073,7 @@ fn test_content() {
         ErrorResponse::build(ErrorCode::BurrowInvalid, "Not allowed to update this post")
     );
 
-    // 21. test update_reply
+    // 20. test update_reply
     // update reply 1-1
     let response = client
         .patch("/content/replies")

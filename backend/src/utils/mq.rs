@@ -313,7 +313,7 @@ pub async fn pulsar_typesense() -> Result<(), pulsar::Error> {
                 let data: TypesenseReplyData = reply.into();
 
                 match client
-                    .post("/collections/replies/documents")
+                    .build_post("/collections/replies/documents")
                     .json(&data)
                     .send()
                     .await
