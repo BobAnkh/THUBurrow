@@ -122,11 +122,6 @@ export default function PostList({ listData, setPage }: Props) {
         total: 2000,
       }}
       dataSource={listData}
-      footer={
-        <div>
-          <b>THU Burrow</b> footer part
-        </div>
-      }
       renderItem={(item: any, index: number) => (
         <List.Item
           key={item.title}

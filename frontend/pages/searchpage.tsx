@@ -63,7 +63,7 @@ const SearchPage: FC = () => {
       const SearchPostKeyword = { keyword: Keyword };
       setloading(true);
       axios
-        .post('http://127.0.0.1:4523/mock2/435762/7622869', {
+        .post(`${process.env.NEXT_PUBLIC_BASEURL}/search?page=${page - 1}`, {
           SearchPostKeyword: SearchPostKeyword,
         })
         .then(function (res) {
@@ -90,7 +90,7 @@ const SearchPage: FC = () => {
       const SearchBurrowKeyword = { keyword: Keyword };
       setloading(true);
       axios
-        .post('http://127.0.0.1:4523/mock2/435762/6973329', {
+        .post(`${process.env.NEXT_PUBLIC_BASEURL}/search?page=${page - 1}`, {
           SearchBurrowKeyword: SearchBurrowKeyword,
         })
         .then(function (res) {
@@ -118,7 +118,7 @@ const SearchPage: FC = () => {
       const RetrievePost = { post_id: id };
       setloading(true);
       axios
-        .post('http://127.0.0.1:4523/mock2/435762/7622868', {
+        .post(`${process.env.NEXT_PUBLIC_BASEURL}/search`, {
           RetrievePost: RetrievePost,
         })
         .then(function (res) {
@@ -143,10 +143,12 @@ const SearchPage: FC = () => {
       const RetrieveBurrow = { burrow_id: id };
       setloading(true);
       axios
-        .post('http://127.0.0.1:4523/mock2/435762/7622866', {
+        .post(`${process.env.NEXT_PUBLIC_BASEURL}/search`, {
           RetrieveBurrow: RetrieveBurrow,
         })
         .then(function (res) {
+          var data1 = new Array();
+          data1[0] = res.data;
           setdata(() => {
             setstate(() => {
               return 'burrow';
@@ -175,7 +177,7 @@ const SearchPage: FC = () => {
     const SearchPostTag = { tag: tag };
     setloading(true);
     axios
-      .post('http://127.0.0.1:4523/mock2/435762/7622870', {
+      .post(`${process.env.NEXT_PUBLIC_BASEURL}/search?page=${page - 1}`, {
         SearchPostTag: SearchPostTag,
       })
       .then(function (res) {

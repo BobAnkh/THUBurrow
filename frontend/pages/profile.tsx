@@ -1,29 +1,16 @@
 import { ColumnsType } from 'antd/es/table';
 import type { NextPage } from 'next';
-import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { UserOutlined } from '@ant-design/icons';
 import axios, { AxiosError } from 'axios';
 import PostList from '../components/post-list';
-import {
-  Layout,
-  Table,
-  Menu,
-  Badge,
-  Breadcrumb,
-  Form,
-  Button,
-  Row,
-  Col,
-  Dropdown,
-  Input,
-  message,
-  Card,
-} from 'antd';
+import { Layout, Table, Badge, message, Card } from 'antd';
 import React, { useState, useEffect } from 'react';
 import 'antd/dist/antd.css';
 import '../styles/profile.module.css';
+import GlobalHeader from '../components/header/header';
 
+axios.defaults.withCredentials = true;
+axios.defaults.headers.post['Content-Type'] = 'application/json';
 const { Header, Content, Footer } = Layout;
 interface User {
   key: number;
@@ -52,7 +39,6 @@ const followedBurrowColumns: ColumnsType<FollowedBurrowInfo> = [
     title: '洞号',
     dataIndex: 'id',
     render: (text, record, index) => {
-      console.log(text, record.update);
       return record.update ? <Badge dot>{text}</Badge> : <Badge>{text}</Badge>;
     },
   },
@@ -96,9 +82,7 @@ const UserPage: NextPage = () => {
   const [followedList, setFollowedList] = useState([]);
   const [page, setPage] = useState(1);
   const [postList, setPostList] = useState([]);
-  const [menuMode, setMenuMode] = useState<'inline' | 'horizontal'>(
-    'horizontal'
-  );
+
   // 获取关注的帖子
   useEffect(() => {
     const fetchPostList = async () => {
@@ -159,58 +143,12 @@ const UserPage: NextPage = () => {
     };
     fetchFollowedList();
   }, [router]);
-  const site = router.pathname.split('/')[1];
-  const menu = (
-    <Menu
-      id='nav'
-      key='nav'
-      theme='dark'
-      mode={menuMode}
-      defaultSelectedKeys={['home']}
-      selectedKeys={[site]}
-    >
-      <Menu.Item key='home'>
-        <Link href='/home'>首页</Link>
-      </Menu.Item>
-      <Menu.Item key='message'>
-        <Link href='/message'>消息</Link>
-      </Menu.Item>
-      <Menu.Item key='trending'>
-        <Link href='/trending'>热榜</Link>
-      </Menu.Item>
-      <Menu.Item key='search'>
-        <Link href='/searchpage'>搜索</Link>
-      </Menu.Item>
-    </Menu>
-  );
-  const UserMenu = (
-    <Menu>
-      <Menu.Item>
-        <Link href='/profile'>个人信息</Link>
-      </Menu.Item>
-      <Menu.Divider />
-      <Menu.Item
-        onClick={() => {
-          localStorage.removeItem('token');
-          window.location.reload();
-        }}
-      >
-        退出
-      </Menu.Item>
-    </Menu>
-  );
+
   return (
     <Layout className='layout'>
       <Header>
-        <Row>
-          <div className='logo' />
-          <Col offset={2}>{menu}</Col>
-          <Col offset={16} span={1}>
-            <Dropdown overlay={UserMenu} placement='bottomCenter'>
-              <Button icon={<UserOutlined />} />
-            </Dropdown>
-          </Col>
-        </Row>
+        <title>我的主页</title>
+        <GlobalHeader />
       </Header>
       <Content>
         <Card title='我的地洞'>
