@@ -1,8 +1,7 @@
 pub fn remove_duplicate(tag: Vec<String>) -> Vec<String> {
-    let mut tag_check = tag.to_owned();
-    tag_check.sort_unstable();
-    tag_check.dedup();
-    tag_check
+    tag.sort_unstable();
+    tag.dedup();
+    tag
 }
 
 #[cfg(test)]
