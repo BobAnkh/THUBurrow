@@ -19,6 +19,7 @@ use crate::pgdb::prelude::*;
 use crate::pool::{PgDb, PulsarSearchProducerMq, Search, TypesenseSearch};
 use crate::utils::auth::Auth;
 use crate::utils::burrow_valid::is_valid_burrow;
+use crate::utils::dedup::remove_duplicate;
 
 pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
     rocket.mount(
@@ -100,6 +101,15 @@ pub async fn create_post(
         );
     }
     // TODO: check if section is valid
+    if content.tag.len() > MAX_TAG {
+        return (
+            Status::BadRequest,
+            Err(Json(ErrorResponse::build(
+                ErrorCode::SectionInvalid,
+                "Wrong Post Tag.",
+            ))),
+        );
+    }
     // check if user has been banned
     match UserStatus::find_by_id(auth.id).one(&pg_con).await {
         Ok(ust) => match ust {
@@ -125,16 +135,16 @@ pub async fn create_post(
                             Box::pin(async move {
                                 // get timestamp
                                 let now = Utc::now().with_timezone(&FixedOffset::east(8 * 3600));
-                                // get tag string
-                                let section = content.section.join(",");
-                                let tag = content.tag.join(",");
+                                // get tag and section string and remove duplicate
+                                let section = remove_duplicate(content.section);
+                                let tag = remove_duplicate(content.tag);
                                 let content_post = pgdb::content_post::ActiveModel {
                                     title: Set(content.title.to_owned()),
                                     burrow_id: Set(content.burrow_id),
                                     create_time: Set(now.to_owned()),
                                     update_time: Set(now.to_owned()),
-                                    section: Set(section.to_owned()),
-                                    tag: Set(tag.to_owned()),
+                                    section: Set(section.join(",")),
+                                    tag: Set(tag.join(",")),
                                     ..Default::default()
                                 };
                                 // insert the row in database
@@ -169,12 +179,22 @@ pub async fn create_post(
                                         "burrow not found".to_string(),
                                     ));
                                 }
+                                UserFollow::update_many()
+                                    .col_expr(
+                                        pgdb::user_follow::Column::IsUpdate,
+                                        Expr::value(true),
+                                    )
+                                    .filter(
+                                        pgdb::user_follow::Column::BurrowId.eq(content.burrow_id),
+                                    )
+                                    .exec(txn)
+                                    .await?;
                                 let pulsar_post = PulsarSearchPostData {
                                     post_id,
                                     title: content.title,
                                     burrow_id: content.burrow_id,
-                                    section: content.section,
-                                    tag: content.tag,
+                                    section,
+                                    tag,
                                     update_time: now.to_owned(),
                                 };
                                 let pulsar_reply = PulsarSearchReplyData {
@@ -233,7 +253,7 @@ pub async fn read_post(
 ) -> (Status, Result<Json<PostPage>, Json<ErrorResponse>>) {
     let pg_con = db.into_inner();
     let page = page.unwrap_or(0);
-    // check if the post not exsits, add corresponding error if so
+    // check if the post not exists, add corresponding error if so
     match ContentPost::find_by_id(post_id).one(&pg_con).await {
         Ok(r) => match r {
             None => (
@@ -321,8 +341,36 @@ pub async fn update_post(
 ) -> (Status, Result<String, Json<ErrorResponse>>) {
     let pg_con = db.into_inner();
     let content = post_info.into_inner();
+    // check if title, author and section is empty
+    if content.title.is_empty() {
+        return (
+            Status::BadRequest,
+            Err(Json(ErrorResponse::build(
+                ErrorCode::EmptyField,
+                "Empty post title.",
+            ))),
+        );
+    }
+    if content.section.is_empty() || content.section.len() > MAX_SECTION {
+        return (
+            Status::BadRequest,
+            Err(Json(ErrorResponse::build(
+                ErrorCode::SectionInvalid,
+                "Wrong Post Section.",
+            ))),
+        );
+    }
+    if content.tag.len() > MAX_TAG {
+        return (
+            Status::BadRequest,
+            Err(Json(ErrorResponse::build(
+                ErrorCode::SectionInvalid,
+                "Wrong Post Tag.",
+            ))),
+        );
+    }
     let now = Utc::now().with_timezone(&FixedOffset::east(8 * 3600));
-    // check if the post not exsits, add corresponding error if so
+    // check if the post not exists, add corresponding error if so
     match ContentPost::find_by_id(post_id).one(&pg_con).await {
         Ok(r) => match r {
             None => (
@@ -346,14 +394,15 @@ pub async fn update_post(
                                     ))),
                                 )
                             } else if is_valid_burrow(&state.valid_burrow, &post_info.burrow_id) {
-                                let section = content.section.join(",");
-                                let tag = content.tag.join(",");
+                                // get tag and section string and remove duplicate
+                                let section = remove_duplicate(content.section);
+                                let tag = remove_duplicate(content.tag);
                                 let content_post = pgdb::content_post::ActiveModel {
                                     post_id: Set(post_id),
                                     title: Set(content.title.to_owned()),
                                     update_time: Set(now.to_owned()),
-                                    section: Set(section),
-                                    tag: Set(tag),
+                                    section: Set(section.join(",")),
+                                    tag: Set(tag.join(",")),
                                     ..Default::default()
                                 };
 
@@ -363,8 +412,8 @@ pub async fn update_post(
                                             post_id,
                                             title: content.title,
                                             burrow_id: r.burrow_id.unwrap(),
-                                            section: content.section,
-                                            tag: content.tag,
+                                            section,
+                                            tag,
                                             update_time: now,
                                         };
                                         let msg = PulsarSearchData::UpdatePost(pulsar_post);
@@ -428,7 +477,7 @@ pub async fn delete_post(
 ) -> (Status, Result<String, Json<ErrorResponse>>) {
     let pg_con = db.into_inner();
     let now = Utc::now().with_timezone(&FixedOffset::east(8 * 3600));
-    // check if the post not exsits, add corresponding error if so
+    // check if the post not exists, add corresponding error if so
     match ContentPost::find_by_id(post_id).one(&pg_con).await {
         Ok(r) => match r {
             None => (
@@ -440,6 +489,7 @@ pub async fn delete_post(
             ),
             Some(post_info) => {
                 //  check if time is within limit, if so, allow user to delete
+                // TODO: change it when final release
                 if post_info
                     .create_time
                     .checked_add_signed(Duration::seconds(5))
@@ -458,7 +508,15 @@ pub async fn delete_post(
                     Ok(opt_state) => match opt_state {
                         Some(state) => {
                             // check if this user create the post
-                            if is_valid_burrow(&state.valid_burrow, &post_info.burrow_id) {
+                            if state.user_state != 0 {
+                                (
+                                    Status::Forbidden,
+                                    Err(Json(ErrorResponse::build(
+                                        ErrorCode::UserForbidden,
+                                        "User not in a valid state",
+                                    ))),
+                                )
+                            } else if is_valid_burrow(&state.valid_burrow, &post_info.burrow_id) {
                                 // delete data in content_subject
                                 let delete_post: pgdb::content_post::ActiveModel = post_info.into();
                                 match pg_con
@@ -587,6 +645,7 @@ pub async fn read_post_list(
             .map(|x| x.document.post_id)
             .collect::<Vec<_>>();
         if post_ids.is_empty() {
+            log::info!("[READ-POST-LIST] Empty post_ids.");
             return (
                 Status::Ok,
                 Ok(Json(ListPage {
@@ -615,6 +674,7 @@ pub async fn read_post_list(
     // TODO: check if the post is banned?
     let post_ids = post_info.iter().map(|r| r.post_id).collect::<Vec<i64>>();
     if post_ids.is_empty() {
+        log::info!("[READ-POST-LIST] Cannot find post id by this section.");
         return (
             Status::Ok,
             Ok(Json(ListPage {
