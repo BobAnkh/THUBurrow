@@ -1,4 +1,5 @@
 mod common;
+use backend::models::content::PostSection;
 use backend::models::error::*;
 use backend::utils::mq::*;
 use rand::distributions::Alphanumeric;
@@ -542,7 +543,7 @@ fn test_content() {
         .json(&json!({
             "title": format!("First post of {}", name),
             "burrow_id": burrow_id,
-            "section": ["TestSection"],
+            "section": ["Learning"],
             "tag": ["NoTag"],
             "content": "This is a test post no.1"}))
         .remote("127.0.0.1:8000".parse().unwrap())
@@ -559,7 +560,7 @@ fn test_content() {
         .json(&json!({
             "title": "",
             "burrow_id": burrow_id,
-            "section": ["TestSection"],
+            "section": ["Learning"],
             "tag": ["NoTag"],
             "content": "This is a test post no.2"}))
         .remote("127.0.0.1:8000".parse().unwrap())
@@ -591,7 +592,7 @@ fn test_content() {
         .json(&json!({
             "title": format!("Third post of {}", name),
             "burrow_id": burrow_id,
-            "section": ["TestSection"],
+            "section": ["Learning"],
             "tag": ["Tag1", "Tag2", "Tag3", "Tag4", "Tag5", "Tag6", "Tag7", "Tag8", "Tag9", "Tag10", ""],
             "content": "This is a wrong test post"}))
         .remote("127.0.0.1:8000".parse().unwrap())
@@ -607,7 +608,7 @@ fn test_content() {
         .json(&json!({
             "title": format!("Forth post of {}", name),
             "burrow_id": burrow_id + 10000,
-            "section": ["TestSection"],
+            "section": ["Learning"],
             "tag": ["NoTag"],
             "content": "This is a test post no.4"}))
         .remote("127.0.0.1:8000".parse().unwrap())
@@ -623,7 +624,7 @@ fn test_content() {
         .json(&json!({
             "title": format!("Fifth post of {}", name),
             "burrow_id": burrow_id,
-            "section": ["TestSection"],
+            "section": ["Learning"],
             "tag": ["NoTag"],
             "content": "This is a test post no.5"}))
         .remote("127.0.0.1:8000".parse().unwrap())
@@ -635,7 +636,7 @@ fn test_content() {
         .json(&json!({
             "title": format!("Sixth post of {}", name),
             "burrow_id": burrow_id,
-            "section": ["TestSection", "nsfw", "MaoQTest"],
+            "section": ["Life", "NSFW", "Learning"],
             "tag": ["NoTag"],
             "content": "This is a test post no.6"}))
         .remote("127.0.0.1:8000".parse().unwrap())
@@ -718,7 +719,7 @@ fn test_content() {
         .json(&json!({
             "title": format!("Sixth post of {}", name),
             "burrow_id": new_burrow_id,
-            "section": ["TestSection"],
+            "section": ["Learning"],
             "tag": ["NoTag"],
             "content": "This is a test post no.6"}))
         .remote("127.0.0.1:8000".parse().unwrap())
@@ -730,7 +731,7 @@ fn test_content() {
         .json(&json!({
             "title": format!("Sixth post of {}", name),
             "burrow_id": new_burrow_id,
-            "section": ["TestSection", "TestSection"],
+            "section": ["Learning", "Learning"],
             "tag": ["NoTag", "NoTag"],
             "content": "This is a test post no.6"}))
         .remote("127.0.0.1:8000".parse().unwrap())
@@ -961,7 +962,7 @@ fn test_content() {
     assert_eq!(post_id + 2, res.post_desc.post_id);
     assert_eq!(2, res.post_desc.post_len);
     assert_eq!(
-        vec!["MaoQTest", "TestSection", "nsfw"],
+        vec![PostSection::Life, PostSection::NSFW, PostSection::Learning],
         res.post_desc.section
     );
     // get post no.4
@@ -986,7 +987,7 @@ fn test_content() {
         .unwrap();
     assert_eq!(post_id + 4, res.post_desc.post_id);
     assert_eq!(1, res.post_desc.post_len);
-    assert_eq!(vec!["TestSection"], res.post_desc.section);
+    assert_eq!(vec![PostSection::Learning], res.post_desc.section);
     assert_eq!(vec!["NoTag"], res.post_desc.tag);
 
     // 18. test read_post_list
@@ -1006,7 +1007,7 @@ fn test_content() {
     // println!("{}", response.into_string().unwrap());
     // // get post list with section
     // let response = client
-    //     .get(format!("/content/posts/list?section=TestSection"))
+    //     .get(format!("/content/posts/list?section=Learning"))
     //     .remote("127.0.0.1:8000".parse().unwrap())
     //     .dispatch();
     // assert_eq!(response.status(), Status::Ok);
@@ -1018,7 +1019,7 @@ fn test_content() {
         .patch(format!("/content/posts/{}", post_id))
         .json(&json!({
             "title": format!("New First post of {}", name),
-            "section": ["NewTestSection"],
+            "section": ["Life"],
             "tag": ["TestTag", "TestTag"]}))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
@@ -1029,7 +1030,7 @@ fn test_content() {
         .patch(format!("/content/posts/{}", post_id + 1))
         .json(&json!({
             "title": format!("New wrong post of {}", name),
-            "section": ["NewTestSection"],
+            "section": ["Life"],
             "tag": ["TestTag"]}))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
@@ -1046,7 +1047,7 @@ fn test_content() {
         .patch(format!("/content/posts/{}", post_id))
         .json(&json!({
             "title": "",
-            "section": ["NewTestSection"],
+            "section": ["Life"],
             "tag": ["TestTag"]}))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
@@ -1074,7 +1075,7 @@ fn test_content() {
         .patch(format!("/content/posts/{}", post_id))
         .json(&json!({
             "title": format!("New post no.3 of {}", name),
-            "section": ["TestSection"],
+            "section": ["Learning"],
             "tag": ["Tag1", "Tag2", "Tag3", "Tag4", "Tag5", "Tag6", "Tag7", "Tag8", "Tag9", "Tag10", ""]}))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
@@ -1088,7 +1089,7 @@ fn test_content() {
         .patch(format!("/content/posts/{}", post_id + 3))
         .json(&json!({
             "title": format!("New wrong post of {}", name),
-            "section": ["NewTestSection"],
+            "section": ["Life"],
             "tag": ["TestTag"]}))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
@@ -1160,3 +1161,78 @@ fn test_content() {
         res.reply_page[1].content
     );
 }
+
+// #[test]
+// fn test_storage() {
+//     // // get the client
+//     // let client = common::get_client().lock();
+//     // // generate a random name
+//     // let name: String = std::iter::repeat(())
+//     //     .map(|()| thread_rng().sample(Alphanumeric))
+//     //     .map(char::from)
+//     //     .take(16)
+//     //     .collect();
+
+//     // // sign up a user
+//     // let response = client
+//     //     .post("/users/sign-up")
+//     //     .json(&json!({
+//     //             "username": name,
+//     //             "password": "testpassword",
+//     //             "email": format!("{}@mails.tsinghua.edu.cn", name)}))
+//     //     .remote("127.0.0.1:8000".parse().unwrap())
+//     //     .dispatch();
+//     // assert_eq!(response.status(), Status::Ok);
+
+//     // // user login
+//     // let response = client
+//     //     .post("/users/login")
+//     //     .json(&json!({
+//     //             "username": name,
+//     //             "password": "testpassword"}))
+//     //     .remote("127.0.0.1:8000".parse().unwrap())
+//     //     .dispatch();
+//     // assert_eq!(response.status(), Status::Ok);
+
+//     // let response = client.post("/storage/images")
+//     //     .header(ContentType::JPEG)
+//     //     .body(r#"a;fklakdjfaoi;jflkasfasokfd"#)
+//     //     .remote("127.0.0.1:8000".parse().unwrap())
+//     //     .dispatch();
+//     // assert_eq!(response.status(), Status::Ok);
+//     // let image_name = response.into_string().unwrap();
+//     // println!("{}", &image_name);
+
+//     fn construct_headers() -> HeaderMap {
+//         let mut headers = HeaderMap::new();
+//         headers.insert(CONTENT_TYPE, HeaderValue::from_static("image/jpeg"));
+//         headers
+//     }
+//     let mut response = reqwest::blocking::Client::new()
+//         .get("http://httpbin.org/image/jpeg")
+//         .send()
+//         .unwrap();
+//     // if response.status().is_success() {
+//     //     println!("{:?}", response.headers());
+//     // }
+//     let mut buf: Vec<u8> = vec![];
+//     response.copy_to(&mut buf).unwrap();
+//     let client = reqwest::blocking::Client::builder()
+//         .cookie_store(true)
+//         .build()
+//         .unwrap();
+//     client
+//         .post("https://dev.thuburrow.com/users/login")
+//         .json(&json!({
+//             "username": "name1",
+//             "password": "testpassword"}))
+//         .send()
+//         .unwrap();
+//     let response = client
+//         .post("https://dev.thuburrow.com/storage/images")
+//         .headers(construct_headers())
+//         .body(buf)
+//         .send()
+//         .unwrap();
+//     println!("{:?}", response.text().unwrap());
+// }

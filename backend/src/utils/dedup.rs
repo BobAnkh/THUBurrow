@@ -1,4 +1,4 @@
-pub fn remove_duplicate(mut tag: Vec<String>) -> Vec<String> {
+pub fn remove_duplicate<T: Ord + PartialEq>(mut tag: Vec<T>) -> Vec<T> {
     tag.sort_unstable();
     tag.dedup();
     tag

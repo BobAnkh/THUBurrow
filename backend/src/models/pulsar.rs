@@ -3,6 +3,7 @@ use pulsar::{DeserializeMessage, Payload, SerializeMessage};
 use sea_orm::prelude::DateTimeWithTimeZone;
 use serde::{Deserialize, Serialize};
 
+use super::content::PostSection;
 use super::search::*;
 
 #[derive(Serialize, Deserialize)]
@@ -31,7 +32,7 @@ pub struct PulsarSearchPostData {
     pub post_id: i64,
     pub title: String,
     pub burrow_id: i64,
-    pub section: Vec<String>,
+    pub section: Vec<PostSection>,
     pub tag: Vec<String>,
     pub update_time: DateTimeWithTimeZone,
 }

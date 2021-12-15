@@ -8,7 +8,7 @@ pub static REPLY_PER_PAGE: usize = 20;
 pub static MAX_SECTION: usize = 3;
 pub static MAX_TAG: usize = 10;
 
-#[derive(Debug, Ord, PartialOrd, Eq, PartialEq)]
+#[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Serialize, Deserialize, Clone)]
 pub enum PostSection {
     Life,
     Learning,
@@ -34,7 +34,7 @@ pub struct PostCreateResponse {
 #[derive(Serialize, Deserialize)]
 pub struct PostUpdateInfo {
     pub title: String,
-    pub section: Vec<String>,
+    pub section: Vec<PostSection>,
     pub tag: Vec<String>,
 }
 
@@ -63,7 +63,7 @@ pub struct ListPage {
 pub struct PostInfo {
     pub title: String,
     pub burrow_id: i64,
-    pub section: Vec<String>,
+    pub section: Vec<PostSection>,
     pub tag: Vec<String>,
     pub content: String,
 }
@@ -95,7 +95,7 @@ pub struct Post {
     pub post_id: i64,
     pub title: String,
     pub burrow_id: i64,
-    pub section: Vec<String>,
+    pub section: Vec<PostSection>,
     pub tag: Vec<String>,
     pub create_time: DateTimeWithTimeZone,
     pub update_time: DateTimeWithTimeZone,
@@ -166,7 +166,7 @@ impl From<content_post::Model> for Post {
             post_id: post_info.post_id,
             title: post_info.title,
             burrow_id: post_info.burrow_id,
-            section: post_info.section.split(',').map(str::to_string).collect(),
+            section: serde_json::from_str(&post_info.section).unwrap(),
             tag: post_info.tag.split(',').map(str::to_string).collect(),
             create_time: post_info.create_time,
             update_time: post_info.update_time,
@@ -185,7 +185,7 @@ impl From<&content_post::Model> for Post {
             post_id: post_info.post_id,
             title: post_info.title.to_owned(),
             burrow_id: post_info.burrow_id,
-            section: post_info.section.split(',').map(str::to_string).collect(),
+            section: serde_json::from_str(&post_info.section).unwrap(),
             tag: post_info.tag.split(',').map(str::to_string).collect(),
             create_time: post_info.create_time,
             update_time: post_info.update_time,

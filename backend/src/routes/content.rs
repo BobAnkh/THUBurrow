@@ -143,7 +143,7 @@ pub async fn create_post(
                                     burrow_id: Set(content.burrow_id),
                                     create_time: Set(now.to_owned()),
                                     update_time: Set(now.to_owned()),
-                                    section: Set(section.join(",")),
+                                    section: Set(serde_json::to_string(&section).unwrap()),
                                     tag: Set(tag.join(",")),
                                     ..Default::default()
                                 };
@@ -401,7 +401,7 @@ pub async fn update_post(
                                     post_id: Set(post_id),
                                     title: Set(content.title.to_owned()),
                                     update_time: Set(now.to_owned()),
-                                    section: Set(section.join(",")),
+                                    section: Set(serde_json::to_string(&section).unwrap()),
                                     tag: Set(tag.join(",")),
                                     ..Default::default()
                                 };
