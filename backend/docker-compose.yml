@@ -21,6 +21,7 @@ services:
       miniostorage:
     volumes:
       - ./conf/log4rs.yml:/etc/backend/conf/log4rs.yml:ro
+      - ./log:/log
     environment:
       ROCKET_DATABASES: '{pgdb={url="postgres://postgres:${PG_PASSWORD:-postgres}@pgdb:5432/${PG_DB:-pgdb}"},keydb={url="redis://:${KEYDB_PASSWORD:-keypassword}@keydb:6379"},minio={url="minio://${MINIO_USER:-minio}:${MINIO_PASSWORD:-miniopassword}@minio:9000"},pulsar-mq={url="pulsar://pulsar:6650"},search={url="http://typesense:8108@${TYPESENSE_API_KEY:-8Dz4jRrsBjYgdCD/VGP1bleph7oBThJr5IcF43l0U24=}"}}'
       ROCKET_SECRET_KEY: ${ROCKET_SECRET_KEY}
