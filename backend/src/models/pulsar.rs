@@ -46,7 +46,7 @@ pub struct PulsarSearchReplyData {
 }
 
 /// `{"ActivateLike":10}` or `{"DeactivateFollow": 10}`, where 10 is the post_id or burrow_id
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub enum RelationData {
     ActivateLike(i64),
     DeactivateLike(i64),

@@ -6,6 +6,7 @@ use std::convert::From;
 pub static POST_PER_PAGE: usize = 20;
 pub static REPLY_PER_PAGE: usize = 20;
 pub static MAX_SECTION: usize = 3;
+pub static MAX_TAG: usize = 10;
 
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq)]
 pub enum PostSection {
@@ -37,7 +38,7 @@ pub struct PostUpdateInfo {
     pub tag: Vec<String>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct ReplyCreateResponse {
     pub post_id: i64,
     pub reply_id: i32,
