@@ -10,8 +10,8 @@ pub static MAX_TAG: usize = 10;
 
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Serialize, Deserialize, Clone)]
 pub enum PostSection {
-    Life,
     Learning,
+    Life,
     NSFW,
     XXG,
 }

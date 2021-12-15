@@ -962,7 +962,7 @@ fn test_content() {
     assert_eq!(post_id + 2, res.post_desc.post_id);
     assert_eq!(2, res.post_desc.post_len);
     assert_eq!(
-        vec![PostSection::Life, PostSection::NSFW, PostSection::Learning],
+        vec![PostSection::Learning, PostSection::Life, PostSection::NSFW],
         res.post_desc.section
     );
     // get post no.4
@@ -1001,7 +1001,7 @@ fn test_content() {
     // TODO
     // // get post list with section
     // let response = client
-    //     .get(format!("/content/posts/list?page=0&section=nsfw"))
+    //     .get(format!("/content/posts/list?page=0&section=NSFW"))
     //     .remote("127.0.0.1:8000".parse().unwrap())
     //     .dispatch(); assert_eq!(response.status(), Status::Ok);
     // println!("{}", response.into_string().unwrap());
