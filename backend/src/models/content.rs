@@ -7,6 +7,14 @@ pub static POST_PER_PAGE: usize = 20;
 pub static REPLY_PER_PAGE: usize = 20;
 pub static MAX_SECTION: usize = 3;
 
+#[derive(Debug, Ord, PartialOrd, Eq, PartialEq)]
+pub enum PostSection {
+    Life,
+    Learning,
+    NSFW,
+    XXG,
+}
+
 #[derive(Debug, FromQueryResult)]
 pub struct LastPostSeq {
     last_value: i64,
@@ -143,6 +151,12 @@ pub struct Reply {
 //         })
 //     }
 // }
+
+impl std::fmt::Display for PostSection {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        std::fmt::Debug::fmt(self, f)
+    }
+}
 
 // TODO: According to post_state to determine whether the post is visible
 impl From<content_post::Model> for Post {

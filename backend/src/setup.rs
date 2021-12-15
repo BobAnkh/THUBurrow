@@ -395,9 +395,9 @@ pub async fn create_burrow_table(db: &DbConn) -> Result<ExecResult, DbErr> {
         )
         .col(
             ColumnDef::new(pgdb::burrow::Column::Badge)
-            .text()
-            .not_null()
-            .default("".to_string()),
+                .text()
+                .not_null()
+                .default("".to_string()),
         )
         .to_owned();
     build_statement(db, &stmt).await
