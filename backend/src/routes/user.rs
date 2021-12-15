@@ -58,7 +58,6 @@ pub async fn user_relation(
     relation_info: Json<RelationData>,
 ) -> (Status, Result<String, Json<ErrorResponse>>) {
     let relation = relation_info.into_inner();
-    log::info!("[INFO] {:?}", relation);
     let msg = relation.to_pulsar(auth.id);
     match producer
         .send("persistent://public/default/relation", msg)

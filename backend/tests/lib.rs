@@ -324,7 +324,9 @@ fn test_burrow() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     assert_eq!(response.into_string().unwrap(), "Success");
+
     std::thread::sleep(std::time::Duration::from_secs(1));
+
     // 4. test get_follow
     // get following burrows of a user
     let response = client
@@ -521,6 +523,18 @@ fn test_content() {
     assert_eq!(response.status(), Status::Ok);
     assert_eq!(response.into_string().unwrap(), "Success");
 
+    // get burrow of a user to check post_num (before create any post)
+    let response = client
+        .get("/users/burrows")
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    let res = response
+        .into_json::<Vec<backend::models::burrow::BurrowMetadata>>()
+        .unwrap();
+    assert_eq!(burrow_id, res[0].burrow_id);
+    assert_eq!(0, res[0].post_num);
+
     // 11. test create_post
     // create post 1
     let response = client
@@ -628,7 +642,7 @@ fn test_content() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
 
-    // get burrow of a user to check post_num
+    // get burrow of a user to check post_num (after created post 1~3)
     let response = client
         .get("/users/burrows")
         .remote("127.0.0.1:8000".parse().unwrap())
@@ -766,6 +780,7 @@ fn test_content() {
     assert_eq!(response.into_string().unwrap(), "Success");
 
     std::thread::sleep(std::time::Duration::from_secs(1));
+
     // get following burrows of a user, check if it's updated
     let response = client
         .get("/users/follow")
@@ -868,6 +883,7 @@ fn test_content() {
     println!("{}", response.into_string().unwrap());
 
     std::thread::sleep(std::time::Duration::from_secs(1));
+
     // 16. test get_collection
     // get post collection of a user
     let response = client
@@ -913,7 +929,13 @@ fn test_content() {
         .unwrap();
     assert_eq!(post_id, res.post_desc.post_id);
     assert_eq!(format!("First post of {}", name), res.post_desc.title);
-
+    assert_eq!(3, res.post_desc.post_len);
+    // TODO: match reply
+    assert_eq!(reply_id, res.reply_page[1].reply_id);
+    assert_eq!(
+        "This is a test reply no.1 for post no.1".to_string(),
+        res.reply_page[1].content
+    );
     // get post no.2: perform a wrong action (post not exist)
     let response = client
         .get(format!("/content/posts/{}", post_id + 1))
@@ -937,6 +959,7 @@ fn test_content() {
         .into_json::<backend::models::content::PostPage>()
         .unwrap();
     assert_eq!(post_id + 2, res.post_desc.post_id);
+    assert_eq!(2, res.post_desc.post_len);
     assert_eq!(
         vec!["MaoQTest", "TestSection", "nsfw"],
         res.post_desc.section
@@ -962,6 +985,7 @@ fn test_content() {
         .into_json::<backend::models::content::PostPage>()
         .unwrap();
     assert_eq!(post_id + 4, res.post_desc.post_id);
+    assert_eq!(1, res.post_desc.post_len);
     assert_eq!(vec!["TestSection"], res.post_desc.section);
     assert_eq!(vec!["NoTag"], res.post_desc.tag);
 
@@ -995,7 +1019,7 @@ fn test_content() {
         .json(&json!({
             "title": format!("New First post of {}", name),
             "section": ["NewTestSection"],
-            "tag": ["TestTag"]}))
+            "tag": ["TestTag", "TestTag"]}))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
@@ -1116,5 +1140,23 @@ fn test_content() {
     assert_eq!(
         response.into_json::<ErrorResponse>().unwrap(),
         ErrorResponse::build(ErrorCode::BurrowInvalid, "")
+    );
+
+    // get post no.1 after update
+    let response = client
+        .get(format!("/content/posts/{}", post_id))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    let res = response
+        .into_json::<backend::models::content::PostPage>()
+        .unwrap();
+    assert_eq!(post_id, res.post_desc.post_id);
+    assert_eq!(vec!["TestTag"], res.post_desc.tag);
+    assert_eq!(format!("New First post of {}", name), res.post_desc.title);
+    assert_eq!(reply_id, res.reply_page[1].reply_id);
+    assert_eq!(
+        "This is a updated reply no.1 for post no.1".to_string(),
+        res.reply_page[1].content
     );
 }

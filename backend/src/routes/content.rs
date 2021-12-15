@@ -19,7 +19,7 @@ use crate::pgdb::prelude::*;
 use crate::pool::{PgDb, PulsarSearchProducerMq, Search, TypesenseSearch};
 use crate::utils::auth::Auth;
 use crate::utils::burrow_valid::is_valid_burrow;
-use crate::utils::tag_duplicate::remove_tag_duplicate;
+use crate::utils::dedup::remove_duplicate;
 
 pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
     rocket.mount(
@@ -136,16 +136,15 @@ pub async fn create_post(
                                 // get timestamp
                                 let now = Utc::now().with_timezone(&FixedOffset::east(8 * 3600));
                                 // get tag and section string and remove duplicate
-                                let section = remove_tag_duplicate(&content.section).join(",");
-                                let tag = remove_tag_duplicate(&content.tag).join(",");
+                                let section = remove_duplicate(content.section);
+                                let tag = remove_duplicate(content.tag);
                                 let content_post = pgdb::content_post::ActiveModel {
                                     title: Set(content.title.to_owned()),
                                     burrow_id: Set(content.burrow_id),
                                     create_time: Set(now.to_owned()),
                                     update_time: Set(now.to_owned()),
-                                    section: Set(section.to_owned()),
-                                    // tag: Set(tag.to_owned()),
-                                    tag: Set(tag.to_owned()),
+                                    section: Set(section.join(",")),
+                                    tag: Set(tag.join(",")),
                                     ..Default::default()
                                 };
                                 // insert the row in database
@@ -186,8 +185,7 @@ pub async fn create_post(
                                         Expr::value(true),
                                     )
                                     .filter(
-                                        pgdb::user_follow::Column::BurrowId
-                                            .eq(content.burrow_id),
+                                        pgdb::user_follow::Column::BurrowId.eq(content.burrow_id),
                                     )
                                     .exec(txn)
                                     .await?;
@@ -195,8 +193,8 @@ pub async fn create_post(
                                     post_id,
                                     title: content.title,
                                     burrow_id: content.burrow_id,
-                                    section: content.section,
-                                    tag: content.tag,
+                                    section,
+                                    tag,
                                     update_time: now.to_owned(),
                                 };
                                 let pulsar_reply = PulsarSearchReplyData {
@@ -396,14 +394,15 @@ pub async fn update_post(
                                     ))),
                                 )
                             } else if is_valid_burrow(&state.valid_burrow, &post_info.burrow_id) {
-                                let section = content.section.join(",");
-                                let tag = content.tag.join(",");
+                                // get tag and section string and remove duplicate
+                                let section = remove_duplicate(content.section);
+                                let tag = remove_duplicate(content.tag);
                                 let content_post = pgdb::content_post::ActiveModel {
                                     post_id: Set(post_id),
                                     title: Set(content.title.to_owned()),
                                     update_time: Set(now.to_owned()),
-                                    section: Set(section),
-                                    tag: Set(tag),
+                                    section: Set(section.join(",")),
+                                    tag: Set(tag.join(",")),
                                     ..Default::default()
                                 };
 
@@ -413,8 +412,8 @@ pub async fn update_post(
                                             post_id,
                                             title: content.title,
                                             burrow_id: r.burrow_id.unwrap(),
-                                            section: content.section,
-                                            tag: content.tag,
+                                            section,
+                                            tag,
                                             update_time: now,
                                         };
                                         let msg = PulsarSearchData::UpdatePost(pulsar_post);
