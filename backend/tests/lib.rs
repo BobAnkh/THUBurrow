@@ -1,4 +1,5 @@
 mod common;
+use backend::models::error::{ErrorCode, ErrorCode::*, ErrorMessage, ErrorResponse};
 use backend::models::search::*;
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
@@ -639,12 +640,18 @@ fn test_search() {
     let response = client
         .post("/burrows")
         .json(&json!({
-            "description": format!("First burrow of {}", name),
-            "title": "Burrow 1"}))
+            "description": format!("Created burrow of {}", name),
+            "title": "Created Burrow"}))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    println!("{}", response.into_string().unwrap());
+    let res = response.into_json::<serde_json::Value>().unwrap();
+    let created_burrow_id: i64 = serde_json::to_string(&res["burrow_id"])
+        .unwrap()
+        .parse::<i64>()
+        .unwrap();
+    println!("Created Burrow Id: {}", created_burrow_id);
+    // println!("{}", response.into_string().unwrap());
 
     // create post
     let response = client
@@ -653,8 +660,8 @@ fn test_search() {
             "title": format!("First post of {}", name),
             "burrow_id": burrow_id,
             "section": ["TestSection"],
-            "tag": ["NoTag"],
-            "content": "This is a test post inside default burrow"}))
+            "tag": ["NoTag","政治相关"],
+            "content": "search test"}))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
@@ -663,126 +670,140 @@ fn test_search() {
         .unwrap();
     let post_id = res.post_id;
     println!("Post Id: {}", post_id);
+    std::thread::sleep(std::time::Duration::from_secs(3));
 
     // retrieve burrow
     let response = client
-        .post(format!("/search/?{}", 1))
-        .json(&json!(SearchRequest::RetrieveBurrow { burrow_id: 5 }))
+        .post("/search".to_string())
+        .json(&json!(SearchRequest::RetrieveBurrow {
+            burrow_id: created_burrow_id
+        }))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    println!("Retrieve result: {}", response.into_string().unwrap());
+    let res = response.into_json::<serde_json::Value>().unwrap();
+    assert_eq!(res["title"], "Created Burrow".to_string());
+    // println!("Retrieve result: {}", response.into_string().unwrap());
 
     // retrieve burrow  (invalid burrow_id)
     let response = client
-        .post(format!("/search/?{}", 1))
+        .post("/search".to_string())
         .json(&json!(SearchRequest::RetrieveBurrow { burrow_id: -1 }))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
-    assert_eq!(response.status(), Status::Ok);
-    println!("Retrieve result: {}", response.into_string().unwrap());
+    let res = response.into_json::<ErrorResponse>().unwrap();
+    assert_eq!(res.error.code, ErrorCode::BurrowNotExist);
+    assert_eq!(res.error.message, "Cannot find burrow -1".to_string());
 
     // search burrow by keyword
     let response = client
-        .post(format!("/search/?{}", 1))
-        .json(&json!(SearchRequest::SearchBurrowKeyword {
-            keywords: vec!("Second".to_string(), "burrow".to_string())
-        }))
+        .post("/search".to_string())
+        .json(&SearchRequest::SearchBurrowKeyword {
+            keywords: vec!["Created".to_string()],
+        })
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    println!("Search result: {}", response.into_string().unwrap());
+    let res = response.into_json::<serde_json::Value>().unwrap();
+    assert_eq!(&res["burrows"][0]["burrow_id"], created_burrow_id);
+    // println!("Search result: {}", response.into_string().unwrap());
 
-    // search burrow by keyword  (empty keyword vector)
-    let response = client
-        .post(format!("/search/?{}", 1))
-        .json(&json!(SearchRequest::SearchBurrowKeyword {
-            keywords: vec!()
-        }))
-        .remote("127.0.0.1:8000".parse().unwrap())
-        .dispatch();
-    assert_eq!(response.status(), Status::Ok);
-    println!("Search result: {}", response.into_string().unwrap());
+    // // search burrow by keyword  (empty keyword vector)
+    // let response = client
+    //     .post(format!("/search/?{}", 1))
+    //     .json(&SearchRequest::SearchBurrowKeyword { keywords: vec![] })
+    //     .remote("127.0.0.1:8000".parse().unwrap())
+    //     .dispatch();
+    // assert_eq!(response.status(), Status::Ok);
+    // println!("Search result: {}", response.into_string().unwrap());
 
     // search burrow by keyword  (repeat keyword vector)
     let response = client
-        .post(format!("/search/?{}", 1))
-        .json(&json!(SearchRequest::SearchBurrowKeyword {
-            keywords: vec!(
-                "burrow".to_string(),
-                "burrow".to_string(),
-                "burrow".to_string(),
-                "burrow".to_string(),
-                "burrow".to_string(),
-                "burrow".to_string(),
-                "burrow".to_string(),
-                "burrow".to_string(),
-                "burrow".to_string(),
-                "burrow".to_string(),
-                "burrow".to_string(),
-                "burrow".to_string(),
-                "burrow".to_string(),
-                "burrow".to_string(),
-            )
-        }))
+        .post("/search".to_string())
+        .json(&SearchRequest::SearchBurrowKeyword {
+            keywords: vec![
+                "created".to_string(),
+                "created".to_string(),
+                "created".to_string(),
+                "created".to_string(),
+                "created".to_string(),
+                "created".to_string(),
+                "created".to_string(),
+                "created".to_string(),
+                "created".to_string(),
+            ],
+        })
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
+
     assert_eq!(response.status(), Status::Ok);
-    println!("Search result: {}", response.into_string().unwrap());
+    let res = response.into_json::<SearchBurrowResponse>().unwrap();
+    // println!("{}",response.into_string().unwrap());
+    assert_eq!(res.burrows[0].burrow_id,created_burrow_id);
 
     // retrieve post
     let response = client
-        .post(format!("/search/?{}", 1))
+        .post("/search".to_string())
         .json(&json!(SearchRequest::RetrievePost { post_id: 1 }))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
-    assert_eq!(response.status(), Status::Ok);
-    println!("Retrieve result: {}", response.into_string().unwrap());
+    let res = response.into_json::<serde_json::Value>().unwrap();
+    assert_eq!(res["post_desc"]["post_id"],1);
+    // println!("Retrieve result: {}", response.into_string().unwrap());
 
     // search post by keyword
     let response = client
-        .post(format!("/search/?{}", 1))
-        .json(&json!(SearchRequest::SearchPostKeyword {
-            keywords: vec!("Testsection".to_string())
-        }))
+        .post("/search".to_string())
+        .json(&SearchRequest::SearchPostKeyword {
+            keywords: vec!["test".to_string()],
+        })
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
-    // assert_eq!(response.status(),Status::Ok);
-    println!("Search result: {}", response.into_string().unwrap());
+    assert_eq!(response.status(),Status::Ok);
+    let res = response.into_json::<SearchMixResponse>().unwrap();
+    assert_eq!(res.replies.replies[0].post_id,post_id);
 
     // search post by keyword   (special characters)
     let response = client
         .post(format!("/search/?{}", 1))
-        .json(&json!(SearchRequest::SearchPostKeyword {
-            keywords: vec!("❤❥웃유♋☮✌☏☢☠✔☑♚▲♪✈✞÷↑↓◆◇⊙■□△▽¿─│♥❣♂♀☿Ⓐ✍✉☣☤✘☒♛▼♫⌘☪≈←→◈◎☉★☆⊿※¡━┃♡ღツ☼☁❅♒✎©®™Σ✪✯☭➳卐√↖↗●◐Θ◤◥︻〖〗┄┆℃℉°✿ϟ☃☂✄¢€£∞✫★½✡×↙↘○◑⊕◣◢︼【】┅┇☽☾✚〓▂▃▄▅▆▇█▉▊▋▌▍▎▏↔↕☽☾の•▸◂▴▾┈┊①②③④⑤⑥⑦⑧⑨⑩ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ㍿▓♨♛❖♓☪✙┉┋☹☺☻تヅツッシÜϡﭢ™℠℗©®♥❤❥❣❦❧♡۵웃유ღ♋♂♀☿☼☀☁☂☄☾☽❄☃☈⊙☉℃℉❅✺ϟ☇♤♧♡♢♠♣♥♦☜☞☝✍☚☛☟✌✽✾✿❁❃❋❀⚘☑✓✔√☐☒✗✘ㄨ✕✖✖⋆✢✣✤✥❋✦✧✩✰✪✫✬✭✮✯❂✡★✱✲✳✴✵✶✷✸✹✺✻✼❄❅❆❇❈❉❊†☨✞✝☥☦☓☩☯☧☬☸✡♁✙♆。，、＇：∶；?‘’“”〝〞ˆˇ﹕︰﹔﹖﹑•¨….¸;！´？！～—ˉ｜‖＂〃｀@﹫¡¿﹏﹋﹌︴々﹟#﹩$﹠&﹪%*﹡﹢﹦﹤‐￣¯―﹨ˆ˜﹍﹎+=<＿_-ˇ~﹉﹊（）〈〉‹›﹛﹜『』〖〗［］《》〔〕{}「」【】︵︷︿︹︽_﹁﹃︻︶︸﹀︺︾ˉ﹂﹄︼☩☨☦✞✛✜✝✙✠✚†‡◉○◌◍◎●◐◑◒◓◔◕◖◗❂☢⊗⊙◘◙◍⅟½⅓⅕⅙⅛⅔⅖⅚⅜¾⅗⅝⅞⅘≂≃≄≅≆≇≈≉≊≋≌≍≎≏≐≑≒≓≔≕≖≗≘≙≚≛≜≝≞≟≠≡≢≣≤≥≦≧≨≩⊰⊱⋛⋚∫∬∭∮∯∰∱∲∳%℅‰‱㊣㊎㊍㊌㊋㊏㊐㊊㊚㊛㊤㊥㊦㊧㊨㊒㊞㊑㊒㊓㊔㊕㊖㊗㊘㊜㊝㊟㊠㊡㊢㊩㊪㊫㊬㊭㊮㊯㊰㊙㉿囍♔♕♖♗♘♙♚♛♜♝♞♟ℂℍℕℙℚℝℤℬℰℯℱℊℋℎℐℒℓℳℴ℘ℛℭ℮ℌℑℜℨ♪♫♩♬♭♮♯°øⒶ☮✌☪✡☭✯卐✐✎✏✑✒✍✉✁✂✃✄✆✉☎☏➟➡➢➣➤➥➦➧➨➚➘➙➛➜➝➞➸♐➲➳⏎➴➵➶➷➸➹➺➻➼➽←↑→↓↔↕↖↗↘↙↚↛↜↝↞↟↠↡↢↣↤↥↦↧↨➫➬➩➪➭➮➯➱↩↪↫↬↭↮↯↰↱↲↳↴↵↶↷↸↹↺↻↼↽↾↿⇀⇁⇂⇃⇄⇅⇆⇇⇈⇉⇊⇋⇌⇍⇎⇏⇐⇑⇒⇓⇔⇕⇖⇗⇘⇙⇚⇛⇜⇝⇞⇟⇠⇡⇢⇣⇤⇥⇦⇧⇨⇩⇪➀➁➂➃➄➅➆➇➈➉➊➋➌➍➎➏➐➑➒➓㊀㊁㊂㊃㊄㊅㊆㊇㊈㊉ⒶⒷⒸⒹⒺⒻⒼⒽⒾⒿⓀⓁⓂⓃⓄⓅⓆⓇⓈⓉⓊⓋⓌⓍⓎⓏⓐⓑⓒⓓⓔⓕⓖⓗⓘⓙⓚⓛⓜⓝⓞⓟⓠⓡⓢⓣⓤⓥⓦⓧⓨⓩ⒜⒝⒞⒟⒠⒡⒢⒣⒤⒥⒦⒧⒨⒩⒪⒫⒬⒭⒮⒯⒰⒱⒲⒳⒴⒵ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩⅪⅫⅬⅭⅮⅯⅰⅱⅲⅳⅴⅵⅶⅷⅸⅹⅺⅻⅼⅽⅾⅿ┌┍┎┏┐┑┒┓└┕┖┗┘┙┚┛├┝┞┟┠┡┢┣┤┥┦┧┨┩┪┫┬┭┮┯┰┱┲┳┴┵┶┷┸┹┺┻┼┽┾┿╀╁╂╃╄╅╆╇╈╉╊╋╌╍╎╏═║╒╓╔╕╖╗╘╙╚╛╜╝╞╟╠╡╢╣╤╥╦╧╨╩╪╫╬◤◥◄►▶◀◣◢▲▼◥▸◂▴▾△▽▷◁⊿▻◅▵▿▹◃❏❐❑❒▀▁▂▃▄▅▆▇▉▊▋█▌▍▎▏▐░▒▓▔▕■□▢▣▤▥▦▧▨▩▪▫▬▭▮▯㋀㋁㋂㋃㋄㋅㋆㋇㋈㋉㋊㋋㏠㏡㏢㏣㏤㏥㏦㏧㏨㏩㏪㏫㏬㏭㏮㏯㏰㏱㏲㏳㏴㏵㏶㏷㏸㏹㏺㏻㏼㏽㏾㍙㍚㍛㍜㍝㍞㍟㍠㍡㍢㍣㍤㍥㍦㍧㍨㍩㍪㍫㍬㍭㍮㍯㍰㍘☰☲☱☴☵☶☳☷☯
+        .json(&SearchRequest::SearchPostKeyword {
+            keywords: vec!["❤❥웃유♋☮✌☏☢☠✔☑♚▲♪✈✞÷↑↓◆◇⊙■□△▽¿─│♥❣♂♀☿Ⓐ✍✉☣☤✘☒♛▼♫⌘☪≈←→◈◎☉★☆⊿※¡━┃♡ღツ☼☁❅♒✎©®™Σ✪✯☭➳卐√↖↗●◐Θ◤◥︻〖〗┄┆℃℉°✿ϟ☃☂✄¢€£∞✫★½✡×↙↘○◑⊕◣◢︼【】┅┇☽☾✚〓▂▃▄▅▆▇█▉▊▋▌▍▎▏↔↕☽☾の•▸◂▴▾┈┊①②③④⑤⑥⑦⑧⑨⑩ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ㍿▓♨♛❖♓☪✙┉┋☹☺☻تヅツッシÜϡﭢ™℠℗©®♥❤❥❣❦❧♡۵웃유ღ♋♂♀☿☼☀☁☂☄☾☽❄☃☈⊙☉℃℉❅✺ϟ☇♤♧♡♢♠♣♥♦☜☞☝✍☚☛☟✌✽✾✿❁❃❋❀⚘☑✓✔√☐☒✗✘ㄨ✕✖✖⋆✢✣✤✥❋✦✧✩✰✪✫✬✭✮✯❂✡★✱✲✳✴✵✶✷✸✹✺✻✼❄❅❆❇❈❉❊†☨✞✝☥☦☓☩☯☧☬☸✡♁✙♆。，、＇：∶；?‘’“”〝〞ˆˇ﹕︰﹔﹖﹑•¨….¸;！´？！～—ˉ｜‖＂〃｀@﹫¡¿﹏﹋﹌︴々﹟#﹩$﹠&﹪%*﹡﹢﹦﹤‐￣¯―﹨ˆ˜﹍﹎+=<＿_-ˇ~﹉﹊（）〈〉‹›﹛﹜『』〖〗［］《》〔〕{}「」【】︵︷︿︹︽_﹁﹃︻︶︸﹀︺︾ˉ﹂﹄︼☩☨☦✞✛✜✝✙✠✚†‡◉○◌◍◎●◐◑◒◓◔◕◖◗❂☢⊗⊙◘◙◍⅟½⅓⅕⅙⅛⅔⅖⅚⅜¾⅗⅝⅞⅘≂≃≄≅≆≇≈≉≊≋≌≍≎≏≐≑≒≓≔≕≖≗≘≙≚≛≜≝≞≟≠≡≢≣≤≥≦≧≨≩⊰⊱⋛⋚∫∬∭∮∯∰∱∲∳%℅‰‱㊣㊎㊍㊌㊋㊏㊐㊊㊚㊛㊤㊥㊦㊧㊨㊒㊞㊑㊒㊓㊔㊕㊖㊗㊘㊜㊝㊟㊠㊡㊢㊩㊪㊫㊬㊭㊮㊯㊰㊙㉿囍♔♕♖♗♘♙♚♛♜♝♞♟ℂℍℕℙℚℝℤℬℰℯℱℊℋℎℐℒℓℳℴ℘ℛℭ℮ℌℑℜℨ♪♫♩♬♭♮♯°øⒶ☮✌☪✡☭✯卐✐✎✏✑✒✍✉✁✂✃✄✆✉☎☏➟➡➢➣➤➥➦➧➨➚➘➙➛➜➝➞➸♐➲➳⏎➴➵➶➷➸➹➺➻➼➽←↑→↓↔↕↖↗↘↙↚↛↜↝↞↟↠↡↢↣↤↥↦↧↨➫➬➩➪➭➮➯➱↩↪↫↬↭↮↯↰↱↲↳↴↵↶↷↸↹↺↻↼↽↾↿⇀⇁⇂⇃⇄⇅⇆⇇⇈⇉⇊⇋⇌⇍⇎⇏⇐⇑⇒⇓⇔⇕⇖⇗⇘⇙⇚⇛⇜⇝⇞⇟⇠⇡⇢⇣⇤⇥⇦⇧⇨⇩⇪➀➁➂➃➄➅➆➇➈➉➊➋➌➍➎➏➐➑➒➓㊀㊁㊂㊃㊄㊅㊆㊇㊈㊉ⒶⒷⒸⒹⒺⒻⒼⒽⒾⒿⓀⓁⓂⓃⓄⓅⓆⓇⓈⓉⓊⓋⓌⓍⓎⓏⓐⓑⓒⓓⓔⓕⓖⓗⓘⓙⓚⓛⓜⓝⓞⓟⓠⓡⓢⓣⓤⓥⓦⓧⓨⓩ⒜⒝⒞⒟⒠⒡⒢⒣⒤⒥⒦⒧⒨⒩⒪⒫⒬⒭⒮⒯⒰⒱⒲⒳⒴⒵ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩⅪⅫⅬⅭⅮⅯⅰⅱⅲⅳⅴⅵⅶⅷⅸⅹⅺⅻⅼⅽⅾⅿ┌┍┎┏┐┑┒┓└┕┖┗┘┙┚┛├┝┞┟┠┡┢┣┤┥┦┧┨┩┪┫┬┭┮┯┰┱┲┳┴┵┶┷┸┹┺┻┼┽┾┿╀╁╂╃╄╅╆╇╈╉╊╋╌╍╎╏═║╒╓╔╕╖╗╘╙╚╛╜╝╞╟╠╡╢╣╤╥╦╧╨╩╪╫╬◤◥◄►▶◀◣◢▲▼◥▸◂▴▾△▽▷◁⊿▻◅▵▿▹◃❏❐❑❒▀▁▂▃▄▅▆▇▉▊▋█▌▍▎▏▐░▒▓▔▕■□▢▣▤▥▦▧▨▩▪▫▬▭▮▯㋀㋁㋂㋃㋄㋅㋆㋇㋈㋉㋊㋋㏠㏡㏢㏣㏤㏥㏦㏧㏨㏩㏪㏫㏬㏭㏮㏯㏰㏱㏲㏳㏴㏵㏶㏷㏸㏹㏺㏻㏼㏽㏾㍙㍚㍛㍜㍝㍞㍟㍠㍡㍢㍣㍤㍥㍦㍧㍨㍩㍪㍫㍬㍭㍮㍯㍰㍘☰☲☱☴☵☶☳☷☯
             ♠♣♧♡♥❤❥❣♂♀✲☀☼☾☽◐◑☺☻☎☏✿❀№↑↓←→√×÷★℃℉°◆◇⊙■□△▽¿½☯✡㍿卍卐♂♀✚〓㎡♪♫♩♬㊚㊛囍㊒㊖Φ♀♂‖$@*&#※卍卐Ψ♫♬♭♩♪♯♮⌒¶∮‖€￡¥$
             ①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳⓪⓿❶❷❸❹❺❻❼❽❾❿⓫⓬⓭⓮⓯⓰⓱⓲⓳⓴⓵⓶⓷⓸⓹⓺⓻⓼⓽⓾㊀㊁㊂㊃㊄㊅㊆㊇㊈㊉㈠㈡㈢㈣㈤㈥㈦㈧㈨㈩⑴⑵⑶⑷⑸⑹⑺⑻⑼⑽⑾⑿⒀⒁⒂⒃⒄⒅⒆⒇⒈⒉⒊⒋⒌⒍⒎⒏⒐⒑⒒⒓⒔⒕⒖⒗⒘⒙⒚⒛ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩⅪⅫⅰⅱⅲⅳⅴⅵⅶⅷⅸⅹⒶⒷⒸⒹⒺⒻⒼⒽⒾⒿⓀⓁⓂⓃⓄⓅⓆⓇⓈⓉⓊⓋⓌⓍⓎⓏⓐⓑⓒⓓⓔⓕⓖⓗⓘⓙⓚⓛⓜⓝⓞⓟⓠⓡⓢⓣⓤⓥⓦⓧⓨⓩ⒜⒝⒞⒟⒠⒡⒢⒣⒤⒥⒦⒧⒨⒩⒪⒫⒬⒭⒮⒯⒰⒱⒲⒳⒴⒵
-            ﹢﹣×÷±+-*/^=≌∽≦≧≒﹤﹥≈≡≠≤≥≮≯∷∶∝∞∧∨∑∏∪∩∈∵∴⊥∥∠⌒⊙√∛∜∟⊿㏒㏑%‰⅟½⅓⅕⅙⅐⅛⅑⅒⅔¾⅖⅗⅘⅚⅜⅝⅞≂≃≄≅≆≇≉≊≋≍≎≏≐≑≓≔≕≖≗≘≙≚≛≜≝≞≟≢≣≨≩⊰⊱⋛⋚∫∮∬∭∯∰∱∲∳℅øπ∀∁∂∃∄∅∆∇∉∊∋∌∍∎∐−∓∔∕∖∗∘∙∡∢∣∤∦∸∹∺∻∼∾∿≀≁≪≫≬≭≰≱≲≳≴≵≶≷≸≹≺≻≼≽≾≿⊀⊁⊂⊃⊄⊅⊆⊇⊈⊉⊊⊋⊌⊍⊎⊏⊐⊑⊒⊓⊔⊕⊖⊗⊘⊚⊛⊜⊝⊞⊟⊠⊡⊢⊣⊤⊦⊧⊨⊩⊪⊫⊬⊭⊮⊯⊲⊳⊴⊵⊶⊷⊸⊹⊺⊻⊼⊽⊾⋀⋁⋂⋃⋄⋅⋆⋇⋈⋉⋊⋋⋌⋍⋎⋏⋐⋑⋒⋓⋔⋕⋖⋗⋘⋙⋜⋝⋞⋟⋠⋡⋢⋣⋤⋥⋦⋧⋨⋩⋪⋫⋬⋭⋮⋯⋰⋱⋲⋳⋴⋵⋶⋷⋸⋹⋺⋻⋼⋽⋾⋿ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩⅪⅫⅬⅭⅮⅯↁↂↃↅↆↇↈ↉↊↋■□▢▣▤▥▦▧▨▩▪▫▬▭▮▯▰▱▲△▴▵▶▷▸▹►▻▼▽▾▿◀◁◂◃◄◅◆◇◈◉◊○◌◍◎●◐◑◒◓◔◕◖◗◘◙◚◛◜◝◞◟◠◡◢◣◤◥◦◧◨◩◪◫◬◭◮◯◰◱◲◳◴◵◶◷◸◹◺◿◻◼◽◾⏢⏥⌓⌔⌖".to_string())
-        }))
+            ﹢﹣×÷±+-*/^=≌∽≦≧≒﹤﹥≈≡≠≤≥≮≯∷∶∝∞∧∨∑∏∪∩∈∵∴⊥∥∠⌒⊙√∛∜∟⊿㏒㏑%‰⅟½⅓⅕⅙⅐⅛⅑⅒⅔¾⅖⅗⅘⅚⅜⅝⅞≂≃≄≅≆≇≉≊≋≍≎≏≐≑≓≔≕≖≗≘≙≚≛≜≝≞≟≢≣≨≩⊰⊱⋛⋚∫∮∬∭∯∰∱∲∳℅øπ∀∁∂∃∄∅∆∇∉∊∋∌∍∎∐−∓∔∕∖∗∘∙∡∢∣∤∦∸∹∺∻∼∾∿≀≁≪≫≬≭≰≱≲≳≴≵≶≷≸≹≺≻≼≽≾≿⊀⊁⊂⊃⊄⊅⊆⊇⊈⊉⊊⊋⊌⊍⊎⊏⊐⊑⊒⊓⊔⊕⊖⊗⊘⊚⊛⊜⊝⊞⊟⊠⊡⊢⊣⊤⊦⊧⊨⊩⊪⊫⊬⊭⊮⊯⊲⊳⊴⊵⊶⊷⊸⊹⊺⊻⊼⊽⊾⋀⋁⋂⋃⋄⋅⋆⋇⋈⋉⋊⋋⋌⋍⋎⋏⋐⋑⋒⋓⋔⋕⋖⋗⋘⋙⋜⋝⋞⋟⋠⋡⋢⋣⋤⋥⋦⋧⋨⋩⋪⋫⋬⋭⋮⋯⋰⋱⋲⋳⋴⋵⋶⋷⋸⋹⋺⋻⋼⋽⋾⋿ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩⅪⅫⅬⅭⅮⅯↁↂↃↅↆↇↈ↉↊↋■□▢▣▤▥▦▧▨▩▪▫▬▭▮▯▰▱▲△▴▵▶▷▸▹►▻▼▽▾▿◀◁◂◃◄◅◆◇◈◉◊○◌◍◎●◐◑◒◓◔◕◖◗◘◙◚◛◜◝◞◟◠◡◢◣◤◥◦◧◨◩◪◫◬◭◮◯◰◱◲◳◴◵◶◷◸◹◺◿◻◼◽◾⏢⏥⌓⌔⌖".to_string()]
+        })
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
-    // assert_eq!(response.status(),Status::Ok);
-    println!("Search result: {}", response.into_string().unwrap());
+    assert_eq!(response.status(),Status::Ok);
+    let res = response.into_json::<serde_json::Value>().unwrap();
+    assert_eq!(res["posts"]["found"], 0);
+    // println!("Search result: {}", response.into_string().unwrap());
 
     // search post by tag
     let response = client
         .post(format!("/search/?{}", 1))
         .json(&json!(SearchRequest::SearchPostTag {
-            tag: vec!("政治相关".to_string())
+            tag: vec!["政治相关".to_string()]
         }))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
-    // assert_eq!(response.status(),Status::Ok);
-    println!("Search result: {}", response.into_string().unwrap());
+    assert_eq!(response.status(),Status::Ok);
+    let res = response.into_json::<SearchPostResponse>().unwrap();
+    assert_eq!(res.posts[0].post_id, post_id);
+    // println!("Search result: {}", response.into_string().unwrap());
 
     // search post by tag   (empty tag vector)
     let response = client
         .post(format!("/search/?{}", 1))
-        .json(&json!(SearchRequest::SearchPostTag { tag: vec!() }))
+        .json(&SearchRequest::SearchPostTag { tag: vec![] })
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
-    // assert_eq!(response.status(),Status::Ok);
-    println!("Search result: {}", response.into_string().unwrap());
+    assert_eq!(response.status(), Status::BadRequest);
+    let res = response.into_json::<ErrorResponse>().unwrap();
+
+    assert_eq!(res.error.code, ErrorCode::EmptyField);
+    assert_eq!(res.error.message, format!("Tags should not be empty"));
+    // ErrorResponse::build(ErrorCode::EmptyField,format!("Tags should not be empty")));
 
     // discard burrow
     let response = client
@@ -790,41 +811,47 @@ fn test_search() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    println!("{:?}", response.into_string());
+    let res = response.into_string().unwrap();
+    assert_eq!(res, format!("Success"));
 
-    //retrieve a non-exist burrow
+    //retrieve a discarded burrow
     let response = client
         .post(format!("/search/?{}", 1))
-        .json(&json!(SearchRequest::RetrieveBurrow {
+        .json(&SearchRequest::RetrieveBurrow {
             burrow_id: burrow_id
-        }))
+        })
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
-    // assert_eq!(response.status(), Status::Ok);
-    println!("Retrieve result: {}", response.into_string().unwrap());
+    assert_eq!(response.status(), Status::Ok);
+    let res = response.into_json::<serde_json::Value>().unwrap();
+    assert_eq!(res["title"], "Default".to_string());
+    // println!("Retrieve result: {}", response.into_string().unwrap());
 
     //retrieve a non-exist post
     let response = client
         .post(format!("/search/?{}", 1))
-        .json(&json!(SearchRequest::RetrievePost { post_id: 3219483 }))
+        .json(&SearchRequest::RetrievePost { post_id: -1 })
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
-    // assert_eq!(response.status(), Status::Ok);
-    println!("Retrieve result: {}", response.into_string().unwrap());
+    assert_eq!(response.status(), Status::NotFound);
+    let res = response.into_json::<ErrorResponse>().unwrap();
+    // println!("Retrieve result: {}", response.into_string().unwrap());
+    assert_eq!(res.error.code, ErrorCode::PostNotExist);
+    assert_eq!(res.error.message, "Cannot find post -1".to_string());
 }
 
-#[test]
-fn test_storage(){
-    let client = common::get_client().lock();
-    let file =  fs::read_to_string("D:\\test.png")
-    // store a image
-    let response = client
-        .post("/storage/images")
-        .remote("127.0.0.1:8000".parse().unwrap())
-        .dispatch();
-    assert_eq!(response.status(), Status::Ok);
-    let res = response
-        .into_json::<backend::models::user::UserResponse>()
-        .unwrap();
-    let burrow_id = res.default_burrow;
-}
+// #[test]
+// fn test_storage(){
+//     let client = common::get_client().lock();
+//     let file =  fs::read_to_string("D:\\test.png")
+//     // store a image
+//     let response = client
+//         .post("/storage/images")
+//         .remote("127.0.0.1:8000".parse().unwrap())
+//         .dispatch();
+//     assert_eq!(response.status(), Status::Ok);
+//     let res = response
+//         .into_json::<backend::models::user::UserResponse>()
+//         .unwrap();
+//     let burrow_id = res.default_burrow;
+// }

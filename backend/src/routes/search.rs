@@ -261,7 +261,7 @@ async fn search(
             }
             let tags = serde_json::to_string(&tag).unwrap();
             let uri = format!(
-                "/collections/posts/documents/search?q=*filter_by=tag:={}&sort_by=post_id:desc&page={}&per_page=20",
+                "/collections/posts/documents/search?q=*&query_by=title&filter_by=tag:={}&sort_by=post_id:desc&page={}&per_page=20",
                 tags,page
             );
             let response = match client.build_get(&uri).send().await {
