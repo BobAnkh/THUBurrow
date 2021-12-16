@@ -20,6 +20,7 @@ import {
   Col,
   Dropdown,
   Row,
+  Popconfirm,
 } from 'antd';
 import { MessageOutlined, LikeOutlined, StarOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/router';
@@ -118,6 +119,25 @@ const Burrow: NextPage = () => {
       setDescriptionTemp(value);
     }
   };
+
+  async function onConfirm() {
+    try {
+      const res = await axios.delete(
+        `${process.env.NEXT_PUBLIC_BASEURL}/burrows/${bid}`
+      );
+      var json = await res.data;
+      if (json.error) {
+        message.error('操作失败');
+        window.location.reload();
+      } else {
+        message.success('操作成功');
+        window.location.reload();
+      }
+    } catch (e) {
+      message.error('操作失败');
+      alert(e);
+    }
+  }
 
   const clickCol = async (pid: number, activate: Boolean, index: number) => {
     let newChangeCol: boolean[] = changeCol;
@@ -221,25 +241,49 @@ const Burrow: NextPage = () => {
                     }
                   />
                 </Form>
-                <div
-                  style={{
-                    margin: '20px 0px 0px 0px',
-                    color: isAlive ? 'black' : 'grey',
-                  }}
-                >
-                  # {bid}&emsp;{burrowTitle}
-                </div>
+                <table>
+                  <td style={{ width: '100%' }}>
+                    <div
+                      style={{
+                        color: isAlive ? 'black' : 'grey',
+                      }}
+                    >
+                      # {bid}&emsp;{burrowTitle}
+                    </div>
+                  </td>
+                  <td style={{ width: '30%' }}>
+                    <Popconfirm
+                      placement='topRight'
+                      title='确认废弃此洞?'
+                      onConfirm={onConfirm}
+                      okText='Yes'
+                      cancelText='No'
+                    >
+                      <Button
+                        type='primary'
+                        danger
+                        shape='round'
+                        style={{
+                          display:
+                            isHost && !editing && isAlive ? 'block' : 'none',
+                        }}
+                      >
+                        废弃此洞
+                      </Button>
+                    </Popconfirm>
+                  </td>
+                </table>
               </h2>
               <div className={styles.Descript}>
                 <h3 className={styles.BriefIntro}>简介:</h3>
                 <Button
                   type='primary'
                   shape='round'
+                  onClick={EditIntro}
                   style={{
                     float: 'right',
                     display: isHost && !editing && isAlive ? 'block' : 'none',
                   }}
-                  onClick={EditIntro}
                 >
                   编辑
                 </Button>
