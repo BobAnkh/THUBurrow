@@ -1,0 +1,12 @@
+[lib-coverage]
+force-clean = false
+verbose = true
+all-features = true
+no-fail-fast = true
+timeout = "300s"
+follow-exec = true
+exclude-files = ["src/bin/*", "src/utils/mq.rs"]
+# args = ["-Z", "unstable-options", "--format", "json", "--report-time"]
+
+[report]
+out = ["Xml"]
