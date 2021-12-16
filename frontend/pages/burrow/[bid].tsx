@@ -1,11 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { NextPage } from 'next';
-import {
-  StarTwoTone,
-  LikeTwoTone,
-  UserOutlined,
-  PlusCircleOutlined,
-} from '@ant-design/icons';
+import { StarTwoTone, LikeTwoTone } from '@ant-design/icons';
 import Link from 'next/link';
 import styles from './burrow.module.css';
 import { TextLoop } from 'react-text-loop-next';
@@ -31,6 +26,7 @@ import { useRouter } from 'next/router';
 import 'antd/dist/antd.css';
 import axios, { AxiosError } from 'axios';
 import { createRouteLoader } from 'next/dist/client/route-loader';
+import GlobalHeader from '../../components/header/header';
 
 axios.defaults.withCredentials = true;
 axios.defaults.headers.post['Content-Type'] = 'application/json';
@@ -76,9 +72,6 @@ const Burrow: NextPage = () => {
   const router = useRouter();
   const { bid } = router.query;
   const site = router.pathname.split('/')[1];
-  const [menuMode, setMenuMode] = useState<'inline' | 'horizontal'>(
-    'horizontal'
-  );
 
   useEffect(() => {
     try {
@@ -105,55 +98,6 @@ const Burrow: NextPage = () => {
       }
     }
   }, [router, page]);
-
-  const menu = (
-    <Menu
-      id='nav'
-      key='nav'
-      theme='dark'
-      mode={menuMode}
-      defaultSelectedKeys={['home']}
-      selectedKeys={[site]}
-    >
-      <Menu.Item key='home'>
-        <Link href='/home'>首页</Link>
-      </Menu.Item>
-      <Menu.Item key='create'>
-        <Link href='/create'>发帖</Link>
-      </Menu.Item>
-      <Menu.Item key='trending'>
-        <Link href='/trending'>热榜</Link>
-      </Menu.Item>
-      <Menu.Item key='searchpage'>
-        <Link href='/searchpage'>搜索</Link>
-      </Menu.Item>
-    </Menu>
-  );
-
-  const UserMenu = (
-    <Menu>
-      <Menu.Item>
-        <Link href='/profile'>个人信息</Link>
-      </Menu.Item>
-      <Menu.Divider />
-      <Menu.Item
-        onClick={() => {
-          localStorage.removeItem('token');
-          window.location.reload();
-        }}
-      >
-        退出
-      </Menu.Item>
-    </Menu>
-  );
-
-  const CreateMenu = (
-    <Menu>
-      <Menu.Item>
-        <Link href='/create'>发表帖子</Link>
-      </Menu.Item>
-    </Menu>
-  );
 
   const EditIntro = () => {
     setEditing(true);
@@ -243,27 +187,7 @@ const Burrow: NextPage = () => {
     <Layout>
       <Header style={{ position: 'fixed', zIndex: 1, width: '100%' }}>
         <title>{`# ${bid} 地洞`}</title>
-        <Row>
-          <div className='logo' />
-          <Col offset={2}>{menu}</Col>
-          <Col offset={14}>
-            <Dropdown overlay={UserMenu} placement='bottomCenter'>
-              <Button icon={<UserOutlined />} />
-            </Dropdown>
-          </Col>
-          <Col>
-            <Dropdown
-              overlay={CreateMenu}
-              placement='bottomCenter'
-              disabled={isAlive ? false : true}
-            >
-              <Button
-                icon={<PlusCircleOutlined />}
-                style={{ margin: '10px' }}
-              />
-            </Dropdown>
-          </Col>
-        </Row>
+        <GlobalHeader />
       </Header>
       <Content
         className='site-Layout'
@@ -292,7 +216,7 @@ const Burrow: NextPage = () => {
                       <TextLoop mask>
                         <div>该洞已废弃</div>
                         <div>仅支持浏览帖子</div>
-                        <div>您无法发表新帖</div>
+                        <div>您无法在本洞发表新帖</div>
                       </TextLoop>
                     }
                   />
