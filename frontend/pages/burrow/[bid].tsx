@@ -101,7 +101,7 @@ const Burrow: NextPage = () => {
         router.push('/login');
       } else if (err.response?.status === 500) {
         message.info('服务器错误!');
-        router.push('/404');
+        window.location.reload();
       }
     }
   }, [router, page]);
