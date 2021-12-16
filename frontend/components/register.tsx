@@ -127,7 +127,7 @@ export default function Register({ switchform }: Iprops) {
     };
     try {
       const res = await axios.post(
-        `${process.env.NEXT_PUBLIC_BASEURL}/6381347`,
+        `${process.env.NEXT_PUBLIC_BASEURL}/users/sign-up`,
         data
       );
       var json = await res.data;
