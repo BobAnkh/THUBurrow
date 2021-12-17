@@ -8,8 +8,6 @@ use serde::Serialize;
 use lazy_static::lazy_static;
 use std::env;
 
-// pub static SECRET_ID: &str = "AKIDjHZbNr52i6D3bsra2EAqFNDn7AvPdZEc";
-// pub static SECRET_KEY: &str = "91cwzlFUTCepiKfjV0JL6anjOlsiGXXH";
 lazy_static! {
     static ref SECRET_ID: String =
         env::var("SECRET_ID").ok().unwrap_or_else(||"".to_string());
