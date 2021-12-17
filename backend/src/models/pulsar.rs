@@ -302,7 +302,7 @@ impl From<&TypesenseReplyData> for PulsarSearchReplyData {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chrono::{Utc, FixedOffset};
+    use chrono::{FixedOffset, Utc};
 
     #[test]
     fn test_into_typesense_burrow_data() {
@@ -310,7 +310,7 @@ mod tests {
         let title = "test_title".to_string();
         let description = "This is for test.".to_string();
         let update_time = Utc::now().with_timezone(&FixedOffset::east(8 * 3600));
-        let data:PulsarSearchBurrowData = PulsarSearchBurrowData {
+        let data: PulsarSearchBurrowData = PulsarSearchBurrowData {
             burrow_id,
             title: title.clone(),
             description: description.clone(),
