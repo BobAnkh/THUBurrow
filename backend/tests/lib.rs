@@ -3,7 +3,8 @@ use backend::models::error::{ErrorCode, ErrorCode::*, ErrorMessage, ErrorRespons
 use backend::models::search::*;
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
-use rocket::http::Status;
+use reqwest::StatusCode;
+use rocket::http::{ContentType, Header, Status};
 use serde_json::json;
 use std::fs;
 
@@ -739,7 +740,7 @@ fn test_search() {
     assert_eq!(response.status(), Status::Ok);
     let res = response.into_json::<SearchBurrowResponse>().unwrap();
     // println!("{}",response.into_string().unwrap());
-    assert_eq!(res.burrows[0].burrow_id,created_burrow_id);
+    assert_eq!(res.burrows[0].burrow_id, created_burrow_id);
 
     // retrieve post
     let response = client
@@ -748,7 +749,7 @@ fn test_search() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     let res = response.into_json::<serde_json::Value>().unwrap();
-    assert_eq!(res["post_desc"]["post_id"],1);
+    assert_eq!(res["post_desc"]["post_id"], 1);
     // println!("Retrieve result: {}", response.into_string().unwrap());
 
     // search post by keyword
@@ -759,9 +760,9 @@ fn test_search() {
         })
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
-    assert_eq!(response.status(),Status::Ok);
+    assert_eq!(response.status(), Status::Ok);
     let res = response.into_json::<SearchMixResponse>().unwrap();
-    assert_eq!(res.replies.replies[0].post_id,post_id);
+    assert_eq!(res.replies.replies[0].post_id, post_id);
 
     // search post by keyword   (special characters)
     let response = client
@@ -774,7 +775,7 @@ fn test_search() {
         })
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
-    assert_eq!(response.status(),Status::Ok);
+    assert_eq!(response.status(), Status::Ok);
     let res = response.into_json::<serde_json::Value>().unwrap();
     assert_eq!(res["posts"]["found"], 0);
     // println!("Search result: {}", response.into_string().unwrap());
@@ -787,7 +788,7 @@ fn test_search() {
         }))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
-    assert_eq!(response.status(),Status::Ok);
+    assert_eq!(response.status(), Status::Ok);
     let res = response.into_json::<SearchPostResponse>().unwrap();
     assert_eq!(res.posts[0].post_id, post_id);
     // println!("Search result: {}", response.into_string().unwrap());
@@ -818,7 +819,7 @@ fn test_search() {
     let response = client
         .post(format!("/search/?{}", 1))
         .json(&SearchRequest::RetrieveBurrow {
-            burrow_id: burrow_id
+            burrow_id: burrow_id,
         })
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
@@ -840,18 +841,137 @@ fn test_search() {
     assert_eq!(res.error.message, "Cannot find post -1".to_string());
 }
 
-// #[test]
-// fn test_storage(){
-//     let client = common::get_client().lock();
-//     let file =  fs::read_to_string("D:\\test.png")
-//     // store a image
-//     let response = client
-//         .post("/storage/images")
-//         .remote("127.0.0.1:8000".parse().unwrap())
-//         .dispatch();
-//     assert_eq!(response.status(), Status::Ok);
-//     let res = response
-//         .into_json::<backend::models::user::UserResponse>()
-//         .unwrap();
-//     let burrow_id = res.default_burrow;
-// }
+#[test]
+fn test_storage() {
+    let client = common::get_client().lock();
+    // generate a random name
+    let name: String = std::iter::repeat(())
+        .map(|()| thread_rng().sample(Alphanumeric))
+        .map(char::from)
+        .take(16)
+        .collect();
+
+    // sign up a user
+    let response = client
+        .post("/users/sign-up")
+        .json(&json!({
+        "username": name,
+        "password": "testpassword",
+        "email": format!("{}@mails.tsinghua.edu.cn", name)}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    let res = response
+        .into_json::<backend::models::user::UserResponse>()
+        .unwrap();
+    let burrow_id = res.default_burrow;
+
+    // user login
+    let response = client
+        .post("/users/login")
+        .json(&json!({
+            "username": name,
+            "password": "testpassword"}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    // println!("{}", response.into_string().unwrap());
+    std::thread::sleep(std::time::Duration::from_secs(5));
+
+    //get an jepg from httpbin
+    let mut jpeg_buf: Vec<u8> = vec![];
+    match reqwest::blocking::Client::new()
+        .get("http://httpbin.org/image/jpeg")
+        .send()
+    {
+        Ok(mut r) => match r.status() {
+            StatusCode::OK => {
+                r.copy_to(&mut jpeg_buf).unwrap();
+            }
+            _ => {
+                let jpeg: String = std::iter::repeat(())
+                    .map(|()| thread_rng().sample(Alphanumeric))
+                    .map(char::from)
+                    .take(1600)
+                    .collect();
+                jpeg_buf = jpeg.into_bytes();
+            }
+        },
+        Err(_) => {
+            jpeg_buf = "a;fklakdjfaoi;jflkasfasokfd".to_string().into_bytes();
+        }
+    };
+
+    // store a jpeg
+    let response = client
+        .post("/storage/images")
+        .header(ContentType::JPEG)
+        .body(jpeg_buf.clone())
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    let jepg_name = response.into_string().unwrap();
+
+    //get an png from httpbin
+    let mut png_buf: Vec<u8> = vec![];
+    match reqwest::blocking::Client::new()
+        .get("http://httpbin.org/image/jpeg")
+        .send()
+    {
+        Ok(mut r) => match r.status() {
+            StatusCode::OK => {
+                r.copy_to(&mut png_buf).unwrap();
+            }
+            _ => {
+                let jpeg: String = std::iter::repeat(())
+                    .map(|()| thread_rng().sample(Alphanumeric))
+                    .map(char::from)
+                    .take(1600)
+                    .collect();
+                jpeg_buf = jpeg.into_bytes();
+            }
+        },
+        Err(_) => {
+            png_buf = "a;fklakdjfaoi;jflkasfasokfd".to_string().into_bytes();
+        }
+    };
+
+    // store a png
+    let response = client
+        .post("/storage/images")
+        .header(ContentType::PNG)
+        .body(png_buf.clone())
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    let png_name = response.into_string().unwrap();
+
+    //list image
+    let response = client
+        .get("/storage/images")
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    let res = response.into_string().unwrap();
+    println!("{}", res);
+
+    //download jpeg image
+    let response = client
+        .get(format!("/storage/images/{}", jepg_name))
+        .header(Header::new("Referer", "https://thuburrow.com/"))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    let res = response.into_bytes().unwrap();
+    assert_eq!(res, jpeg_buf);
+
+    //download png image
+    let response = client
+        .get(format!("/storage/images/{}", png_name))
+        .header(Header::new("Referer", "https://thuburrow.com/"))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    let res = response.into_bytes().unwrap();
+    assert_eq!(res, png_buf);
+}

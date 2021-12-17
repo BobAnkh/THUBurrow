@@ -86,7 +86,7 @@ async fn upload_image(
     }
 }
 
-#[get("/image/<filename>")]
+#[get("/images/<filename>")]
 async fn download_image(
     auth: Auth,
     _ref: ReferrerCheck,

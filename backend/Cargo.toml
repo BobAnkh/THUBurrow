@@ -42,7 +42,7 @@ rocket_cors = { git = "https://github.com/BobAnkh/rocket_cors.git", branch = "ma
 pulsar = "4.1.1"
 futures = "0.3"
 tokio = { version = "1.13.0", features = ["macros", "rt-multi-thread", "parking_lot"] }
-reqwest = { version = "0.11", features = ["json"] }
+reqwest = { version = "0.11", features = ["json","blocking"] }
 rust-s3 = "0.27.0"
 log4rs = "1.0.0"
 rand = "0.8.4"
