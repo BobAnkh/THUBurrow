@@ -46,13 +46,8 @@ idgenerator = "1.2.0"
 rocket_cors = { git = "https://github.com/BobAnkh/rocket_cors.git", branch = "master"}
 pulsar = "4.1.1"
 futures = "0.3"
-<<<<<<< HEAD
-tokio = { version = "1.13.0", features = ["macros", "rt-multi-thread", "parking_lot"] }
-reqwest = { version = "0.11", features = ["json","blocking"] }
-=======
 tokio = { version = "1.13.0", features = ["macros", "rt-multi-thread", "parking_lot", "signal"] }
 reqwest = { version = "0.11", features = ["json", "blocking", "cookies"] }
->>>>>>> 32d2013c7d27e4c80cd1192aa4f3fc400ab50972
 rust-s3 = "0.27.0"
 log4rs = "1.0.0"
 rand = "0.8.4"

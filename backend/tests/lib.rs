@@ -1,22 +1,16 @@
 mod common;
-<<<<<<< HEAD
 use backend::models::error::{ErrorCode, ErrorCode::*, ErrorMessage, ErrorResponse};
 use backend::models::search::*;
-=======
 use backend::models::content::PostSection;
 use backend::models::error::*;
 use backend::utils::mq::*;
->>>>>>> 32d2013c7d27e4c80cd1192aa4f3fc400ab50972
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 use reqwest::StatusCode;
 use rocket::http::{ContentType, Header, Status};
 use serde_json::json;
-<<<<<<< HEAD
 use std::fs;
-=======
 use tokio::runtime::Runtime;
->>>>>>> 32d2013c7d27e4c80cd1192aa4f3fc400ab50972
 
 #[test]
 fn integration_test() {
@@ -1171,7 +1165,6 @@ fn test_content() {
         res.reply_page[1].content
     );
 }
-<<<<<<< HEAD
 #[test]
 fn test_search() {
     // get the client
@@ -1548,80 +1541,3 @@ fn test_storage() {
     let res = response.into_bytes().unwrap();
     assert_eq!(res, png_buf);
 }
-=======
-
-// #[test]
-// fn test_storage() {
-//     // // get the client
-//     // let client = common::get_client().lock();
-//     // // generate a random name
-//     // let name: String = std::iter::repeat(())
-//     //     .map(|()| thread_rng().sample(Alphanumeric))
-//     //     .map(char::from)
-//     //     .take(16)
-//     //     .collect();
-
-//     // // sign up a user
-//     // let response = client
-//     //     .post("/users/sign-up")
-//     //     .json(&json!({
-//     //             "username": name,
-//     //             "password": "testpassword",
-//     //             "email": format!("{}@mails.tsinghua.edu.cn", name)}))
-//     //     .remote("127.0.0.1:8000".parse().unwrap())
-//     //     .dispatch();
-//     // assert_eq!(response.status(), Status::Ok);
-
-//     // // user login
-//     // let response = client
-//     //     .post("/users/login")
-//     //     .json(&json!({
-//     //             "username": name,
-//     //             "password": "testpassword"}))
-//     //     .remote("127.0.0.1:8000".parse().unwrap())
-//     //     .dispatch();
-//     // assert_eq!(response.status(), Status::Ok);
-
-//     // let response = client.post("/storage/images")
-//     //     .header(ContentType::JPEG)
-//     //     .body(r#"a;fklakdjfaoi;jflkasfasokfd"#)
-//     //     .remote("127.0.0.1:8000".parse().unwrap())
-//     //     .dispatch();
-//     // assert_eq!(response.status(), Status::Ok);
-//     // let image_name = response.into_string().unwrap();
-//     // println!("{}", &image_name);
-
-//     fn construct_headers() -> HeaderMap {
-//         let mut headers = HeaderMap::new();
-//         headers.insert(CONTENT_TYPE, HeaderValue::from_static("image/jpeg"));
-//         headers
-//     }
-//     let mut response = reqwest::blocking::Client::new()
-//         .get("http://httpbin.org/image/jpeg")
-//         .send()
-//         .unwrap();
-//     // if response.status().is_success() {
-//     //     println!("{:?}", response.headers());
-//     // }
-//     let mut buf: Vec<u8> = vec![];
-//     response.copy_to(&mut buf).unwrap();
-//     let client = reqwest::blocking::Client::builder()
-//         .cookie_store(true)
-//         .build()
-//         .unwrap();
-//     client
-//         .post("https://dev.thuburrow.com/users/login")
-//         .json(&json!({
-//             "username": "name1",
-//             "password": "testpassword"}))
-//         .send()
-//         .unwrap();
-//     let response = client
-//         .post("https://dev.thuburrow.com/storage/images")
-//         .headers(construct_headers())
-//         .body(buf)
-//         .send()
-//         .unwrap();
-//     println!("{:?}", response.text().unwrap());
-// }
->>>>>>> 32d2013c7d27e4c80cd1192aa4f3fc400ab50972
