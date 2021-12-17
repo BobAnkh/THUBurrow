@@ -22,6 +22,8 @@ fn integration_test() {
     test_user();
     test_burrow();
     test_content();
+    test_search();
+    test_storage();
 }
 
 // #[test]
@@ -1165,7 +1167,8 @@ fn test_content() {
         res.reply_page[1].content
     );
 }
-#[test]
+
+// #[test]
 fn test_search() {
     // get the client
     let client = common::get_client().lock();
@@ -1226,7 +1229,7 @@ fn test_search() {
         .json(&json!({
             "title": format!("First post of {}", name),
             "burrow_id": burrow_id,
-            "section": ["TestSection"],
+            "section": ["NSFW"],
             "tag": ["NoTag","政治相关"],
             "content": "search test"}))
         .remote("127.0.0.1:8000".parse().unwrap())
@@ -1407,7 +1410,7 @@ fn test_search() {
     assert_eq!(res.error.message, "Cannot find post -1".to_string());
 }
 
-#[test]
+// #[test]
 fn test_storage() {
     let client = common::get_client().lock();
     // generate a random name
