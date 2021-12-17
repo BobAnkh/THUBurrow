@@ -219,6 +219,6 @@ mod tests {
         let timestamp = 1638791815.to_string();
         let date = "2021-12-06".to_string();
         println!("{}", gen_auth(&param, timestamp.clone(), date.clone()));
-        assert_eq!(gen_auth(&param, timestamp, date), "TC3-HMAC-SHA256 Credential=AKIDjHZbNr52i6D3bsra2EAqFNDn7AvPdZEc/2021-12-06/ses/tc3_request, SignedHeaders=content-type;host, Signature=5b18a08ccbfc5ce3ec67d053964c3803577a9008be7d4248f6400d04badf48d7".to_string());
+        assert_eq!(gen_auth(&param, timestamp, date), "TC3-HMAC-SHA256 Credential=/2021-12-06/ses/tc3_request, SignedHeaders=content-type;host, Signature=8cd08830134ead51d3b488e84a14a148131caa5a81fa29a8366370ba39a6eb18".to_string());
     }
 }
