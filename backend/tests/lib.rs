@@ -49,7 +49,7 @@ fn test_email() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     println!("{}", response.into_string().unwrap());
-    std::thread::sleep(std::time::Duration::from_secs(5));
+    std::thread::sleep(std::time::Duration::from_secs(2));
     // set verification code: Request Time 2
     let response = client
         .post("/users/email")
@@ -60,7 +60,7 @@ fn test_email() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     println!("{}", response.into_string().unwrap());
-    std::thread::sleep(std::time::Duration::from_secs(5));
+    std::thread::sleep(std::time::Duration::from_secs(2));
     // set verification code: Request Time 3
     let response = client
         .post("/users/email")
@@ -71,7 +71,7 @@ fn test_email() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     println!("{}", response.into_string().unwrap());
-    std::thread::sleep(std::time::Duration::from_secs(5));
+    std::thread::sleep(std::time::Duration::from_secs(2));
     // set verification code: Request Time 4 (RateLimit)
     let response = client
         .post("/users/email")

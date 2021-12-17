@@ -2,7 +2,9 @@ extern crate serde;
 use futures::TryStreamExt;
 use lazy_static::lazy_static;
 use pulsar::{Consumer, Pulsar, SubType, TokioExecutor};
-use rand::Rng;
+use rand::{thread_rng, Rng};
+use rand::distributions::Alphanumeric;
+use std::iter;
 use sea_orm::sea_query::Expr;
 use sea_orm::{entity::*, ConnectionTrait, Database, DatabaseConnection, DbErr, QueryFilter};
 use serde_json::json;
@@ -138,8 +140,7 @@ lazy_static! {
         url
     };
     static ref BACKEND_TEST_MODE: bool =
-        // **TODO**: set default to 'false' later
-        env::var("BACKEND_TEST_MODE").map(|x| x.parse::<bool>().unwrap()).ok().unwrap_or(true);
+        env::var("BACKEND_TEST_MODE").map(|x| x.parse::<bool>().unwrap()).ok().unwrap_or(false);
 }
 
 async fn create_typesense_collections() -> Result<(), reqwest::Error> {
@@ -801,10 +802,7 @@ pub async fn pulsar_email() -> Result<(), pulsar::Error> {
         if *BACKEND_TEST_MODE {
             let verification_code = "666666";
             match get_set_redis(&mut kv_conn, &data.email, verification_code).await {
-                Ok(_) => {
-                    log::info!("[PULSAR-EMAIL] Redis get & set success");
-                    log::info!("[PULSAR-EMAIL] Email send success");
-                }
+                Ok(_) => log::info!("[PULSAR-EMAIL] Redis get & set success, Email send success"),
                 Err(e) => match e.kind() {
                     redis::ErrorKind::ExtensionError => {
                         log::info!("[PULSAR-EMAIL] User sent too many emails, refuse to send");
@@ -818,15 +816,18 @@ pub async fn pulsar_email() -> Result<(), pulsar::Error> {
             }
         } else if check_email_exist(&data.email).await.0 {
             // generate verification code
-            let verification_code: i32 = rand::thread_rng().gen_range(100000..1000000);
+            let verification_code: String = iter::repeat(())
+                .map(|()| thread_rng().sample(Alphanumeric))
+                .map(char::from)
+                .take(6)
+                .collect();
             // println!("{}", verification_code);
-            let verification_code = &verification_code.to_string();
-            match get_set_redis(&mut kv_conn, &data.email, verification_code).await {
+            match get_set_redis(&mut kv_conn, &data.email, &verification_code).await {
                 Ok(_) => {
                     log::info!("[PULSAR-EMAIL] Redis get & set success");
                     match email_send::post(
                         data.email.clone(),
-                        verification_code.parse::<i32>().unwrap(),
+                        &verification_code,
                     )
                     .await
                     {

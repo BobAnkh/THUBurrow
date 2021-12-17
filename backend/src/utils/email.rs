@@ -7,7 +7,6 @@ lazy_static! {
         "tsinghua.edu.cn".to_string(),
         "mail.tsinghua.edu.cn".to_string(),
         "mails.tsinghua.edu.cn".to_string(),
-        "tsinghua.edu.cn".to_string(),
     ];
 }
 

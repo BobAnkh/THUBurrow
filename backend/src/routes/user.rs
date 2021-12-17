@@ -78,17 +78,6 @@ pub async fn user_relation(
     (Status::Ok, Ok("Success".to_string()))
 }
 
-// #[get("/clear")]
-// pub async fn clear_redis(kvdb: Connection<RedisDb>) {
-//     let email = "gsr18@mails.tsinghua.edu.cn".to_string();
-//     let mut kvdb_con = kvdb.into_inner();
-//     let _: Result<String, redis::RedisError> = redis::cmd("SET")
-//         .arg(&email)
-//         .arg("0".to_string() + ":" + "666666")
-//         .query_async(kvdb_con.as_mut())
-//         .await;
-// }
-
 #[post("/email", data = "<email_info>", format = "json")]
 pub async fn user_email_activate(
     db: Connection<PgDb>,
@@ -285,9 +274,33 @@ pub async fn user_sign_up(
                             Status::BadRequest,
                             Err(Json(ErrorResponse::build(
                                 ErrorCode::CredentialInvalid,
-                                "Invalid verification code: Wrong verification code.",
+                                "Invalid verification code",
                             ))),
                         );
+                    } else {
+                        let delete_result: Result<i64, redis::RedisError> = redis::cmd("DEL")
+                            .arg(&user.email)
+                            .query_async(kvdb_con.as_mut())
+                            .await;
+                        match delete_result {
+                            Ok(1) => {
+                                log::info!("[SIGN-UP] delete email -> rate:code success");
+                            },
+                            Ok(_) => {
+                                log::error!("[SIGN-UP] delete zero or more than one email -> rate:code");
+                                return (
+                                    Status::InternalServerError,
+                                    Err(Json(ErrorResponse::default())),
+                                );
+                            },
+                            Err(e) => {
+                                log::error!("[SIGN-UP] Database Error: {:?}", e);
+                                return (
+                                    Status::InternalServerError,
+                                    Err(Json(ErrorResponse::default())),
+                                );
+                            },
+                        }
                     }
                 }
                 None => {
@@ -295,7 +308,7 @@ pub async fn user_sign_up(
                         Status::BadRequest,
                         Err(Json(ErrorResponse::build(
                             ErrorCode::CredentialInvalid,
-                            "Invalid verification code: Cannot find email -> code in redis.",
+                            "Invalid verification code",
                         ))),
                     )
                 }

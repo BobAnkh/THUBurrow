@@ -457,7 +457,6 @@ dependencies = [
  "rocket_db_pools",
  "rust-crypto",
  "rust-s3",
- "rustc-serialize",
  "sea-orm",
  "serde",
  "serde_json",

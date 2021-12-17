@@ -13,8 +13,8 @@ on:
 jobs:
   cargo-integration-test:
     runs-on: ubuntu-latest
-    # env:
-    #   BACKEND_TEST_MODE: true
+    env:
+      BACKEND_TEST_MODE: true
     defaults:
       run:
         working-directory: backend
@@ -45,8 +45,8 @@ jobs:
 
   cargo-coverage-test:
     runs-on: ubuntu-latest
-    # env:
-    #   BACKEND_TEST_MODE: true
+    env:
+      BACKEND_TEST_MODE: true
     defaults:
       run:
         working-directory: backend
