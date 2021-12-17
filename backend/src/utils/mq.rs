@@ -327,7 +327,7 @@ pub async fn pulsar_typesense() -> Result<(), pulsar::Error> {
                             r.text().await.unwrap()
                         ),
                     },
-                    Err(e) => println!("add new reply failed {:?}", e),
+                    Err(e) => log::error!("add new reply failed {:?}", e),
                 }
             }
             PulsarSearchData::UpdateBurrow(burrow) => {

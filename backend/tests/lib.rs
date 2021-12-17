@@ -1240,7 +1240,7 @@ fn test_search() {
         .unwrap();
     let post_id = res.post_id;
     println!("Post Id: {}", post_id);
-    std::thread::sleep(std::time::Duration::from_secs(3));
+    std::thread::sleep(std::time::Duration::from_secs(1));
 
     // retrieve burrow
     let response = client
@@ -1335,7 +1335,7 @@ fn test_search() {
 
     // search post by keyword   (special characters)
     let response = client
-        .post(format!("/search/?{}", 1))
+        .post("/search".to_string())
         .json(&SearchRequest::SearchPostKeyword {
             keywords: vec!["❤❥웃유♋☮✌☏☢☠✔☑♚▲♪✈✞÷↑↓◆◇⊙■□△▽¿─│♥❣♂♀☿Ⓐ✍✉☣☤✘☒♛▼♫⌘☪≈←→◈◎☉★☆⊿※¡━┃♡ღツ☼☁❅♒✎©®™Σ✪✯☭➳卐√↖↗●◐Θ◤◥︻〖〗┄┆℃℉°✿ϟ☃☂✄¢€£∞✫★½✡×↙↘○◑⊕◣◢︼【】┅┇☽☾✚〓▂▃▄▅▆▇█▉▊▋▌▍▎▏↔↕☽☾の•▸◂▴▾┈┊①②③④⑤⑥⑦⑧⑨⑩ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ㍿▓♨♛❖♓☪✙┉┋☹☺☻تヅツッシÜϡﭢ™℠℗©®♥❤❥❣❦❧♡۵웃유ღ♋♂♀☿☼☀☁☂☄☾☽❄☃☈⊙☉℃℉❅✺ϟ☇♤♧♡♢♠♣♥♦☜☞☝✍☚☛☟✌✽✾✿❁❃❋❀⚘☑✓✔√☐☒✗✘ㄨ✕✖✖⋆✢✣✤✥❋✦✧✩✰✪✫✬✭✮✯❂✡★✱✲✳✴✵✶✷✸✹✺✻✼❄❅❆❇❈❉❊†☨✞✝☥☦☓☩☯☧☬☸✡♁✙♆。，、＇：∶；?‘’“”〝〞ˆˇ﹕︰﹔﹖﹑•¨….¸;！´？！～—ˉ｜‖＂〃｀@﹫¡¿﹏﹋﹌︴々﹟#﹩$﹠&﹪%*﹡﹢﹦﹤‐￣¯―﹨ˆ˜﹍﹎+=<＿_-ˇ~﹉﹊（）〈〉‹›﹛﹜『』〖〗［］《》〔〕{}「」【】︵︷︿︹︽_﹁﹃︻︶︸﹀︺︾ˉ﹂﹄︼☩☨☦✞✛✜✝✙✠✚†‡◉○◌◍◎●◐◑◒◓◔◕◖◗❂☢⊗⊙◘◙◍⅟½⅓⅕⅙⅛⅔⅖⅚⅜¾⅗⅝⅞⅘≂≃≄≅≆≇≈≉≊≋≌≍≎≏≐≑≒≓≔≕≖≗≘≙≚≛≜≝≞≟≠≡≢≣≤≥≦≧≨≩⊰⊱⋛⋚∫∬∭∮∯∰∱∲∳%℅‰‱㊣㊎㊍㊌㊋㊏㊐㊊㊚㊛㊤㊥㊦㊧㊨㊒㊞㊑㊒㊓㊔㊕㊖㊗㊘㊜㊝㊟㊠㊡㊢㊩㊪㊫㊬㊭㊮㊯㊰㊙㉿囍♔♕♖♗♘♙♚♛♜♝♞♟ℂℍℕℙℚℝℤℬℰℯℱℊℋℎℐℒℓℳℴ℘ℛℭ℮ℌℑℜℨ♪♫♩♬♭♮♯°øⒶ☮✌☪✡☭✯卐✐✎✏✑✒✍✉✁✂✃✄✆✉☎☏➟➡➢➣➤➥➦➧➨➚➘➙➛➜➝➞➸♐➲➳⏎➴➵➶➷➸➹➺➻➼➽←↑→↓↔↕↖↗↘↙↚↛↜↝↞↟↠↡↢↣↤↥↦↧↨➫➬➩➪➭➮➯➱↩↪↫↬↭↮↯↰↱↲↳↴↵↶↷↸↹↺↻↼↽↾↿⇀⇁⇂⇃⇄⇅⇆⇇⇈⇉⇊⇋⇌⇍⇎⇏⇐⇑⇒⇓⇔⇕⇖⇗⇘⇙⇚⇛⇜⇝⇞⇟⇠⇡⇢⇣⇤⇥⇦⇧⇨⇩⇪➀➁➂➃➄➅➆➇➈➉➊➋➌➍➎➏➐➑➒➓㊀㊁㊂㊃㊄㊅㊆㊇㊈㊉ⒶⒷⒸⒹⒺⒻⒼⒽⒾⒿⓀⓁⓂⓃⓄⓅⓆⓇⓈⓉⓊⓋⓌⓍⓎⓏⓐⓑⓒⓓⓔⓕⓖⓗⓘⓙⓚⓛⓜⓝⓞⓟⓠⓡⓢⓣⓤⓥⓦⓧⓨⓩ⒜⒝⒞⒟⒠⒡⒢⒣⒤⒥⒦⒧⒨⒩⒪⒫⒬⒭⒮⒯⒰⒱⒲⒳⒴⒵ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩⅪⅫⅬⅭⅮⅯⅰⅱⅲⅳⅴⅵⅶⅷⅸⅹⅺⅻⅼⅽⅾⅿ┌┍┎┏┐┑┒┓└┕┖┗┘┙┚┛├┝┞┟┠┡┢┣┤┥┦┧┨┩┪┫┬┭┮┯┰┱┲┳┴┵┶┷┸┹┺┻┼┽┾┿╀╁╂╃╄╅╆╇╈╉╊╋╌╍╎╏═║╒╓╔╕╖╗╘╙╚╛╜╝╞╟╠╡╢╣╤╥╦╧╨╩╪╫╬◤◥◄►▶◀◣◢▲▼◥▸◂▴▾△▽▷◁⊿▻◅▵▿▹◃❏❐❑❒▀▁▂▃▄▅▆▇▉▊▋█▌▍▎▏▐░▒▓▔▕■□▢▣▤▥▦▧▨▩▪▫▬▭▮▯㋀㋁㋂㋃㋄㋅㋆㋇㋈㋉㋊㋋㏠㏡㏢㏣㏤㏥㏦㏧㏨㏩㏪㏫㏬㏭㏮㏯㏰㏱㏲㏳㏴㏵㏶㏷㏸㏹㏺㏻㏼㏽㏾㍙㍚㍛㍜㍝㍞㍟㍠㍡㍢㍣㍤㍥㍦㍧㍨㍩㍪㍫㍬㍭㍮㍯㍰㍘☰☲☱☴☵☶☳☷☯
             ♠♣♧♡♥❤❥❣♂♀✲☀☼☾☽◐◑☺☻☎☏✿❀№↑↓←→√×÷★℃℉°◆◇⊙■□△▽¿½☯✡㍿卍卐♂♀✚〓㎡♪♫♩♬㊚㊛囍㊒㊖Φ♀♂‖$@*&#※卍卐Ψ♫♬♭♩♪♯♮⌒¶∮‖€￡¥$
@@ -1351,7 +1351,7 @@ fn test_search() {
 
     // search post by tag
     let response = client
-        .post(format!("/search/?{}", 1))
+        .post("/search".to_string())
         .json(&json!(SearchRequest::SearchPostTag {
             tag: vec!["政治相关".to_string()]
         }))
@@ -1364,7 +1364,7 @@ fn test_search() {
 
     // search post by tag   (empty tag vector)
     let response = client
-        .post(format!("/search/?{}", 1))
+        .post("/search".to_string())
         .json(&SearchRequest::SearchPostTag { tag: vec![] })
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
@@ -1386,7 +1386,7 @@ fn test_search() {
 
     //retrieve a discarded burrow
     let response = client
-        .post(format!("/search/?{}", 1))
+        .post("/search".to_string())
         .json(&SearchRequest::RetrieveBurrow {
             burrow_id: burrow_id,
         })
@@ -1399,7 +1399,7 @@ fn test_search() {
 
     //retrieve a non-exist post
     let response = client
-        .post(format!("/search/?{}", 1))
+        .post("/search".to_string())
         .json(&SearchRequest::RetrievePost { post_id: -1 })
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
@@ -1430,10 +1430,7 @@ fn test_storage() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    let res = response
-        .into_json::<backend::models::user::UserResponse>()
-        .unwrap();
-    let burrow_id = res.default_burrow;
+
 
     // user login
     let response = client
@@ -1449,6 +1446,11 @@ fn test_storage() {
 
     //get an jepg from httpbin
     let mut jpeg_buf: Vec<u8> = vec![];
+    let jpeg: String = std::iter::repeat(())
+        .map(|()| thread_rng().sample(Alphanumeric))
+        .map(char::from)
+        .take(1600)
+        .collect();
     match reqwest::blocking::Client::new()
         .get("http://httpbin.org/image/jpeg")
         .send()
@@ -1458,16 +1460,11 @@ fn test_storage() {
                 r.copy_to(&mut jpeg_buf).unwrap();
             }
             _ => {
-                let jpeg: String = std::iter::repeat(())
-                    .map(|()| thread_rng().sample(Alphanumeric))
-                    .map(char::from)
-                    .take(1600)
-                    .collect();
                 jpeg_buf = jpeg.into_bytes();
             }
         },
         Err(_) => {
-            jpeg_buf = "a;fklakdjfaoi;jflkasfasokfd".to_string().into_bytes();
+            jpeg_buf = jpeg.into_bytes();
         }
     };
 
@@ -1483,6 +1480,11 @@ fn test_storage() {
 
     //get an png from httpbin
     let mut png_buf: Vec<u8> = vec![];
+    let png: String = std::iter::repeat(())
+        .map(|()| thread_rng().sample(Alphanumeric))
+        .map(char::from)
+        .take(1600)
+        .collect();
     match reqwest::blocking::Client::new()
         .get("http://httpbin.org/image/jpeg")
         .send()
@@ -1492,16 +1494,11 @@ fn test_storage() {
                 r.copy_to(&mut png_buf).unwrap();
             }
             _ => {
-                let jpeg: String = std::iter::repeat(())
-                    .map(|()| thread_rng().sample(Alphanumeric))
-                    .map(char::from)
-                    .take(1600)
-                    .collect();
-                jpeg_buf = jpeg.into_bytes();
+                png_buf = png.into_bytes();
             }
         },
         Err(_) => {
-            png_buf = "a;fklakdjfaoi;jflkasfasokfd".to_string().into_bytes();
+            png_buf = png.into_bytes();
         }
     };
 
