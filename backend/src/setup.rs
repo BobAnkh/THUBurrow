@@ -399,6 +399,12 @@ pub async fn create_burrow_table(db: &DbConn) -> Result<ExecResult, DbErr> {
                 .not_null()
                 .default("".to_string()),
         )
+        .col(
+            ColumnDef::new(pgdb::burrow::Column::Avatar)
+                .text()
+                .not_null()
+                .default("default.jpg".to_string()),
+        )
         .to_owned();
     build_statement(db, &stmt).await
 }
