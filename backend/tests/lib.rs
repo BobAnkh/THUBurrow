@@ -340,6 +340,25 @@ fn test_burrow() {
         .unwrap();
     assert_eq!(burrow_id + 1, res[0].burrow.burrow_id);
     assert_eq!(burrow_id, res[1].burrow.burrow_id);
+    // unfollow burrow 2nd
+    let response = client
+        .post("/users/relation")
+        .json(&json!({ "DeactivateFollow": burrow_id + 1 }))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    assert_eq!(response.into_string().unwrap(), "Success");
+    std::thread::sleep(std::time::Duration::from_secs(1));
+    // get following burrows of a user
+    let response = client
+        .get("/users/follow")
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    let res = response
+        .into_json::<Vec<backend::models::user::UserGetFollowResponse>>()
+        .unwrap();
+    assert_eq!(1, res.len());
 
     // 5. test get_total_burrow_count
     // get total burrow count
@@ -779,6 +798,14 @@ fn test_content() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     assert_eq!(response.into_string().unwrap(), "Success");
+    // like post no.4
+    let response = client
+        .post("/users/relation")
+        .json(&json!({ "ActivateLike": post_id + 3 }))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    assert_eq!(response.into_string().unwrap(), "Success");
 
     std::thread::sleep(std::time::Duration::from_secs(1));
 
@@ -899,6 +926,25 @@ fn test_content() {
     assert_eq!(true, res[0].is_update);
     assert_eq!(post_id, res[1].post.post_id);
     assert_eq!(true, res[0].is_update);
+    // deactivate collect post no.3
+    let response = client
+        .post("/users/relation")
+        .json(&json!({ "DeactivateCollection": post_id + 2 }))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    assert_eq!(response.into_string().unwrap(), "Success");
+    std::thread::sleep(std::time::Duration::from_secs(1));
+    // get post collection of a user after deactivate collection
+    let response = client
+        .get("/users/collection")
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    let res = response
+        .into_json::<Vec<backend::models::user::UserGetCollectionResponse>>()
+        .unwrap();
+    assert_eq!(1, res.len());
 
     // discard new burrow
     let response = client
@@ -931,7 +977,6 @@ fn test_content() {
     assert_eq!(post_id, res.post_desc.post_id);
     assert_eq!(format!("First post of {}", name), res.post_desc.title);
     assert_eq!(3, res.post_desc.post_len);
-    // TODO: match reply
     assert_eq!(reply_id, res.reply_page[1].reply_id);
     assert_eq!(
         "This is a test reply no.1 for post no.1".to_string(),
@@ -976,6 +1021,7 @@ fn test_content() {
         .unwrap();
     assert_eq!(post_id + 3, res.post_desc.post_id);
     assert_eq!(new_burrow_id, res.post_desc.burrow_id);
+    assert_eq!(true, res.like);
     // get post no.5 to test if tag and section is duplicated
     let response = client
         .get(format!("/content/posts/{}", post_id + 4))
@@ -990,6 +1036,27 @@ fn test_content() {
     assert_eq!(vec![PostSection::Learning], res.post_desc.section);
     assert_eq!(vec!["NoTag"], res.post_desc.tag);
 
+    // deactivate like post no.4
+        let response = client
+        .post("/users/relation")
+        .json(&json!({ "DeactivateLike": post_id + 3 }))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    assert_eq!(response.into_string().unwrap(), "Success");
+    std::thread::sleep(std::time::Duration::from_secs(1));
+    // get post no.4 after deactivate like
+    let response = client
+        .get(format!("/content/posts/{}", post_id + 3))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    let res = response
+        .into_json::<backend::models::content::PostPage>()
+        .unwrap();
+    assert_eq!(post_id + 3, res.post_desc.post_id);
+    assert_eq!(false, res.like);
+
     // 18. test read_post_list
     // get post list
     let response = client
@@ -999,19 +1066,32 @@ fn test_content() {
     assert_eq!(response.status(), Status::Ok);
     println!("{}", response.into_string().unwrap());
     // TODO
-    // // get post list with section
-    // let response = client
-    //     .get(format!("/content/posts/list?page=0&section=NSFW"))
-    //     .remote("127.0.0.1:8000".parse().unwrap())
-    //     .dispatch(); assert_eq!(response.status(), Status::Ok);
-    // println!("{}", response.into_string().unwrap());
-    // // get post list with section
-    // let response = client
-    //     .get(format!("/content/posts/list?section=Learning"))
-    //     .remote("127.0.0.1:8000".parse().unwrap())
-    //     .dispatch();
-    // assert_eq!(response.status(), Status::Ok);
-    // println!("{}", response.into_string().unwrap());
+    // get post list with section
+    let response = client
+        .get(format!("/content/posts/list?page=0&section=NSFW"))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    let res = response
+        .into_json::<backend::models::content::ListPage>()
+        .unwrap();
+    assert_eq!(post_id + 2, res.post_page[0].post.post_id);
+    assert_eq!(
+        vec![PostSection::Learning, PostSection::Life, PostSection::NSFW],
+        res.post_page[0].post.section
+    );
+    // get post list with section
+    let response = client
+        .get(format!("/content/posts/list?section=Learning"))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    let res = response
+        .into_json::<backend::models::content::ListPage>()
+        .unwrap();
+    assert_eq!(post_id + 4, res.post_page[0].post.post_id);
+    assert_eq!(post_id, res.post_page[3].post.post_id);
+    assert_eq!(vec![PostSection::Learning], res.post_page[0].post.section);
 
     // 19. test update_post
     // update post no.1
