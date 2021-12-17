@@ -1037,7 +1037,7 @@ fn test_content() {
     assert_eq!(vec!["NoTag"], res.post_desc.tag);
 
     // deactivate like post no.4
-        let response = client
+    let response = client
         .post("/users/relation")
         .json(&json!({ "DeactivateLike": post_id + 3 }))
         .remote("127.0.0.1:8000".parse().unwrap())
