@@ -373,8 +373,8 @@ mod tests {
         };
         let data_to_res: SearchBurrowResponse = sbdata.into();
         let data_to_res2: SearchBurrowResponse = (&sbdata2).into();
-        assert_eq!(data_to_res,sbresponse);
-        assert_eq!(data_to_res2,sbresponse);
+        assert_eq!(data_to_res, sbresponse);
+        assert_eq!(data_to_res2, sbresponse);
     }
 
     #[test]
@@ -387,10 +387,10 @@ mod tests {
         let document = TypesensePostData {
             id: "test_id".to_string(),
             burrow_id: 999i64,
-            post_id:999i64,
+            post_id: 999i64,
             title: "test_title".to_string(),
-            section:vec![PostSection::Learning],
-            tag:vec!["test_tag".to_string()],
+            section: vec![PostSection::Learning],
+            tag: vec!["test_tag".to_string()],
             update_time: now,
         };
         let document2 = document.clone();
@@ -410,12 +410,12 @@ mod tests {
         let spresponse = SearchPostResponse {
             found: 999i32,
             page: 999usize,
-            posts:vec![pspdata],
+            posts: vec![pspdata],
         };
         let data_to_res: SearchPostResponse = spdata.into();
         let data_to_res2: SearchPostResponse = (&spdata2).into();
-        assert_eq!(data_to_res,spresponse);
-        assert_eq!(data_to_res2,spresponse);
+        assert_eq!(data_to_res, spresponse);
+        assert_eq!(data_to_res2, spresponse);
     }
 
     #[test]
@@ -428,19 +428,19 @@ mod tests {
         let document = TypesenseReplyData {
             id: "test_id".to_string(),
             burrow_id: 999i64,
-            post_id:999i64,
-            reply_id:999i32,
+            post_id: 999i64,
+            reply_id: 999i32,
             update_time: now,
-            content:"test_content".to_string(),
+            content: "test_content".to_string(),
         };
         let document2 = document.clone();
         let srhit = SearchReplyHit {
             highlights: vec![highlight],
             document,
         };
-        let grouped_hits =SearchReplyGroupHit{
-            group_key:vec![999i64],
-            hits:vec![srhit],
+        let grouped_hits = SearchReplyGroupHit {
+            group_key: vec![999i64],
+            hits: vec![srhit],
         };
         let srdata = SearchReplyData {
             found: 999i32,
@@ -449,20 +449,20 @@ mod tests {
         };
         let srdata2 = srdata.clone();
         let psrdata: PulsarSearchReplyData = document2.into();
-        let srgresponse = SearchReplyGroupResponse{
-            post_id:999i64,
-            replies:vec![psrdata],
+        let srgresponse = SearchReplyGroupResponse {
+            post_id: 999i64,
+            replies: vec![psrdata],
         };
         // let psbdata_2: PulsarSearchBurrowData = (&document3).into();
         // assert_eq!(psbdata_1, psbdata_2);
         let srresponse = SearchReplyResponse {
             found: 999i32,
             page: 999usize,
-            replies:vec![srgresponse],
+            replies: vec![srgresponse],
         };
         let data_to_res: SearchReplyResponse = srdata.into();
         let data_to_res2: SearchReplyResponse = (&srdata2).into();
-        assert_eq!(data_to_res,srresponse);
-        assert_eq!(data_to_res2,srresponse);
+        assert_eq!(data_to_res, srresponse);
+        assert_eq!(data_to_res2, srresponse);
     }
 }
