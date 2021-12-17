@@ -284,21 +284,23 @@ pub async fn user_sign_up(
                         match delete_result {
                             Ok(1) => {
                                 log::info!("[SIGN-UP] delete email -> rate:code success");
-                            },
+                            }
                             Ok(_) => {
-                                log::error!("[SIGN-UP] delete zero or more than one email -> rate:code");
+                                log::error!(
+                                    "[SIGN-UP] delete zero or more than one email -> rate:code"
+                                );
                                 return (
                                     Status::InternalServerError,
                                     Err(Json(ErrorResponse::default())),
                                 );
-                            },
+                            }
                             Err(e) => {
                                 log::error!("[SIGN-UP] Database Error: {:?}", e);
                                 return (
                                     Status::InternalServerError,
                                     Err(Json(ErrorResponse::default())),
                                 );
-                            },
+                            }
                         }
                     }
                 }

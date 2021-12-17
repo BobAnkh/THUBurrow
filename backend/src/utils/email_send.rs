@@ -3,17 +3,17 @@ use crypto::digest::Digest;
 use crypto::hmac::Hmac;
 use crypto::mac::Mac;
 use crypto::sha2::Sha256;
+use hex;
+use lazy_static::lazy_static;
 use reqwest::header::HeaderMap;
 use serde::Serialize;
-use lazy_static::lazy_static;
 use std::env;
-use hex;
 
 lazy_static! {
-    static ref SECRET_ID: String =
-        env::var("SECRET_ID").ok().unwrap_or_else(||"".to_string());
-    static ref SECRET_KEY: String =
-        env::var("SECRET_KEY").ok().unwrap_or_else(||"".to_string());
+    static ref SECRET_ID: String = env::var("SECRET_ID").ok().unwrap_or_else(|| "".to_string());
+    static ref SECRET_KEY: String = env::var("SECRET_KEY")
+        .ok()
+        .unwrap_or_else(|| "".to_string());
 }
 
 #[derive(Serialize)]
@@ -133,17 +133,17 @@ pub async fn post(user_email: String, verification_code: &str) -> Result<String,
     let now = Utc::now();
     let timestamp = now.timestamp().to_string();
     let date = now.format("%Y-%m-%d").to_string();
-        // let timestamp = 1638791815.to_string();
-        // let host = "ses.tencentcloudapi.com".to_string();
-        // let action = "SendEmail".to_string();
-        // let region = "ap-hongkong".to_string();
-        // let version = "2020-10-02".to_string();
+    // let timestamp = 1638791815.to_string();
+    // let host = "ses.tencentcloudapi.com".to_string();
+    // let action = "SendEmail".to_string();
+    // let region = "ap-hongkong".to_string();
+    // let version = "2020-10-02".to_string();
 
     // generate header
     let mut headers = assemble_headers(timestamp.clone());
 
     // generate body data
-        // let verification_code = 123456;
+    // let verification_code = 123456;
     let body = Body {
         from_email_address: "THUBurrow <noreply@testmail.thuburrow.com>".to_string(),
         destination: vec![user_email],
@@ -154,22 +154,22 @@ pub async fn post(user_email: String, verification_code: &str) -> Result<String,
         subject: "Verification Email".to_string(),
     };
     let payload = gen_payload(&body);
-        // println!("{}", payload);
+    // println!("{}", payload);
 
     // generate authorization, set header
     let auth = gen_auth(&body, timestamp.clone(), date.clone());
     headers.insert("Authorization", auth.parse().unwrap());
-        // let req = format!("\ncurl -X POST https://{} -H \"Authorization: {}\" -H \"Content-Type: application/json; charset=utf-8\" -H \"Host: {}\" -H \"X-TC-Action: {}\" -H \"X-TC-Timestamp: {}\" -H \"X-TC-Version: {}\" -H \"X-TC-Region: {}\" -d \'{}\'"
-        //     , host
-        //     , auth
-        //     , host
-        //     , action
-        //     , timestamp
-        //     , version
-        //     , region
-        //     , payload
-        // );
-        // println!("{}", req);
+    // let req = format!("\ncurl -X POST https://{} -H \"Authorization: {}\" -H \"Content-Type: application/json; charset=utf-8\" -H \"Host: {}\" -H \"X-TC-Action: {}\" -H \"X-TC-Timestamp: {}\" -H \"X-TC-Version: {}\" -H \"X-TC-Region: {}\" -d \'{}\'"
+    //     , host
+    //     , auth
+    //     , host
+    //     , action
+    //     , timestamp
+    //     , version
+    //     , region
+    //     , payload
+    // );
+    // println!("{}", req);
     // send request
     let response = client
         .post("https://ses.tencentcloudapi.com")

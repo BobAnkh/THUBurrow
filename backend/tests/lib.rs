@@ -127,7 +127,10 @@ fn test_email() {
     assert_eq!(response.status(), Status::BadRequest);
     assert_eq!(
         response.into_json::<ErrorResponse>().unwrap(),
-        ErrorResponse::build(ErrorCode::EmailDuplicate, "This Email address is already in use",)
+        ErrorResponse::build(
+            ErrorCode::EmailDuplicate,
+            "This Email address is already in use",
+        )
     );
 }
 

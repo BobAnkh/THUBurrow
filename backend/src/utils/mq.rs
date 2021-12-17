@@ -2,14 +2,14 @@ extern crate serde;
 use futures::TryStreamExt;
 use lazy_static::lazy_static;
 use pulsar::{Consumer, Pulsar, SubType, TokioExecutor};
-use rand::{thread_rng, Rng};
 use rand::distributions::Alphanumeric;
-use std::iter;
+use rand::{thread_rng, Rng};
 use sea_orm::sea_query::Expr;
 use sea_orm::{entity::*, ConnectionTrait, Database, DatabaseConnection, DbErr, QueryFilter};
 use serde_json::json;
 use std::collections::HashMap;
 use std::env;
+use std::iter;
 use tokio::time::Duration;
 
 use super::email::check_email_exist;
@@ -139,8 +139,10 @@ lazy_static! {
         };
         url
     };
-    static ref BACKEND_TEST_MODE: bool =
-        env::var("BACKEND_TEST_MODE").map(|x| x.parse::<bool>().unwrap()).ok().unwrap_or(false);
+    static ref BACKEND_TEST_MODE: bool = env::var("BACKEND_TEST_MODE")
+        .map(|x| x.parse::<bool>().unwrap())
+        .ok()
+        .unwrap_or(false);
 }
 
 async fn create_typesense_collections() -> Result<(), reqwest::Error> {
@@ -825,12 +827,7 @@ pub async fn pulsar_email() -> Result<(), pulsar::Error> {
             match get_set_redis(&mut kv_conn, &data.email, &verification_code).await {
                 Ok(_) => {
                     log::info!("[PULSAR-EMAIL] Redis get & set success");
-                    match email_send::post(
-                        data.email.clone(),
-                        &verification_code,
-                    )
-                    .await
-                    {
+                    match email_send::post(data.email.clone(), &verification_code).await {
                         Ok(res) => {
                             log::info!("[PULSAR-EMAIL] Email send success, response: {}", res);
                             // println!("{}", res);
