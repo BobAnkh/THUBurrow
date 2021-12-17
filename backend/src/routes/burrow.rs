@@ -124,6 +124,8 @@ pub async fn create_burrow(
                         uid: Set(auth.id),
                         title: Set(burrow.title),
                         description: Set(burrow.description),
+                        create_time: Set(now.to_owned()),
+                        update_time: Set(now.to_owned()),
                         ..Default::default()
                     };
                     // insert the row in database
@@ -158,6 +160,7 @@ pub async fn create_burrow(
                                     "[Create-Burrow] successfully create burrow {} for user {}",
                                     burrow_id, uid
                                 );
+                                // TODO: move them out of the transaction
                                 let msg = PulsarSearchData::CreateBurrow(pulsar_burrow);
                                 let _ = producer
                                     .send("persistent://public/default/search", msg)
@@ -422,13 +425,14 @@ pub async fn update_burrow(
                         ))),
                     )
                 } else if is_valid_burrow(&state.valid_burrow, &burrow_id) {
+                    let now = Utc::now().with_timezone(&FixedOffset::east(8 * 3600));
                     let burrows = pgdb::burrow::ActiveModel {
                         burrow_id: Set(burrow_id),
                         title: Set(burrow.title.to_owned()),
                         description: Set(burrow.description.to_owned()),
+                        update_time: Set(now.to_owned()),
                         ..Default::default()
                     };
-                    let now = Utc::now().with_timezone(&FixedOffset::east(8 * 3600));
                     let pulsar_burrow = PulsarSearchBurrowData {
                         burrow_id,
                         title: burrow.title,

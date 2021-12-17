@@ -1,3 +1,8 @@
+//! # Database Pool
+//!
+//! `pool` is a collection of `Database Connection Pool`s that can be used to perform
+//! operations on multiple databases, e.g. PostgreSQL, Redis, Pulsar, Typesense, Minio, etc.
+
 use deadpool::managed::{self, Manager, Object, PoolConfig, PoolError};
 use deadpool::Runtime;
 use pulsar::MultiTopicProducer;
@@ -12,7 +17,7 @@ use s3::BucketConfiguration;
 use sea_orm::{DatabaseConnection, DbErr};
 use std::time::Duration;
 
-// redis for keydb
+/// Manager used for managing redis connection pool.
 pub trait DeadManager: Manager + Sized + Send + Sync + 'static {
     fn new(config: &Config) -> Result<Self, Self::Error>;
 }
@@ -23,6 +28,7 @@ impl DeadManager for deadpool_redis::Manager {
     }
 }
 
+/// Redis Connection Pool
 #[derive(Database)]
 #[database("keydb")]
 pub struct RedisDb(RedisPoolWrapper);
@@ -70,7 +76,7 @@ where
     }
 }
 
-// sql for postgres
+/// PostgreSQL Connection Pool
 #[derive(Database)]
 #[database("pgdb")]
 pub struct PgDb(SeaOrmPool);
@@ -97,7 +103,7 @@ impl Pool for SeaOrmPool {
     }
 }
 
-// pulsar
+/// Pulsar Connection Pool
 #[derive(Database)]
 #[database("pulsar-mq")]
 pub struct PulsarSearchProducerMq(PulsarProducerPool);
@@ -132,34 +138,35 @@ impl Pool for PulsarProducerPool {
     }
 }
 
-#[rocket::async_trait]
-pub trait RocketPulsarProducer {
-    async fn get_producer(
-        &self,
-        topic: &str,
-    ) -> Result<producer::Producer<TokioExecutor>, PulsarError>;
-}
+// #[rocket::async_trait]
+// pub trait RocketPulsarProducer {
+//     async fn get_producer(
+//         &self,
+//         topic: &str,
+//     ) -> Result<producer::Producer<TokioExecutor>, PulsarError>;
+// }
 
-#[rocket::async_trait]
-impl RocketPulsarProducer for Pulsar<TokioExecutor> {
-    async fn get_producer(
-        &self,
-        topic: &str,
-    ) -> Result<producer::Producer<TokioExecutor>, PulsarError> {
-        self.producer()
-            .with_topic(topic)
-            .with_options(producer::ProducerOptions {
-                schema: Some(proto::Schema {
-                    r#type: proto::schema::Type::String as i32,
-                    ..Default::default()
-                }),
-                ..Default::default()
-            })
-            .build()
-            .await
-    }
-}
+// #[rocket::async_trait]
+// impl RocketPulsarProducer for Pulsar<TokioExecutor> {
+//     async fn get_producer(
+//         &self,
+//         topic: &str,
+//     ) -> Result<producer::Producer<TokioExecutor>, PulsarError> {
+//         self.producer()
+//             .with_topic(topic)
+//             .with_options(producer::ProducerOptions {
+//                 schema: Some(proto::Schema {
+//                     r#type: proto::schema::Type::String as i32,
+//                     ..Default::default()
+//                 }),
+//                 ..Default::default()
+//             })
+//             .build()
+//             .await
+//     }
+// }
 
+/// Minio Connection Pool
 #[derive(Database)]
 #[database("minio")]
 pub struct MinioImageStorage(MinioImagePool);
@@ -231,7 +238,7 @@ impl Pool for MinioImagePool {
     }
 }
 
-// typesense
+/// Typesense Connection Pool
 #[derive(Database)]
 #[database("search")]
 pub struct TypesenseSearch(TypesenseSearchPool);

@@ -71,7 +71,7 @@ jobs:
           cargo install cargo-tarpaulin
           # cargo tarpaulin --all-features --no-run --skip-clean --no-fail-fast --verbose --timeout 300 --out Xml
           # ./target/debug/consumer &
-          cargo tarpaulin --all-features --no-fail-fast --skip-clean --verbose --timeout 300 --out Xml
+          cargo tarpaulin --all-features --no-fail-fast --skip-clean --verbose --timeout 300 --out Xml --exclude-files "src/bin/*" --follow-exec
       - name: remove containers
         run: docker-compose -f docker-compose-dev.yml down && sudo rm -rf data    
       - name: Upload to codecov.io

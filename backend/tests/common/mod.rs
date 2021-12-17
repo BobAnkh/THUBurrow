@@ -8,10 +8,10 @@ use tokio::runtime::Runtime;
 pub fn get_client() -> &'static Mutex<Client> {
     static INSTANCE: OnceCell<Mutex<Client>> = OnceCell::new();
     INSTANCE.get_or_init(|| {
-        let rt = Runtime::new().unwrap();
-        rt.spawn(generate_trending());
-        rt.spawn(pulsar_relation());
-        rt.spawn(pulsar_typesense());
+        // let rt = Runtime::new().unwrap();
+        // rt.spawn(generate_trending());
+        // rt.spawn(pulsar_relation());
+        // rt.spawn(pulsar_typesense());
         // let _ = vec![
         //     tokio::spawn(pulsar_relation()),
         //     tokio::spawn(pulsar_typesense()),

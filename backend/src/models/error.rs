@@ -45,7 +45,11 @@ pub enum ErrorCode {
     None,
 }
 
+<<<<<<< HEAD
 #[derive(Serialize, Deserialize, Debug, Clone,PartialEq)]
+=======
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+>>>>>>> 32d2013c7d27e4c80cd1192aa4f3fc400ab50972
 pub struct ErrorMessage {
     pub code: ErrorCode,
     pub message: String,
