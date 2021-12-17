@@ -26,7 +26,6 @@ use crate::pool::{PgDb, PulsarSearchProducerMq, RedisDb};
 use crate::utils::auth::{Auth, CookieOptions};
 use crate::utils::burrow_valid::*;
 use crate::utils::email;
-// use crate::utils::email_send;
 
 pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
     rocket.mount(
@@ -116,16 +115,14 @@ pub async fn user_email_activate(
                     .arg(&email)
                     .query_async(kvdb_con.as_mut())
                     .await;
-                let mut op_times;
-                match get_redis_result {
+                // let mut op_times;
+                let op_times = 1 + match get_redis_result {
                     Ok(opt_res) => match opt_res {
                         Some(res) => {
                             let values: Vec<&str> = res.split(':').collect();
-                            op_times = values[0].parse::<usize>().unwrap();
+                            values[0].parse::<usize>().unwrap()
                         }
-                        None => {
-                            op_times = 0;
-                        }
+                        None => 0,
                     },
                     Err(e) => {
                         log::error!("[EMAIL-AC] Database Error: {:?}", e);
@@ -135,7 +132,7 @@ pub async fn user_email_activate(
                         );
                     }
                 };
-                op_times += 1;
+                // op_times += 1;
                 log::info!("[EMAIL-AC] op_times: {}", op_times);
                 if op_times > SEND_EMAIL_LIMIT {
                     return (
@@ -417,138 +414,11 @@ pub async fn user_log_in(
                 // check if password is wrong, add corresponding error if so
                 if matched_user.password.eq(&password) {
                     info!("[LOGIN] password correct, continue...");
-                    // generate token and refresh token
-                    let token: String = iter::repeat(())
-                        .map(|()| thread_rng().sample(Alphanumeric))
-                        .map(char::from)
-                        .take(32)
-                        .collect();
-                    let mut hash_sha3 = Sha3::sha3_384();
-                    hash_sha3.input_str(&token);
-                    let refresh_token = hash_sha3.result_str();
-                    // set token -> id
-                    let uid_result: Result<String, redis::RedisError> = redis::cmd("SETEX")
-                        .arg(&token)
-                        .arg(4 * 3600i32)
-                        .arg(matched_user.uid)
-                        .query_async(con.as_mut())
-                        .await;
-                    match uid_result {
-                        Ok(s) => info!("[LOGIN] setex token->id: {:?} -> {}", &token, s),
-                        Err(e) => {
-                            error!(
-                                "[LOGIN] failed to set token -> id when login. RedisError: {:?}",
-                                e
-                            );
-                            return (
-                                Status::InternalServerError,
-                                Err(Json(ErrorResponse::default())),
-                            );
-                        }
-                    };
-                    // set refresh_token -> id
-                    let uid_result: Result<String, redis::RedisError> = redis::cmd("SETEX")
-                        .arg(&refresh_token)
-                        .arg(15 * 24 * 3600i32)
-                        .arg(matched_user.uid)
-                        .query_async(con.as_mut())
-                        .await;
-                    match uid_result {
-                        Ok(s) => info!(
-                            "[LOGIN] setex refresh_token->id: {:?} -> {}",
-                            &refresh_token, s
-                        ),
-                        Err(e) => {
-                            error!("[LOGIN] failed to set refresh_token -> id when login. RedisError: {:?}", e);
-                            return (
-                                Status::InternalServerError,
-                                Err(Json(ErrorResponse::default())),
-                            );
-                        }
-                    };
-                    // get old token and set new token by getset id -> token
-                    // TODO: add time limit to the key?
-                    let old_token_get: Result<Option<String>, redis::RedisError> =
-                        redis::cmd("GETSET")
-                            .arg(matched_user.uid)
-                            .arg(&token)
-                            .query_async(con.as_mut())
-                            .await;
-                    match old_token_get {
-                        Ok(res) => match res {
-                            // if old token -> id exists
-                            Some(old_token) => {
-                                info!("[LOGIN] find old token:{:?}, continue...", old_token);
-                                // clear old token -> id
-                                let delete_result: Result<i64, redis::RedisError> =
-                                    redis::cmd("DEL")
-                                        .arg(&old_token)
-                                        .query_async(con.as_mut())
-                                        .await;
-                                match delete_result {
-                                    Ok(1) => info!("[LOGIN] delete token->id"),
-                                    Ok(0) => info!("[LOGIN] no token->id found"),
-                                    Ok(_) => {
-                                        error!("[LOGIN] failed to delete refresh_token -> id when login.");
-                                        return (
-                                            Status::InternalServerError,
-                                            Err(Json(ErrorResponse::default())),
-                                        );
-                                    }
-                                    Err(e) => {
-                                        error!("[LOGIN] failed to delete token -> id when login. RedisError: {:?}", e);
-                                        return (
-                                            Status::InternalServerError,
-                                            Err(Json(ErrorResponse::default())),
-                                        );
-                                    }
-                                };
-                                // find old refresh_token by hashing old token
-                                let mut hash_sha3 = Sha3::sha3_384();
-                                hash_sha3.input_str(&old_token);
-                                let old_refresh_token = hash_sha3.result_str();
-                                // clear old refresh_token -> id
-                                let delete_result: Result<i64, redis::RedisError> =
-                                    redis::cmd("DEL")
-                                        .arg(&old_refresh_token)
-                                        .query_async(con.as_mut())
-                                        .await;
-                                match delete_result {
-                                    Ok(1) => info!("[LOGIN] delete ref_token->id"),
-                                    Ok(0) => info!("[LOGIN] no ref_token->id found"),
-                                    Ok(_) => {
-                                        error!("[LOGIN] failed to delete refresh_token -> id when login.");
-                                        return (
-                                            Status::InternalServerError,
-                                            Err(Json(ErrorResponse::default())),
-                                        );
-                                    }
-                                    Err(e) => {
-                                        error!("[LOGIN] failed to delete refresh_token -> id when login. RedisError: {:?}", e);
-                                        return (
-                                            Status::InternalServerError,
-                                            Err(Json(ErrorResponse::default())),
-                                        );
-                                    }
-                                };
-                                info!("[LOGIN] set id->token: {} -> {:?}", matched_user.uid, token);
-                            }
-                            None => {
-                                info!("[LOGIN] no id->token found");
-                                info!("[LOGIN] set id->token: {} -> {:?}", matched_user.uid, token);
-                            }
-                        },
-                        Err(e) => {
-                            error!(
-                                "[LOGIN] failed to set id -> token when login. RedisError: {:?}",
-                                e
-                            );
-                            return (
-                                Status::InternalServerError,
-                                Err(Json(ErrorResponse::default())),
-                            );
-                        }
-                    };
+                    let token =
+                        match crate::utils::auth::set_token(matched_user.uid, con.as_mut()).await {
+                            Ok(t) => t,
+                            Err(e) => return (Status::InternalServerError, Err(Json(e))),
+                        };
                     // build cookie
                     let cookie = Cookie::build("token", token).cookie_options().finish();
                     // set cookie

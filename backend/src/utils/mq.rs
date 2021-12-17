@@ -1,4 +1,5 @@
 extern crate serde;
+use crate::config::mq::*;
 use futures::TryStreamExt;
 use lazy_static::lazy_static;
 use pulsar::{Consumer, Pulsar, SubType, TokioExecutor};
@@ -140,9 +141,9 @@ lazy_static! {
         url
     };
     static ref BACKEND_TEST_MODE: bool = env::var("BACKEND_TEST_MODE")
-        .map(|x| x.parse::<bool>().unwrap())
+        .map(|x| x.parse::<bool>().unwrap_or(true))
         .ok()
-        .unwrap_or(false);
+        .unwrap_or(true);
 }
 
 async fn create_typesense_collections() -> Result<(), reqwest::Error> {
@@ -742,14 +743,13 @@ async fn get_set_redis(
     verification_code: &str,
 ) -> Result<String, redis::RedisError> {
     let get_res: Option<String> = redis::cmd("GET").arg(email).query_async(kv_conn).await?;
-    let mut op_times = match get_res {
+    let op_times = 1 + match get_res {
         Some(res) => {
             let values: Vec<&str> = res.split(':').collect();
             values[0].parse::<usize>().unwrap()
         }
         None => 0,
     };
-    op_times += 1;
     // check request rate
     if op_times > SEND_EMAIL_LIMIT {
         let e = (redis::ErrorKind::ExtensionError, "RateLimit").into();
@@ -757,7 +757,7 @@ async fn get_set_redis(
     } else {
         let _: String = redis::cmd("SETEX")
             .arg(email)
-            .arg(14400i32)
+            .arg(EMAIL_TOKEN_EX)
             .arg(op_times.to_string() + ":" + verification_code)
             .query_async(kv_conn)
             .await?;
@@ -851,7 +851,7 @@ pub async fn pulsar_email() -> Result<(), pulsar::Error> {
         } else {
             let set_redis_result: Result<String, redis::RedisError> = redis::cmd("SETEX")
                 .arg(&data.email)
-                .arg(14400i32)
+                .arg(EMAIL_TOKEN_EX)
                 .arg((SEND_EMAIL_LIMIT + 1).to_string() + ":" + "666666")
                 .query_async(&mut kv_conn)
                 .await;

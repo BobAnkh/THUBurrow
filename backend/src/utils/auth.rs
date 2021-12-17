@@ -6,7 +6,9 @@ use rocket::http::private::cookie::CookieBuilder;
 use rocket::http::{Cookie, SameSite, Status};
 use rocket::request::{self, FromRequest, Outcome, Request};
 use rocket::State;
+use std::iter;
 
+use crate::config::user::*;
 use crate::models::error::*;
 use crate::pool::RedisDb;
 
@@ -91,6 +93,135 @@ pub enum ValidToken {
     Invalid,
     DatabaseErr,
     Missing,
+}
+
+pub async fn set_token(
+    uid: i64,
+    kv_conn: &mut redis::aio::Connection,
+) -> Result<String, ErrorResponse> {
+    // generate token and refresh token
+    let token: String = iter::repeat(())
+        .map(|()| thread_rng().sample(Alphanumeric))
+        .map(char::from)
+        .take(32)
+        .collect();
+    let mut hash_sha3 = Sha3::sha3_384();
+    hash_sha3.input_str(&token);
+    let refresh_token = hash_sha3.result_str();
+    // set token -> id
+    let uid_result: Result<String, redis::RedisError> = redis::cmd("SETEX")
+        .arg(&token)
+        .arg(TOKEN_TO_ID_EX)
+        .arg(uid)
+        .query_async(kv_conn)
+        .await;
+    match uid_result {
+        Ok(s) => info!("[LOGIN] setex token->id: {:?} -> {}", &token, s),
+        Err(e) => {
+            error!(
+                "[LOGIN] failed to set token -> id when login. RedisError: {:?}",
+                e
+            );
+            return Err(ErrorResponse::default());
+        }
+    };
+    // set refresh_token -> id
+    let uid_result: Result<String, redis::RedisError> = redis::cmd("SETEX")
+        .arg(&refresh_token)
+        .arg(REF_TOKEN_TO_ID_EX)
+        .arg(uid)
+        .query_async(kv_conn)
+        .await;
+    match uid_result {
+        Ok(s) => info!(
+            "[LOGIN] setex refresh_token->id: {:?} -> {}",
+            &refresh_token, s
+        ),
+        Err(e) => {
+            error!(
+                "[LOGIN] failed to set refresh_token -> id when login. RedisError: {:?}",
+                e
+            );
+            return Err(ErrorResponse::default());
+        }
+    };
+    // get old token and set new token by getset id -> token
+    let old_token_get: Result<Option<String>, redis::RedisError> =
+        redis::cmd("GET").arg(uid).query_async(kv_conn).await;
+    match old_token_get {
+        Ok(res) => match res {
+            // if old token -> id exists
+            Some(old_token) => {
+                info!("[LOGIN] find old token:{:?}, continue...", old_token);
+                // clear old token -> id
+                let delete_result: Result<i64, redis::RedisError> =
+                    redis::cmd("DEL").arg(&old_token).query_async(kv_conn).await;
+                match delete_result {
+                    Ok(1) => info!("[LOGIN] delete token->id"),
+                    Ok(0) => info!("[LOGIN] no token->id found"),
+                    Ok(_) => {
+                        error!("[LOGIN] failed to delete refresh_token -> id when login.");
+                        return Err(ErrorResponse::default());
+                    }
+                    Err(e) => {
+                        error!(
+                            "[LOGIN] failed to delete token -> id when login. RedisError: {:?}",
+                            e
+                        );
+                        return Err(ErrorResponse::default());
+                    }
+                };
+                // find old refresh_token by hashing old token
+                let mut hash_sha3 = Sha3::sha3_384();
+                hash_sha3.input_str(&old_token);
+                let old_refresh_token = hash_sha3.result_str();
+                // clear old refresh_token -> id
+                let delete_result: Result<i64, redis::RedisError> = redis::cmd("DEL")
+                    .arg(&old_refresh_token)
+                    .query_async(kv_conn)
+                    .await;
+                match delete_result {
+                    Ok(1) => info!("[LOGIN] delete ref_token->id"),
+                    Ok(0) => info!("[LOGIN] no ref_token->id found"),
+                    Ok(_) => {
+                        error!("[LOGIN] failed to delete refresh_token -> id when login.");
+                        return Err(ErrorResponse::default());
+                    }
+                    Err(e) => {
+                        error!("[LOGIN] failed to delete refresh_token -> id when login. RedisError: {:?}", e);
+                        return Err(ErrorResponse::default());
+                    }
+                };
+            }
+            None => info!("[LOGIN] no id -> token found"),
+        },
+        Err(e) => {
+            error!(
+                "[LOGIN] failed to get id -> token when login. RedisError: {:?}",
+                e
+            );
+            return Err(ErrorResponse::default());
+        }
+    };
+    let new_token_set: Result<String, redis::RedisError> = redis::cmd("SETEX")
+        .arg(uid)
+        .arg(ID_TO_TOKEN_EX)
+        .arg(&token)
+        .query_async(kv_conn)
+        .await;
+    match new_token_set {
+        Ok(_) => {
+            info!("[LOGIN] set id->token: {} -> {:?}", uid, token);
+            Ok(token)
+        }
+        Err(e) => {
+            error!(
+                "[LOGIN] failed to set id -> token when login. RedisError: {:?}",
+                e
+            );
+            Err(ErrorResponse::default())
+        }
+    }
 }
 
 async fn is_valid<'r>(

@@ -145,7 +145,7 @@ pub async fn post(user_email: String, verification_code: &str) -> Result<String,
     // generate body data
     // let verification_code = 123456;
     let body = Body {
-        from_email_address: "THUBurrow <noreply@testmail.thuburrow.com>".to_string(),
+        from_email_address: "THUBurrow <no-reply@mail.thuburrow.com>".to_string(),
         destination: vec![user_email],
         template: Template {
             template_id: 21517,
@@ -188,6 +188,27 @@ mod tests {
     #[test]
     fn test_to_hex() {
         assert_eq!(hex::encode(b"hello"), "68656c6c6f".to_string());
+    }
+
+    #[test]
+    fn test_sign() {
+        assert_eq!(
+            sign(b"key", b"msg"),
+            hex::decode("2d93cbc1be167bcb1637a4a23cbff01a7878f0c50ee833954ea5221bb1b8c628")
+                .unwrap()
+        );
+    }
+
+    #[test]
+    fn test_assemble_headers() {
+        let timestamp = "1638791815".to_string();
+        let headers = assemble_headers(timestamp);
+        assert_eq!(headers["Host"], "ses.tencentcloudapi.com");
+        assert_eq!(headers["Content-Type"], "application/json; charset=utf-8");
+        assert!(headers.contains_key("X-TC-Timestamp"));
+        assert_eq!(headers["X-TC-Region"], "ap-hongkong");
+        assert_eq!(headers["X-TC-Action"], "SendEmail");
+        assert_eq!(headers["X-TC-Version"], "2020-10-02");
     }
 
     #[test]

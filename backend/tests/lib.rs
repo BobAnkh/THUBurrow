@@ -240,6 +240,30 @@ fn test_user() {
             "username": new_name,
             "password": "testpassword",
             "email": format!("{}@mails.tsinghua.edu.cn", new_name),
+            "verification_code": "666666"}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::BadRequest);
+    assert_eq!(
+        response.into_json::<ErrorResponse>().unwrap(),
+        ErrorResponse::build(ErrorCode::CredentialInvalid, "Invalid verification code",)
+    );
+    // sign up a user: perform a wrong action (Wrong verification code)
+    let response = client
+        .post("/users/email")
+        .json(&json!({
+            "email": format!("{}@mails.tsinghua.edu.cn", new_name)
+        }))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    println!("{}", response.into_string().unwrap());
+    let response = client
+        .post("/users/sign-up")
+        .json(&json!({
+            "username": new_name,
+            "password": "testpassword",
+            "email": format!("{}@mails.tsinghua.edu.cn", new_name),
             "verification_code": "233333"}))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
