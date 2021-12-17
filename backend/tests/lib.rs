@@ -1431,7 +1431,6 @@ fn test_storage() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
 
-
     // user login
     let response = client
         .post("/users/login")
