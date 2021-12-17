@@ -7,6 +7,7 @@ use reqwest::header::HeaderMap;
 use serde::Serialize;
 use lazy_static::lazy_static;
 use std::env;
+use hex;
 
 lazy_static! {
     static ref SECRET_ID: String =
@@ -33,18 +34,6 @@ struct Body {
     template: Template,
     #[serde(rename = "Subject")]
     subject: String,
-}
-
-static CHARS: &'static[u8] = b"0123456789abcdef";
-fn to_hex(bytes: &[u8]) -> String {
-    let mut v = Vec::with_capacity(bytes.len() * 2);
-    for &byte in bytes.iter() {
-        v.push(CHARS[(byte >> 4) as usize]);
-        v.push(CHARS[(byte & 0xf) as usize]);
-    }
-    unsafe {
-        String::from_utf8_unchecked(v)
-    }
 }
 
 fn hash(s: String) -> String {
@@ -128,7 +117,7 @@ fn gen_auth(param: &Body, timestamp: String, date: String) -> String {
     let secret_signing = sign(&secret_service, "tc3_request".as_bytes());
     let mut hmac = Hmac::new(Sha256::new(), &secret_signing);
     hmac.input(string_to_sign.as_bytes());
-    let signature = to_hex(hmac.result().code());
+    let signature = hex::encode(hmac.result().code());
     // println!("{}", signature);
 
     // step 4: attach Authorization
@@ -198,7 +187,7 @@ mod tests {
 
     #[test]
     fn test_to_hex() {
-        assert_eq!(to_hex(b"hello"), "68656c6c6f".to_string());
+        assert_eq!(hex::encode(b"hello"), "68656c6c6f".to_string());
     }
 
     #[test]

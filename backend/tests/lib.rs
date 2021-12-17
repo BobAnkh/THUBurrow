@@ -41,6 +41,11 @@ fn test_email() {
         .map(char::from)
         .take(16)
         .collect();
+    let new_name: String = std::iter::repeat(())
+        .map(|()| thread_rng().sample(Alphanumeric))
+        .map(char::from)
+        .take(16)
+        .collect();
     // set verification code: Request Time 1
     let response = client
         .post("/users/email")
@@ -83,13 +88,11 @@ fn test_email() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::TooManyRequests);
-    println!("{}", response.into_string().unwrap());
+    assert_eq!(
+        response.into_json::<ErrorResponse>().unwrap(),
+        ErrorResponse::build(ErrorCode::RateLimit, "Request Send-Email too many times",)
+    );
     // set verification code
-    let new_name: String = std::iter::repeat(())
-        .map(|()| thread_rng().sample(Alphanumeric))
-        .map(char::from)
-        .take(16)
-        .collect();
     let response = client
         .post("/users/email")
         .json(&json!({
@@ -122,7 +125,10 @@ fn test_email() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::BadRequest);
-    println!("{}", response.into_string().unwrap());
+    assert_eq!(
+        response.into_json::<ErrorResponse>().unwrap(),
+        ErrorResponse::build(ErrorCode::EmailDuplicate, "This Email address is already in use",)
+    );
 }
 
 // #[test]
@@ -149,6 +155,7 @@ fn test_user() {
         }))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
+    assert_eq!(response.status(), Status::Ok);
     println!("{}", response.into_string().unwrap());
     std::thread::sleep(std::time::Duration::from_secs(5));
     // sign up a user
@@ -222,6 +229,21 @@ fn test_user() {
     assert_eq!(
         response.into_json::<ErrorResponse>().unwrap(),
         ErrorResponse::build(ErrorCode::UsernameDuplicate, "Duplicate username.",)
+    );
+    // sign up a user: perform a wrong action (Wrong verification code)
+    let response = client
+        .post("/users/sign-up")
+        .json(&json!({
+            "username": new_name,
+            "password": "testpassword",
+            "email": format!("{}@mails.tsinghua.edu.cn", new_name),
+            "verification_code": "233333"}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::BadRequest);
+    assert_eq!(
+        response.into_json::<ErrorResponse>().unwrap(),
+        ErrorResponse::build(ErrorCode::CredentialInvalid, "Invalid verification code",)
     );
 
     // 2. test user_log_in
@@ -579,7 +601,7 @@ fn test_burrow() {
         .patch(format!("/burrows/{}", burrow_id))
         .json(&json!({
             "description": format!("New Third burrow of {}", name),
-            "title": "new Burrow 3"}))
+            "title": ""}))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::BadRequest);
