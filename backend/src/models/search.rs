@@ -1,6 +1,7 @@
 use sea_orm::prelude::DateTimeWithTimeZone;
 use serde::{Deserialize, Serialize};
 
+use super::content::PostSection;
 use super::pulsar::*;
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -18,7 +19,7 @@ pub struct TypesensePostData {
     pub post_id: i64,
     pub burrow_id: i64,
     pub title: String,
-    pub section: Vec<String>,
+    pub section: Vec<PostSection>,
     pub tag: Vec<String>,
     pub update_time: DateTimeWithTimeZone,
 }

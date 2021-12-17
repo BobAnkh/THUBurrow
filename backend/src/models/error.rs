@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum ErrorCode {
     /// 500 InternalServerError
     DatabaseErr,
@@ -45,13 +45,13 @@ pub enum ErrorCode {
     None,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct ErrorMessage {
     pub code: ErrorCode,
     pub message: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct ErrorResponse {
     pub error: ErrorMessage,
 }

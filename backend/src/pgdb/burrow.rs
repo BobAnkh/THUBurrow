@@ -14,6 +14,11 @@ pub struct Model {
     pub uid: i64,
     pub burrow_state: i32,
     pub post_num: i32,
+    pub create_time: DateTimeWithTimeZone,
+    pub update_time: DateTimeWithTimeZone,
+    pub credit: i32,
+    #[sea_orm(column_type = "Text")]
+    pub badge: String,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter)]

@@ -377,6 +377,28 @@ pub async fn create_burrow_table(db: &DbConn) -> Result<ExecResult, DbErr> {
                 .not_null()
                 .default(0),
         )
+        .col(
+            ColumnDef::new(pgdb::burrow::Column::CreateTime)
+                .timestamp_with_time_zone()
+                .not_null(),
+        )
+        .col(
+            ColumnDef::new(pgdb::burrow::Column::UpdateTime)
+                .timestamp_with_time_zone()
+                .not_null(),
+        )
+        .col(
+            ColumnDef::new(pgdb::burrow::Column::Credit)
+                .integer()
+                .not_null()
+                .default(0),
+        )
+        .col(
+            ColumnDef::new(pgdb::burrow::Column::Badge)
+                .text()
+                .not_null()
+                .default("".to_string()),
+        )
         .to_owned();
     build_statement(db, &stmt).await
 }

@@ -1,6 +1,7 @@
-use super::burrow::BurrowMetadata;
 use rocket::serde::{Deserialize, Serialize};
 use uuid::Uuid;
+// use crate::pgdb::{self, prelude::*};
+use super::{burrow::BurrowMetadata, content::Post};
 
 pub static SEND_EMAIL_LIMIT: usize = 3;
 
@@ -32,6 +33,12 @@ pub struct UserLoginInfo<'r> {
 #[derive(Serialize, Deserialize)]
 pub struct UserResponse {
     pub default_burrow: i64,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct UserGetCollectionResponse {
+    pub post: Post,
+    pub is_update: bool,
 }
 
 #[derive(Serialize, Deserialize)]
