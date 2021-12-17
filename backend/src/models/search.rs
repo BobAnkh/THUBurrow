@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use super::content::PostSection;
 use super::pulsar::*;
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct TypesenseBurrowData {
     pub id: String,
     pub burrow_id: i64,
@@ -13,7 +13,7 @@ pub struct TypesenseBurrowData {
     pub update_time: DateTimeWithTimeZone,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct TypesensePostData {
     pub id: String,
     pub post_id: i64,
@@ -24,7 +24,7 @@ pub struct TypesensePostData {
     pub update_time: DateTimeWithTimeZone,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct TypesenseReplyData {
     pub id: String,
     pub post_id: i64,
@@ -34,7 +34,7 @@ pub struct TypesenseReplyData {
     pub update_time: DateTimeWithTimeZone,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub enum SearchRequest {
     RetrieveBurrow { burrow_id: i64 },
     RetrievePost { post_id: i64 },
@@ -43,96 +43,96 @@ pub enum SearchRequest {
     SearchPostTag { tag: Vec<String> },
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct SearchBurrowResponse {
     pub found: i32,
     pub page: usize,
     pub burrows: Vec<PulsarSearchBurrowData>,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct SearchBurrowData {
     pub found: i32,
     pub page: usize,
     pub hits: Vec<SearchBurrowHit>,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct SearchBurrowHit {
     pub highlights: Vec<SearchHighlight>,
     pub document: TypesenseBurrowData,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct SearchHighlight {
     pub field: String,
     pub snippet: String,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct SearchMixResponse {
     pub posts: SearchPostResponse,
     pub replies: SearchReplyResponse,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct SearchMixResult {
     pub results: (SearchPostData, SearchReplyData),
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct SearchPostResponse {
     pub found: i32,
     pub page: usize,
     pub posts: Vec<PulsarSearchPostData>,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct SearchPostData {
     pub found: i32,
     pub page: usize,
     pub hits: Vec<SearchPostHit>,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct SearchPostHit {
     pub highlights: Vec<SearchHighlight>,
     pub document: TypesensePostData,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct SearchReplyResponse {
     pub found: i32,
     pub page: usize,
     pub replies: Vec<SearchReplyGroupResponse>,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct SearchReplyData {
     pub found: i32,
     pub page: usize,
     pub grouped_hits: Vec<SearchReplyGroupHit>,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct SearchReplyGroupResponse {
     pub post_id: i64,
     pub replies: Vec<PulsarSearchReplyData>,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct SearchReplyGroupHit {
     pub group_key: Vec<i64>,
     pub hits: Vec<SearchReplyHit>,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct SearchReplyHit {
     pub highlights: Vec<SearchHighlight>,
     pub document: TypesenseReplyData,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct SearchParam {
     pub collection: String,
     pub q: String,
@@ -143,7 +143,7 @@ pub struct SearchParam {
     pub highlight_fields: String,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct MultiSearch {
     pub searches: Vec<SearchParam>,
 }
