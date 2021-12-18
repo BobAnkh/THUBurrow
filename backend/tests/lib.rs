@@ -47,7 +47,7 @@ fn test_reset() {
         .take(16)
         .collect();
     // try to reset a non-existed user
-        let response = client
+    let response = client
         .post("/users/reset")
         .json(&json!({
             "email": format!("{}@mails.tsinghua.edu.cn", name)
@@ -185,10 +185,7 @@ fn test_reset() {
     assert_eq!(response.status(), Status::BadRequest);
     assert_eq!(
         response.into_json::<ErrorResponse>().unwrap(),
-        ErrorResponse::build(
-            ErrorCode::CredentialInvalid,
-            "Wrong username or password.",
-        )
+        ErrorResponse::build(ErrorCode::CredentialInvalid, "Wrong username or password.",)
     );
     let response = client
         .post("/users/login")

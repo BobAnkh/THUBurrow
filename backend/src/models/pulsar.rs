@@ -69,8 +69,8 @@ pub enum PulsarRelationData {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub enum PulsarSendEmail {
-    Sign {email: String},
-    Reset {email: String},
+    Sign { email: String },
+    Reset { email: String },
 }
 
 impl RelationData {
