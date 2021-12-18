@@ -33,7 +33,6 @@ const { Option } = Select;
 const PostDetial: NextPage = () => {
   const router = useRouter();
   const { pid } = router.query;
-  console.log('pid:' + pid);
   const pid_ = Number(pid);
   const [page, setPage] = useState(1);
   const [bid, setBid] = useState(1);
@@ -51,7 +50,6 @@ const PostDetial: NextPage = () => {
   useEffect(() => {
     const fetchReplyList = async () => {
       try {
-        console.log(pid);
         const res = await axios.get(
           `${process.env.NEXT_PUBLIC_BASEURL}/content/${pid}?page=${page - 1}`,
           {
@@ -94,8 +92,7 @@ const PostDetial: NextPage = () => {
   const toOption = (bidList: number[], bid: number) => {
     const bidOptionList = [];
     for (let i = 0; i < bidList.length; i++) {
-      //注意修改bid === bidList[i]
-      if (replyList[0].burrow_id === bidList[i]) {
+      if (bid === bidList[i]) {
         bidOptionList.push(
           <Option key={bidList[i].toString()} value={bidList[i]}>
             {'#' + bidList[i].toString() + ' 洞主 (发帖人)'}
@@ -192,15 +189,9 @@ const PostDetial: NextPage = () => {
   return (
     <Layout className='layout'>
       <Header>
-        <title>{title}</title>
         <GlobalHeader />
       </Header>
       <Content style={{ padding: '0 50px' }}>
-        <Breadcrumb style={{ margin: '16px 0' }}>
-          <Breadcrumb.Item>Home</Breadcrumb.Item>
-          <Breadcrumb.Item>List</Breadcrumb.Item>
-          <Breadcrumb.Item>App</Breadcrumb.Item>
-        </Breadcrumb>
         <Card
           title={
             <>
@@ -240,7 +231,9 @@ const PostDetial: NextPage = () => {
               >
                 {' ' + '收藏' + ' '}
               </Button>
-              <Title level={2}>title</Title>
+              <Title level={3} style={{ float: 'left', margin: '10px' }}>
+                {title}
+              </Title>
             </>
           }
         >

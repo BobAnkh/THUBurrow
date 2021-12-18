@@ -2,11 +2,35 @@ import type { NextPage, GetStaticProps } from 'next';
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { Layout, Breadcrumb, message, Card } from 'antd';
+import {
+  Layout,
+  Breadcrumb,
+  message,
+  Card,
+  PageHeader,
+  Button,
+  Menu,
+  Tag,
+} from 'antd';
 import PostList from '../components/post-list';
 import GlobalHeader from '../components/header/header';
 import '../node_modules/antd/dist/antd.css';
 import axios, { AxiosError } from 'axios';
+
+const operationTabList = [
+  {
+    key: '',
+    tab: <span>全部</span>,
+  },
+  {
+    key: '学习',
+    tab: <span>学习</span>,
+  },
+  {
+    key: '生活',
+    tab: <span>生活</span>,
+  },
+];
 
 const { Header, Content, Footer } = Layout;
 
@@ -21,15 +45,23 @@ const Home: NextPage = () => {
   const [postNum, setPostNum] = useState(1);
   const [postList, setPostList] = useState([]);
   const [page, setPage] = useState(1);
+  const [section, setsection] = useState('');
   useEffect(() => {
     const fetchPostList = async () => {
       try {
-        const res = await axios.get(
-          `${process.env.NEXT_PUBLIC_BASEURL}/content/list?page=${page - 1}`,
-          {
-            headers: { 'Content-Type': 'application/json' },
-          }
-        );
+        var url;
+        if (section == '') {
+          url = `${process.env.NEXT_PUBLIC_BASEURL}/content/list?page=${
+            page - 1
+          }`;
+        } else {
+          url = `${process.env.NEXT_PUBLIC_BASEURL}/content/list?page=${
+            page - 1
+          }&section=${section}`;
+        }
+        const res = await axios.get(url, {
+          headers: { 'Content-Type': 'application/json' },
+        });
         const postlist = res.data.list_page.post_page;
         setPostList(postlist);
         setPostNum(res.data.post_num);
@@ -42,7 +74,11 @@ const Home: NextPage = () => {
       }
     };
     fetchPostList();
-  }, [page, router]);
+  }, [page, router, section]);
+
+  const changesection = (value: string) => {
+    setsection(value);
+  };
 
   return (
     <Layout className='layout'>
@@ -51,13 +87,20 @@ const Home: NextPage = () => {
         <GlobalHeader />
       </Header>
       <Content style={{ padding: '0 50px' }}>
-        <Breadcrumb style={{ margin: '16px 0' }}>
-          <Breadcrumb.Item>分区1</Breadcrumb.Item>
-          <Breadcrumb.Item>分区2</Breadcrumb.Item>
-          <Breadcrumb.Item>分区3</Breadcrumb.Item>
-        </Breadcrumb>
-        <Card>
-          <PostList listData={postList} setPage={setPage} totalNum={postNum} />
+        <Card
+          style={{ margin: '16px 0' }}
+          bordered={false}
+          tabList={operationTabList}
+          activeTabKey={section}
+          onTabChange={changesection}
+        >
+          <Card>
+            <PostList
+              listData={postList}
+              totalNum={postNum}
+              setPage={setPage}
+            />
+          </Card>
         </Card>
       </Content>
       <Footer style={{ textAlign: 'center' }}>THUBurrow © 2021</Footer>

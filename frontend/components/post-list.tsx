@@ -37,10 +37,10 @@ const showtag = (value: Array<string>) => {
   return value.map(showtag1);
 };
 export default function PostList({ listData, setPage, totalNum }: Props) {
-  const initialchange1 = new Array(10).fill(false);
-  const initialchange2 = new Array(10).fill(false);
-  const initialnum1 = new Array(10).fill(0);
-  const initialnum2 = new Array(10).fill(0);
+  const initialchange1 = new Array(20).fill(false);
+  const initialchange2 = new Array(20).fill(false);
+  const initialnum1 = new Array(20).fill(0);
+  const initialnum2 = new Array(20).fill(0);
   const [changeLike, setChangeLike] = useState(initialchange1);
   const [changeCol, setChangeCol] = useState(initialchange2);
   const [likeNum, setLikeNum] = useState(initialnum1);
@@ -117,7 +117,7 @@ export default function PostList({ listData, setPage, totalNum }: Props) {
         onChange: (page) => {
           setPage(page);
         },
-        pageSize: 10,
+        pageSize: 20,
         showQuickJumper: true,
         showSizeChanger: false,
         total: totalNum,
