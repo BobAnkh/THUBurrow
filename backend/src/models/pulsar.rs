@@ -478,4 +478,35 @@ mod tests {
         assert_eq!(ref_into_data, target);
         assert_eq!(into_data, target);
     }
+
+    #[test]
+    fn test_to_pulsar() {
+        let post_id = &100;
+        let uid = 100000;
+        let burrow_id = &1;
+        assert_eq!(
+            RelationData::ActivateLike(*post_id).to_pulsar(uid),
+            PulsarRelationData::ActivateLike(uid, *post_id)
+        );
+        assert_eq!(
+            RelationData::DeactivateLike(*post_id).to_pulsar(uid),
+            PulsarRelationData::DeactivateLike(uid, *post_id)
+        );
+        assert_eq!(
+            RelationData::ActivateCollection(*post_id).to_pulsar(uid),
+            PulsarRelationData::ActivateCollection(uid, *post_id)
+        );
+        assert_eq!(
+            RelationData::DeactivateCollection(*post_id).to_pulsar(uid),
+            PulsarRelationData::DeactivateCollection(uid, *post_id)
+        );
+        assert_eq!(
+            RelationData::ActivateFollow(*burrow_id).to_pulsar(uid),
+            PulsarRelationData::ActivateFollow(uid, *burrow_id)
+        );
+        assert_eq!(
+            RelationData::DeactivateFollow(*burrow_id).to_pulsar(uid),
+            PulsarRelationData::DeactivateFollow(uid, *burrow_id)
+        );
+    }
 }

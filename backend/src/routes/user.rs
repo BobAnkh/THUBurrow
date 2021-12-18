@@ -118,7 +118,6 @@ pub async fn user_email_activate(
                     .arg(&email)
                     .query_async(kvdb_con.as_mut())
                     .await;
-                // let mut op_times;
                 let op_times = 1 + match get_redis_result {
                     Ok(opt_res) => match opt_res {
                         Some(res) => {
@@ -135,7 +134,6 @@ pub async fn user_email_activate(
                         );
                     }
                 };
-                // op_times += 1;
                 log::info!("[EMAIL-AC] op_times: {}", op_times);
                 if op_times > SEND_EMAIL_LIMIT {
                     return (
@@ -146,14 +144,6 @@ pub async fn user_email_activate(
                         ))),
                     );
                 }
-                // match email_send::post(email.clone(), 666666).await {
-                //     Ok(res) => {
-                //         println!("{}", res);
-                //     },
-                //     Err(e) => {
-                //         println!("{}", e);
-                //     },
-                // };
                 let msg = PulsarSendEmail::Sign { email };
                 match producer
                     .send("persistent://public/default/email", msg)
@@ -211,7 +201,6 @@ pub async fn user_reset_email(
                     .arg(&email)
                     .query_async(kvdb_con.as_mut())
                     .await;
-                // let mut op_times;
                 let op_times = 1 + match get_redis_result {
                     Ok(opt_res) => match opt_res {
                         Some(res) => {
@@ -673,6 +662,7 @@ pub async fn user_change_password(
             ))),
         );
     }
+    let mut hash_sha3 = Sha3::sha3_256();
     hash_sha3.input_str(&(salt + user.new_password));
     let new_password = hash_sha3.result_str();
     let mut users: pgdb::user::ActiveModel = user_stored.into();

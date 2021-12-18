@@ -252,7 +252,7 @@ pub async fn send(user_email: String, verification_code: String) -> Result<Strin
             template_id: 22078,
             template_data: format!(
                 "{{\\\"operation\\\":\"{}\",\\\"code\\\":\"{}\"}}",
-                verification_code, operation
+                operation, verification_code
             ),
         },
         subject: "Verification Email".to_string(),
