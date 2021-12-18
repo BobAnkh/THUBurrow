@@ -327,6 +327,7 @@ fn test_reset() {
     assert_eq!(response.status(), Status::Ok);
     assert_eq!(response.into_string().unwrap(), "Success");
     h4.abort();
+    std::thread::sleep(std::time::Duration::from_secs(1));
 }
 
 #[test]
@@ -445,6 +446,7 @@ fn test_email() {
         )
     );
     h4.abort();
+    std::thread::sleep(std::time::Duration::from_secs(1));
 }
 
 #[test]
@@ -637,6 +639,7 @@ fn test_user() {
         ErrorResponse::build(ErrorCode::CredentialInvalid, "Wrong username or password.",)
     );
     h4.abort();
+    std::thread::sleep(std::time::Duration::from_secs(1));
 }
 
 #[test]
@@ -982,6 +985,7 @@ fn test_burrow() {
     h2.abort();
     h3.abort();
     h4.abort();
+    std::thread::sleep(std::time::Duration::from_secs(1));
 }
 
 #[test]
@@ -1747,6 +1751,7 @@ fn test_content() {
     h2.abort();
     h3.abort();
     h4.abort();
+    std::thread::sleep(std::time::Duration::from_secs(1));
 }
 
 #[test]
@@ -2007,6 +2012,7 @@ fn test_search() {
     h2.abort();
     h3.abort();
     h4.abort();
+    std::thread::sleep(std::time::Duration::from_secs(1));
 }
 
 #[test]
@@ -2152,4 +2158,5 @@ fn test_storage() {
     let res = response.into_bytes().unwrap();
     assert_eq!(res, png_buf);
     h4.abort();
+    std::thread::sleep(std::time::Duration::from_secs(1));
 }
