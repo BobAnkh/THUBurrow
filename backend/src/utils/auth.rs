@@ -1,21 +1,90 @@
-use crate::pool::RedisDb;
 use crypto::digest::Digest;
 use crypto::sha3::Sha3;
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
+use rocket::http::private::cookie::CookieBuilder;
 use rocket::http::{Cookie, SameSite, Status};
 use rocket::request::{self, FromRequest, Outcome, Request};
 use rocket::State;
+use std::iter;
 
+use crate::config::user::*;
+use crate::models::error::*;
+use crate::pool::RedisDb;
+
+/// Usage of Auth
+///
+/// # Example
+///
+/// ```ignore
+/// use rocket::Request;
+/// use rocket::{Build, Rocket};
+/// use crate::models::error::*;
+/// use crate::utils::auth::{self, Auth, ValidToken};
+/// pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
+///     rocket
+///         .mount(
+///             "/sample",
+///             routes![
+///                 auth_name,
+///                 auth_new,
+///             ],
+///         )
+///         .register(
+///             "/sample/auth/new",
+///             catchers![auth_new_bad_request, auth_new_unauthorized],
+///         )
+/// }
+///
+/// #[get("/auth/<name>")]
+/// async fn auth_name(auth: Result<Auth, ErrorResponse>, name: &str) -> String {
+///     if let Err(e) = auth {
+///         return format!("{:?}", e);
+///     }
+///     format!("Hello, {}!", name)
+/// }
+///
+/// #[get("/auth/new/<name>")]
+/// async fn auth_new(auth: Auth, name: &str) -> String {
+///     format!("Hello, {}, your id is {}!", name, auth.id)
+/// }
+///
+/// #[catch(400)]
+/// async fn auth_new_bad_request(request: &Request<'_>) -> String {
+///     let user_result = request
+///         .local_cache_async(async { auth::auth_token(request).await })
+///         .await;
+///     match user_result {
+///         Some(e) => match e {
+///             ValidToken::Invalid => "Invalid token".to_string(),
+///             ValidToken::Missing => "Missing token".to_string(),
+///             ValidToken::DatabaseErr => "DatabaseErr token".to_string(),
+///             ValidToken::Valid(id) => format!("User Id found: {}", id),
+///             ValidToken::Refresh(id) => format!("User Id found: {}", id),
+///         },
+///         None => "Valid token".to_string(),
+///     }
+/// }
+///
+/// #[catch(401)]
+/// async fn auth_new_unauthorized(request: &Request<'_>) -> String {
+///     let user_result = request
+///         .local_cache_async(async { auth::auth_token(request).await })
+///         .await;
+///     match user_result {
+///         Some(e) => match e {
+///             ValidToken::Invalid => "Invalid token".to_string(),
+///             ValidToken::Missing => "Missing token".to_string(),
+///             ValidToken::DatabaseErr => "DatabaseErr token".to_string(),
+///             ValidToken::Valid(id) => format!("User Id found: {}", id),
+///             ValidToken::Refresh(id) => format!("User Id found: {}", id),
+///         },
+///         None => "Valid token".to_string(),
+///     }
+/// }
+/// ```
 pub struct Auth {
     pub id: i64,
-}
-
-#[derive(Debug)]
-pub enum AuthTokenError {
-    Missing,
-    Invalid,
-    DatabaseErr,
 }
 
 pub enum ValidToken {
@@ -24,6 +93,135 @@ pub enum ValidToken {
     Invalid,
     DatabaseErr,
     Missing,
+}
+
+pub async fn set_token(
+    uid: i64,
+    kv_conn: &mut redis::aio::Connection,
+) -> Result<String, ErrorResponse> {
+    // generate token and refresh token
+    let token: String = iter::repeat(())
+        .map(|()| thread_rng().sample(Alphanumeric))
+        .map(char::from)
+        .take(32)
+        .collect();
+    let mut hash_sha3 = Sha3::sha3_384();
+    hash_sha3.input_str(&token);
+    let refresh_token = hash_sha3.result_str();
+    // set token -> id
+    let uid_result: Result<String, redis::RedisError> = redis::cmd("SETEX")
+        .arg(&token)
+        .arg(TOKEN_TO_ID_EX)
+        .arg(uid)
+        .query_async(kv_conn)
+        .await;
+    match uid_result {
+        Ok(s) => info!("[LOGIN] setex token->id: {:?} -> {}", &token, s),
+        Err(e) => {
+            error!(
+                "[LOGIN] failed to set token -> id when login. RedisError: {:?}",
+                e
+            );
+            return Err(ErrorResponse::default());
+        }
+    };
+    // set refresh_token -> id
+    let uid_result: Result<String, redis::RedisError> = redis::cmd("SETEX")
+        .arg(&refresh_token)
+        .arg(REF_TOKEN_TO_ID_EX)
+        .arg(uid)
+        .query_async(kv_conn)
+        .await;
+    match uid_result {
+        Ok(s) => info!(
+            "[LOGIN] setex refresh_token->id: {:?} -> {}",
+            &refresh_token, s
+        ),
+        Err(e) => {
+            error!(
+                "[LOGIN] failed to set refresh_token -> id when login. RedisError: {:?}",
+                e
+            );
+            return Err(ErrorResponse::default());
+        }
+    };
+    // get old token and set new token by getset id -> token
+    let old_token_get: Result<Option<String>, redis::RedisError> =
+        redis::cmd("GET").arg(uid).query_async(kv_conn).await;
+    match old_token_get {
+        Ok(res) => match res {
+            // if old token -> id exists
+            Some(old_token) => {
+                info!("[LOGIN] find old token:{:?}, continue...", old_token);
+                // clear old token -> id
+                let delete_result: Result<i64, redis::RedisError> =
+                    redis::cmd("DEL").arg(&old_token).query_async(kv_conn).await;
+                match delete_result {
+                    Ok(1) => info!("[LOGIN] delete token->id"),
+                    Ok(0) => info!("[LOGIN] no token->id found"),
+                    Ok(_) => {
+                        error!("[LOGIN] failed to delete refresh_token -> id when login.");
+                        return Err(ErrorResponse::default());
+                    }
+                    Err(e) => {
+                        error!(
+                            "[LOGIN] failed to delete token -> id when login. RedisError: {:?}",
+                            e
+                        );
+                        return Err(ErrorResponse::default());
+                    }
+                };
+                // find old refresh_token by hashing old token
+                let mut hash_sha3 = Sha3::sha3_384();
+                hash_sha3.input_str(&old_token);
+                let old_refresh_token = hash_sha3.result_str();
+                // clear old refresh_token -> id
+                let delete_result: Result<i64, redis::RedisError> = redis::cmd("DEL")
+                    .arg(&old_refresh_token)
+                    .query_async(kv_conn)
+                    .await;
+                match delete_result {
+                    Ok(1) => info!("[LOGIN] delete ref_token->id"),
+                    Ok(0) => info!("[LOGIN] no ref_token->id found"),
+                    Ok(_) => {
+                        error!("[LOGIN] failed to delete refresh_token -> id when login.");
+                        return Err(ErrorResponse::default());
+                    }
+                    Err(e) => {
+                        error!("[LOGIN] failed to delete refresh_token -> id when login. RedisError: {:?}", e);
+                        return Err(ErrorResponse::default());
+                    }
+                };
+            }
+            None => info!("[LOGIN] no id -> token found"),
+        },
+        Err(e) => {
+            error!(
+                "[LOGIN] failed to get id -> token when login. RedisError: {:?}",
+                e
+            );
+            return Err(ErrorResponse::default());
+        }
+    };
+    let new_token_set: Result<String, redis::RedisError> = redis::cmd("SETEX")
+        .arg(uid)
+        .arg(ID_TO_TOKEN_EX)
+        .arg(&token)
+        .query_async(kv_conn)
+        .await;
+    match new_token_set {
+        Ok(_) => {
+            info!("[LOGIN] set id->token: {} -> {:?}", uid, token);
+            Ok(token)
+        }
+        Err(e) => {
+            error!(
+                "[LOGIN] failed to set id -> token when login. RedisError: {:?}",
+                e
+            );
+            Err(ErrorResponse::default())
+        }
+    }
 }
 
 async fn is_valid<'r>(
@@ -111,14 +309,8 @@ async fn is_valid<'r>(
                             match refresh_set {
                                 Ok(_) => {
                                     // set cookie to the new token
-                                    let cookie = Cookie::build("token", new_token)
-                                        .domain(".thuburrow.com")
-                                        .path("/")
-                                        .same_site(SameSite::Strict)
-                                        .secure(true)
-                                        .http_only(true)
-                                        .max_age(time::Duration::weeks(1))
-                                        .finish();
+                                    let cookie =
+                                        Cookie::build("token", new_token).cookie_options().finish();
                                     request.cookies().add_private(cookie);
                                     info!("[SSO] set new_token -> id");
                                 }
@@ -176,7 +368,7 @@ pub async fn auth_token<'r>(request: &'r Request<'_>) -> Option<ValidToken> {
 
 #[rocket::async_trait]
 impl<'r> FromRequest<'r> for Auth {
-    type Error = AuthTokenError;
+    type Error = ErrorResponse;
 
     async fn from_request(request: &'r Request<'_>) -> request::Outcome<Self, Self::Error> {
         let auth_result = request
@@ -184,19 +376,46 @@ impl<'r> FromRequest<'r> for Auth {
             .await;
         match auth_result {
             Some(msg) => match msg {
-                ValidToken::Missing => {
-                    Outcome::Failure((Status::Unauthorized, AuthTokenError::Missing))
-                }
-                ValidToken::Invalid => {
-                    Outcome::Failure((Status::Unauthorized, AuthTokenError::Invalid))
-                }
-                ValidToken::DatabaseErr => {
-                    Outcome::Failure((Status::InternalServerError, AuthTokenError::DatabaseErr))
-                }
+                ValidToken::Missing => Outcome::Failure((
+                    Status::Unauthorized,
+                    ErrorResponse::build(
+                        ErrorCode::AuthTokenMissing,
+                        "Authentication token is missing.",
+                    ),
+                )),
+                ValidToken::Invalid => Outcome::Failure((
+                    Status::Unauthorized,
+                    ErrorResponse::build(
+                        ErrorCode::AuthTokenInvalid,
+                        "Authentication token is invalid.",
+                    ),
+                )),
+                ValidToken::DatabaseErr => Outcome::Failure((
+                    Status::InternalServerError,
+                    ErrorResponse::build(ErrorCode::DatabaseErr, ""),
+                )),
                 ValidToken::Refresh(id) => Outcome::Success(Auth { id: *id }),
                 ValidToken::Valid(id) => Outcome::Success(Auth { id: *id }),
             },
-            None => Outcome::Failure((Status::InternalServerError, AuthTokenError::DatabaseErr)),
+            None => Outcome::Failure((
+                Status::InternalServerError,
+                ErrorResponse::build(ErrorCode::DatabaseErr, ""),
+            )),
         }
+    }
+}
+
+pub trait CookieOptions {
+    fn cookie_options(self) -> Self;
+}
+
+impl CookieOptions for CookieBuilder<'_> {
+    fn cookie_options(self) -> Self {
+        self.domain(".thuburrow.com")
+            .path("/")
+            .same_site(SameSite::Strict)
+            .secure(true)
+            .http_only(true)
+            .max_age(time::Duration::weeks(1))
     }
 }
