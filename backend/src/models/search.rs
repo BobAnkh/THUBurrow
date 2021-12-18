@@ -3,8 +3,6 @@ use serde::{Deserialize, Serialize};
 
 use super::content::PostSection;
 use super::pulsar::*;
-use chrono::FixedOffset;
-use chrono::Utc;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct TypesenseBurrowData {
@@ -337,6 +335,8 @@ impl From<&SearchMixResult> for SearchMixResponse {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use chrono::FixedOffset;
+    use chrono::Utc;
 
     #[test]
     fn testfrom_searchburrowresponse() {
@@ -465,6 +465,7 @@ mod tests {
         assert_eq!(data_to_res, srresponse);
         assert_eq!(data_to_res2, srresponse);
     }
+
     #[test]
     fn testfrom_srgresponse() {
         let now = Utc::now().with_timezone(&FixedOffset::east(8 * 3600));
@@ -506,6 +507,7 @@ mod tests {
         assert_eq!(srghit_to_srgres, srgresponse);
         assert_eq!(srghit_to_srgres2, srgresponse);
     }
+
     #[test]
     fn testfrom_smresponse() {
         let now = Utc::now().with_timezone(&FixedOffset::east(8 * 3600));
