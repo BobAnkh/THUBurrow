@@ -111,7 +111,6 @@ const Burrow: NextPage = () => {
       description: { descriptionTemp },
     };
     try {
-      console.log(data);
       const res = await axios.post(
         `${process.env.NEXT_PUBLIC_BASEURL}/${bid}`,
         data
