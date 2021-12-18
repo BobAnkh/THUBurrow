@@ -1,0 +1,101 @@
+version: '3'
+
+services:
+
+  pgdb:
+    image: postgres
+    container_name: postgres-container
+    restart: unless-stopped
+    expose:
+      - "5432"
+    volumes:
+      - ./data/pg-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: ${PG_PASSWORD:-postgres}
+      POSTGRES_DB: ${PG_DB:-pgdb}
+    networks:
+      innerdb:
+        aliases:
+          - pgdb
+
+  keydb:
+    image: eqalpha/keydb:latest
+    container_name: keydb-container
+    restart: unless-stopped
+    privileged: true
+    expose:
+      - "6379"
+    volumes:
+      - ./conf/keydb_conf/keydb.conf:/etc/keydb/keydb.conf
+      - ./data/keydb-data:/data
+    command: keydb-server --requirepass ${KEYDB_PASSWORD:-keypassword}
+    networks:
+      innerdb:
+        aliases:
+          - keydb
+
+  pulsar:
+    image: apachepulsar/pulsar:2.8.1
+    container_name: pulsar-container
+    restart: unless-stopped
+    expose:
+      - "8080"
+      - "6650"
+    volumes:
+      - ./data/pulsardata:/pulsar/data
+    # - ./conf/pulsarconf:/pulsar/conf
+    command: bin/pulsar standalone
+    networks:
+      messagequeue:
+        aliases:
+          - pulsar
+
+  minio:
+    image: quay.io/minio/minio
+    container_name: minio-container
+    restart: unless-stopped
+    expose:
+      - "9000"
+      - "9001"
+    volumes:
+      - ./data/minio-data:/data
+    environment:
+      MINIO_ROOT_USER: ${MINIO_USER:-minio}
+      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD:-miniopassword}
+    command: server /data --console-address ":9001"
+    networks:
+      miniostorage:
+        aliases:
+          - minio
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  typesense:
+    image: typesense/typesense:0.21.0
+    container_name: typesense-container
+    restart: unless-stopped
+    expose:
+      - "8108"
+    volumes:
+      - ./data/typesense-data:/data
+    environment:
+      TYPESENSE_API_KEY: ${TYPESENSE_API_KEY:-8Dz4jRrsBjYgdCD/VGP1bleph7oBThJr5IcF43l0U24=}
+      TYPESENSE_DATA_DIR: "/data"
+    networks:
+      messagequeue:
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8108/health"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+networks:
+  innerdb:
+    name: innerdb
+  messagequeue:
+    name: messagequeue
+  miniostorage:
+    name: miniostorage

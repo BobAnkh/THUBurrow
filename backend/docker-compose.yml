@@ -4,21 +4,16 @@ services:
 
   backend:
     build: .
-    image: backend:latest
-    container_name: backend_container
+    image: bobankh/thuburrow:${BG_VERSION:-latest}
+    container_name: backend-container-${BG_VERSION:-latest}
     restart: unless-stopped
-    depends_on:
-      - pgdb
-      - keydb
-      - minio
-      - typesense
+    # depends_on:
+    #   - pgdb
+    #   - keydb
+    #   - minio
+    #   - typesense
     expose:
       - "8000"
-    networks:
-      innerdb:
-      proxy:
-      messagequeue:
-      miniostorage:
     volumes:
       - ./conf/log4rs.yml:/etc/backend/conf/log4rs.yml:ro
       - ./log:/log
@@ -27,100 +22,13 @@ services:
       ROCKET_SECRET_KEY: ${ROCKET_SECRET_KEY}
       ROCKET_ADDRESS: "0.0.0.0"
       VIRTUAL_HOST: ${BACKEND_HOST}
+    networks:
+      innerdb:
+      proxy:
+      messagequeue:
+      miniostorage:
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 20s
-      retries: 3
-
-  pgdb:
-    image: postgres
-    container_name: postgres_container
-    restart: unless-stopped
-    environment:
-      POSTGRES_PASSWORD: ${PG_PASSWORD:-postgres}
-      POSTGRES_DB: ${PG_DB:-pgdb}
-    volumes:
-      - ./data/pg-data:/var/lib/postgresql/data
-    expose:
-      - "5432"
-    networks:
-      innerdb:
-        aliases:
-          - pgdb
-
-  keydb:
-    image: eqalpha/keydb:latest
-    restart: unless-stopped
-    container_name: keydb_container
-    expose:
-      - "6379"
-    volumes:
-      - ./conf/keydb_conf/keydb.conf:/etc/keydb/keydb.conf
-      - ./data/keydb-data:/data
-    command: keydb-server --requirepass ${KEYDB_PASSWORD:-keypassword}
-    privileged: true
-    networks:
-      innerdb:
-        aliases:
-          - keydb
-
-  pulsar:
-    image: apachepulsar/pulsar:2.8.1
-    container_name: pulsar_container
-    command: bin/pulsar standalone
-    expose:
-      - "8080"
-      - "6650"
-    restart: unless-stopped
-    volumes:
-      - ./data/pulsardata:/pulsar/data
-    # - ./conf/pulsarconf:/pulsar/conf
-    networks:
-      messagequeue:
-        aliases:
-          - pulsar
-
-  minio:
-    image: quay.io/minio/minio
-    restart: unless-stopped
-    container_name: minio_container
-    expose:
-      - "9000"
-      - "9001"
-    volumes:
-      - ./data/minio-data:/data
-    networks:
-      miniostorage:
-        aliases:
-          - minio
-    environment:
-      MINIO_ROOT_USER: ${MINIO_USER:-minio}
-      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD:-miniopassword}
-    command: server /data --console-address ":9001"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-      interval: 30s
-      timeout: 20s
-      retries: 3
-
-  typesense:
-    image: typesense/typesense:0.21.0
-    container_name: typesense_container
-    restart: unless-stopped
-    environment:
-      TYPESENSE_API_KEY: ${TYPESENSE_API_KEY:-8Dz4jRrsBjYgdCD/VGP1bleph7oBThJr5IcF43l0U24=}
-      TYPESENSE_DATA_DIR: "/data"
-    depends_on:
-      - pulsar
-    expose:
-      - "8108"
-    volumes:
-      - ./data/typesense-data:/data
-    networks:
-      messagequeue:
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8108/health"]
       interval: 30s
       timeout: 20s
       retries: 3
@@ -128,10 +36,13 @@ services:
 networks:
   innerdb:
     name: innerdb
+    external: true
   messagequeue:
     name: messagequeue
+    external: true
   miniostorage:
     name: miniostorage
+    external: true
   proxy:
     name: proxy
     external: true

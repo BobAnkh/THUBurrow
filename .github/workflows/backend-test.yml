@@ -8,6 +8,8 @@ on:
       - backend
   pull_request:
       types: [ready_for_review, opened, synchronize, reopened]
+      paths:
+        - '**.rs'
   workflow_dispatch:
 
 jobs:
