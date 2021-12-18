@@ -38,6 +38,10 @@ pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
             get_burrow,
             user_relation,
             get_user_valid_burrow,
+            user_email_activate,
+            user_reset,
+            user_reset_email,
+            user_change_password,
         ],
     )
 }
@@ -78,10 +82,12 @@ pub async fn user_relation(
 #[post("/email", data = "<email_info>", format = "json")]
 pub async fn user_email_activate(
     db: Connection<PgDb>,
+    kvdb: Connection<RedisDb>,
     email_info: Json<UserEmail>,
     mut producer: Connection<PulsarSearchProducerMq>,
 ) -> (Status, Result<String, Json<ErrorResponse>>) {
     let pg_con = db.into_inner();
+    let mut kvdb_con = kvdb.into_inner();
     let email = email_info.into_inner().email;
     if !email::check_email_syntax(&email) {
         return (
@@ -108,14 +114,44 @@ pub async fn user_email_activate(
                     ))),
                 )
             } else {
-                let msg = PulsarSendEmail { email };
+                let get_redis_result: Result<Option<String>, redis::RedisError> = redis::cmd("GET")
+                    .arg(&email)
+                    .query_async(kvdb_con.as_mut())
+                    .await;
+                let op_times = 1 + match get_redis_result {
+                    Ok(opt_res) => match opt_res {
+                        Some(res) => {
+                            let values: Vec<&str> = res.split(':').collect();
+                            values[0].parse::<usize>().unwrap()
+                        }
+                        None => 0,
+                    },
+                    Err(e) => {
+                        log::error!("[EMAIL-AC] Database Error: {:?}", e);
+                        return (
+                            Status::InternalServerError,
+                            Err(Json(ErrorResponse::default())),
+                        );
+                    }
+                };
+                log::info!("[EMAIL-AC] op_times: {}", op_times);
+                if op_times > SEND_EMAIL_LIMIT {
+                    return (
+                        Status::TooManyRequests,
+                        Err(Json(ErrorResponse::build(
+                            ErrorCode::RateLimit,
+                            "Request Send-Email too many times",
+                        ))),
+                    );
+                }
+                let msg = PulsarSendEmail::Sign { email };
                 match producer
                     .send("persistent://public/default/email", msg)
                     .await
                 {
                     Ok(_) => (Status::Ok, Ok("Success".to_string())),
                     Err(e) => {
-                        log::error!("[SEND-EMAIL] Database error: {:?}", e);
+                        log::error!("[EMAIL-AC] Database error: {:?}", e);
                         (
                             Status::InternalServerError,
                             Err(Json(ErrorResponse::default())),
@@ -125,7 +161,98 @@ pub async fn user_email_activate(
             }
         }
         Err(e) => {
-            log::error!("[SIGN-UP] Database Error: {:?}", e);
+            log::error!("[EMAIL-AC] Database Error: {:?}", e);
+            (
+                Status::InternalServerError,
+                Err(Json(ErrorResponse::default())),
+            )
+        }
+    }
+}
+
+#[post("/reset/email", data = "<email_info>", format = "json")]
+pub async fn user_reset_email(
+    db: Connection<PgDb>,
+    kvdb: Connection<RedisDb>,
+    email_info: Json<UserEmail>,
+    mut producer: Connection<PulsarSearchProducerMq>,
+) -> (Status, Result<String, Json<ErrorResponse>>) {
+    let pg_con = db.into_inner();
+    let mut kvdb_con = kvdb.into_inner();
+    let email = email_info.into_inner().email;
+    if !email::check_email_syntax(&email) {
+        return (
+            Status::BadRequest,
+            Err(Json(ErrorResponse::build(
+                ErrorCode::EmailInvalid,
+                "Invalid Email address",
+            ))),
+        );
+    }
+    // check if email address is exist, add corresponding error if so
+    match User::find()
+        .filter(pgdb::user::Column::Email.eq(email.clone()))
+        .one(&pg_con)
+        .await
+    {
+        Ok(res) => {
+            if res.is_some() {
+                let get_redis_result: Result<Option<String>, redis::RedisError> = redis::cmd("GET")
+                    .arg(&email)
+                    .query_async(kvdb_con.as_mut())
+                    .await;
+                let op_times = 1 + match get_redis_result {
+                    Ok(opt_res) => match opt_res {
+                        Some(res) => {
+                            let values: Vec<&str> = res.split(':').collect();
+                            values[0].parse::<usize>().unwrap()
+                        }
+                        None => 0,
+                    },
+                    Err(e) => {
+                        log::error!("[EMAIL-RESET] Database Error: {:?}", e);
+                        return (
+                            Status::InternalServerError,
+                            Err(Json(ErrorResponse::default())),
+                        );
+                    }
+                };
+                log::info!("[EMAIL-RESET] op_times: {}", op_times);
+                if op_times > SEND_EMAIL_LIMIT {
+                    return (
+                        Status::TooManyRequests,
+                        Err(Json(ErrorResponse::build(
+                            ErrorCode::RateLimit,
+                            "Request Send-Email too many times",
+                        ))),
+                    );
+                }
+                let msg = PulsarSendEmail::Reset { email };
+                match producer
+                    .send("persistent://public/default/email", msg)
+                    .await
+                {
+                    Ok(_) => (Status::Ok, Ok("Success".to_string())),
+                    Err(e) => {
+                        log::error!("[EMAIL-RESET] Database error: {:?}", e);
+                        (
+                            Status::InternalServerError,
+                            Err(Json(ErrorResponse::default())),
+                        )
+                    }
+                }
+            } else {
+                (
+                    Status::BadRequest,
+                    Err(Json(ErrorResponse::build(
+                        ErrorCode::EmailInvalid,
+                        "This Email address hasn't been signed up.",
+                    ))),
+                )
+            }
+        }
+        Err(e) => {
+            log::error!("[EMAIL-RESET] Database Error: {:?}", e);
             (
                 Status::InternalServerError,
                 Err(Json(ErrorResponse::default())),
@@ -137,9 +264,11 @@ pub async fn user_email_activate(
 #[post("/sign-up", data = "<user_info>", format = "json")]
 pub async fn user_sign_up(
     db: Connection<PgDb>,
+    kvdb: Connection<RedisDb>,
     user_info: Json<UserInfo<'_>>,
 ) -> (Status, Result<Json<UserResponse>, Json<ErrorResponse>>) {
     let pg_con = db.into_inner();
+    let mut kvdb_con = kvdb.into_inner();
     // get user info from request
     let user = user_info.into_inner();
     // check if email address is valid, add corresponding error if so
@@ -210,6 +339,70 @@ pub async fn user_sign_up(
                 );
             }
         }
+        // check if verification code is correct, return corresponding error if so
+        let get_redis_result: Result<Option<String>, redis::RedisError> = redis::cmd("GET")
+            .arg(&user.email)
+            .query_async(kvdb_con.as_mut())
+            .await;
+        match get_redis_result {
+            Ok(res) => match res {
+                Some(s) => {
+                    let values: Vec<&str> = s.split(':').collect();
+                    let code = values[1];
+                    if !user.verification_code.eq(code) {
+                        return (
+                            Status::BadRequest,
+                            Err(Json(ErrorResponse::build(
+                                ErrorCode::CredentialInvalid,
+                                "Invalid verification code",
+                            ))),
+                        );
+                    } else {
+                        let delete_result: Result<i64, redis::RedisError> = redis::cmd("DEL")
+                            .arg(&user.email)
+                            .query_async(kvdb_con.as_mut())
+                            .await;
+                        match delete_result {
+                            Ok(1) => {
+                                log::info!("[SIGN-UP] delete email -> rate:code success");
+                            }
+                            Ok(_) => {
+                                log::error!(
+                                    "[SIGN-UP] delete zero or more than one email -> rate:code"
+                                );
+                                return (
+                                    Status::InternalServerError,
+                                    Err(Json(ErrorResponse::default())),
+                                );
+                            }
+                            Err(e) => {
+                                log::error!("[SIGN-UP] Database Error: {:?}", e);
+                                return (
+                                    Status::InternalServerError,
+                                    Err(Json(ErrorResponse::default())),
+                                );
+                            }
+                        }
+                    }
+                }
+                None => {
+                    return (
+                        Status::BadRequest,
+                        Err(Json(ErrorResponse::build(
+                            ErrorCode::CredentialInvalid,
+                            "Invalid verification code",
+                        ))),
+                    )
+                }
+            },
+            Err(e) => {
+                log::error!("[SIGN-UP] Database Error: {:?}", e);
+                return (
+                    Status::InternalServerError,
+                    Err(Json(ErrorResponse::default())),
+                );
+            }
+        };
 
         // generate salt
         let salt = gen_salt().await;
@@ -271,6 +464,233 @@ pub async fn user_sign_up(
     }
 }
 
+#[post("/reset", data = "<user_info>", format = "json")]
+pub async fn user_reset(
+    db: Connection<PgDb>,
+    kvdb: Connection<RedisDb>,
+    cookies: &CookieJar<'_>,
+    user_info: Json<UserResetInfo<'_>>,
+) -> (Status, Result<String, Json<ErrorResponse>>) {
+    let pg_con = db.into_inner();
+    let mut kv_conn = kvdb.into_inner();
+    // get user info from request
+    let user = user_info.into_inner();
+    // check if email address is valid, add corresponding error if so
+    if !email::check_email_syntax(user.email) {
+        (
+            Status::BadRequest,
+            Err(Json(ErrorResponse::build(
+                ErrorCode::EmailInvalid,
+                "Invalid Email address.",
+            ))),
+        )
+    } else {
+        // check if email address is in use
+        let user_stored = match User::find()
+            .filter(pgdb::user::Column::Email.eq(user.email))
+            .one(&pg_con)
+            .await
+        {
+            Ok(res) => match res {
+                None => {
+                    return (
+                        Status::BadRequest,
+                        Err(Json(ErrorResponse::build(
+                            ErrorCode::EmailInvalid,
+                            "This Email address hasn't been signed up.",
+                        ))),
+                    );
+                }
+                Some(u) => u,
+            },
+            Err(e) => {
+                log::error!("[RESET] Database Error: {:?}", e);
+                return (
+                    Status::InternalServerError,
+                    Err(Json(ErrorResponse::default())),
+                );
+            }
+        };
+        // check if verification code is correct, return corresponding error if so
+        let get_redis_result: Result<Option<String>, redis::RedisError> = redis::cmd("GET")
+            .arg(&user.email)
+            .query_async(kv_conn.as_mut())
+            .await;
+        match get_redis_result {
+            Ok(res) => match res {
+                Some(s) => {
+                    let values: Vec<&str> = s.split(':').collect();
+                    let code = values[1];
+                    if !user.verification_code.eq(code) {
+                        return (
+                            Status::BadRequest,
+                            Err(Json(ErrorResponse::build(
+                                ErrorCode::CredentialInvalid,
+                                "Invalid verification code",
+                            ))),
+                        );
+                    } else {
+                        let delete_result: Result<i64, redis::RedisError> = redis::cmd("DEL")
+                            .arg(&user.email)
+                            .query_async(kv_conn.as_mut())
+                            .await;
+                        match delete_result {
+                            Ok(1) => {
+                                log::info!("[RESET] delete email -> rate:code success");
+                            }
+                            Ok(_) => {
+                                log::error!(
+                                    "[RESET] delete zero or more than one email -> rate:code"
+                                );
+                                return (
+                                    Status::InternalServerError,
+                                    Err(Json(ErrorResponse::default())),
+                                );
+                            }
+                            Err(e) => {
+                                log::error!("[RESET] Database Error: {:?}", e);
+                                return (
+                                    Status::InternalServerError,
+                                    Err(Json(ErrorResponse::default())),
+                                );
+                            }
+                        }
+                    }
+                }
+                None => {
+                    return (
+                        Status::BadRequest,
+                        Err(Json(ErrorResponse::build(
+                            ErrorCode::CredentialInvalid,
+                            "Invalid verification code",
+                        ))),
+                    )
+                }
+            },
+            Err(e) => {
+                log::error!("[RESET] Database Error: {:?}", e);
+                return (
+                    Status::InternalServerError,
+                    Err(Json(ErrorResponse::default())),
+                );
+            }
+        };
+
+        // get salt
+        let salt = user_stored.salt.clone();
+        let uid = user_stored.uid;
+        // encrypt password
+        let mut hash_sha3 = Sha3::sha3_256();
+        hash_sha3.input_str(&(salt + user.password));
+        let password = hash_sha3.result_str();
+        let mut users: pgdb::user::ActiveModel = user_stored.into();
+        users.password = Set(password);
+        // insert rows in database
+        match users.update(&pg_con).await {
+            Ok(_) => {
+                let token = match crate::utils::auth::set_token(uid, kv_conn.as_mut()).await {
+                    Ok(t) => t,
+                    Err(e) => return (Status::InternalServerError, Err(Json(e))),
+                };
+                // build cookie
+                let cookie = Cookie::build("token", token).cookie_options().finish();
+                // set cookie
+                cookies.add_private(cookie);
+                info!("[RESET] User login complete.");
+                (Status::Ok, Ok("Success".to_string()))
+            }
+            Err(e) => {
+                error!("[RESET] Database error: {:?}", e);
+                (
+                    Status::InternalServerError,
+                    Err(Json(ErrorResponse::default())),
+                )
+            }
+        }
+    }
+}
+
+#[post("/change", data = "<user_info>", format = "json")]
+pub async fn user_change_password(
+    auth: Auth,
+    db: Connection<PgDb>,
+    kvdb: Connection<RedisDb>,
+    cookies: &CookieJar<'_>,
+    user_info: Json<UserChangePassword<'_>>,
+) -> (Status, Result<String, Json<ErrorResponse>>) {
+    let pg_con = db.into_inner();
+    let mut kv_conn = kvdb.into_inner();
+    // get user info from request
+    let user = user_info.into_inner();
+    // check if email address is valid, add corresponding error if so
+    // check if email address is in use
+    let user_stored = match User::find_by_id(auth.id).one(&pg_con).await {
+        Ok(res) => match res {
+            None => {
+                return (
+                    Status::BadRequest,
+                    Err(Json(ErrorResponse::build(
+                        ErrorCode::UserNotExist,
+                        "User not exist.",
+                    ))),
+                );
+            }
+            Some(u) => u,
+        },
+        Err(e) => {
+            log::error!("[RESET] Database Error: {:?}", e);
+            return (
+                Status::InternalServerError,
+                Err(Json(ErrorResponse::default())),
+            );
+        }
+    };
+    // get salt
+    let salt = user_stored.salt.clone();
+    let uid = user_stored.uid;
+    let old_password = user_stored.password.clone();
+    // encrypt password
+    let mut hash_sha3 = Sha3::sha3_256();
+    hash_sha3.input_str(&(salt.clone() + user.password));
+    let password = hash_sha3.result_str();
+    if password != old_password {
+        return (
+            Status::BadRequest,
+            Err(Json(ErrorResponse::build(
+                ErrorCode::CredentialInvalid,
+                "Wrong password.",
+            ))),
+        );
+    }
+    let mut hash_sha3 = Sha3::sha3_256();
+    hash_sha3.input_str(&(salt + user.new_password));
+    let new_password = hash_sha3.result_str();
+    let mut users: pgdb::user::ActiveModel = user_stored.into();
+    users.password = Set(new_password);
+    // insert rows in database
+    match users.update(&pg_con).await {
+        Ok(_) => {
+            let token = match crate::utils::auth::set_token(uid, kv_conn.as_mut()).await {
+                Ok(t) => t,
+                Err(e) => return (Status::InternalServerError, Err(Json(e))),
+            };
+            // build cookie
+            let cookie = Cookie::build("token", token).cookie_options().finish();
+            // set cookie
+            cookies.add_private(cookie);
+            info!("[RESET] User login complete.");
+            (Status::Ok, Ok("Success".to_string()))
+        }
+        Err(e) => {
+            error!("[RESET] Database error: {:?}", e);
+            (
+                Status::InternalServerError,
+                Err(Json(ErrorResponse::default())),
+            )
+        }
+    }
+}
+
 #[post("/login", data = "<user_info>", format = "json")]
 pub async fn user_log_in(
     db: Connection<PgDb>,
@@ -291,13 +711,13 @@ pub async fn user_log_in(
             Some(matched_user) => {
                 info!("[LOGIN] username exists, continue...");
                 let salt = matched_user.salt;
-                if salt.is_empty() {
-                    error!("[LOGIN] cannot find user's salt.");
-                    return (
-                        Status::InternalServerError,
-                        Err(Json(ErrorResponse::default())),
-                    );
-                }
+                // if salt.is_empty() {
+                //     error!("[LOGIN] cannot find user's salt.");
+                //     return (
+                //         Status::InternalServerError,
+                //         Err(Json(ErrorResponse::default())),
+                //     );
+                // }
                 // encrypt input password same as sign-up
                 let mut hash_sha3 = Sha3::sha3_256();
                 hash_sha3.input_str(&(salt + user.password));
@@ -305,138 +725,11 @@ pub async fn user_log_in(
                 // check if password is wrong, add corresponding error if so
                 if matched_user.password.eq(&password) {
                     info!("[LOGIN] password correct, continue...");
-                    // generate token and refresh token
-                    let token: String = iter::repeat(())
-                        .map(|()| thread_rng().sample(Alphanumeric))
-                        .map(char::from)
-                        .take(32)
-                        .collect();
-                    let mut hash_sha3 = Sha3::sha3_384();
-                    hash_sha3.input_str(&token);
-                    let refresh_token = hash_sha3.result_str();
-                    // set token -> id
-                    let uid_result: Result<String, redis::RedisError> = redis::cmd("SETEX")
-                        .arg(&token)
-                        .arg(4 * 3600i32)
-                        .arg(matched_user.uid)
-                        .query_async(con.as_mut())
-                        .await;
-                    match uid_result {
-                        Ok(s) => info!("[LOGIN] setex token->id: {:?} -> {}", &token, s),
-                        Err(e) => {
-                            error!(
-                                "[LOGIN] failed to set token -> id when login. RedisError: {:?}",
-                                e
-                            );
-                            return (
-                                Status::InternalServerError,
-                                Err(Json(ErrorResponse::default())),
-                            );
-                        }
-                    };
-                    // set refresh_token -> id
-                    let uid_result: Result<String, redis::RedisError> = redis::cmd("SETEX")
-                        .arg(&refresh_token)
-                        .arg(15 * 24 * 3600i32)
-                        .arg(matched_user.uid)
-                        .query_async(con.as_mut())
-                        .await;
-                    match uid_result {
-                        Ok(s) => info!(
-                            "[LOGIN] setex refresh_token->id: {:?} -> {}",
-                            &refresh_token, s
-                        ),
-                        Err(e) => {
-                            error!("[LOGIN] failed to set refresh_token -> id when login. RedisError: {:?}", e);
-                            return (
-                                Status::InternalServerError,
-                                Err(Json(ErrorResponse::default())),
-                            );
-                        }
-                    };
-                    // get old token and set new token by getset id -> token
-                    // TODO: add time limit to the key?
-                    let old_token_get: Result<Option<String>, redis::RedisError> =
-                        redis::cmd("GETSET")
-                            .arg(matched_user.uid)
-                            .arg(&token)
-                            .query_async(con.as_mut())
-                            .await;
-                    match old_token_get {
-                        Ok(res) => match res {
-                            // if old token -> id exists
-                            Some(old_token) => {
-                                info!("[LOGIN] find old token:{:?}, continue...", old_token);
-                                // clear old token -> id
-                                let delete_result: Result<i64, redis::RedisError> =
-                                    redis::cmd("DEL")
-                                        .arg(&old_token)
-                                        .query_async(con.as_mut())
-                                        .await;
-                                match delete_result {
-                                    Ok(1) => info!("[LOGIN] delete token->id"),
-                                    Ok(0) => info!("[LOGIN] no token->id found"),
-                                    Ok(_) => {
-                                        error!("[LOGIN] failed to delete refresh_token -> id when login.");
-                                        return (
-                                            Status::InternalServerError,
-                                            Err(Json(ErrorResponse::default())),
-                                        );
-                                    }
-                                    Err(e) => {
-                                        error!("[LOGIN] failed to delete token -> id when login. RedisError: {:?}", e);
-                                        return (
-                                            Status::InternalServerError,
-                                            Err(Json(ErrorResponse::default())),
-                                        );
-                                    }
-                                };
-                                // find old refresh_token by hashing old token
-                                let mut hash_sha3 = Sha3::sha3_384();
-                                hash_sha3.input_str(&old_token);
-                                let old_refresh_token = hash_sha3.result_str();
-                                // clear old refresh_token -> id
-                                let delete_result: Result<i64, redis::RedisError> =
-                                    redis::cmd("DEL")
-                                        .arg(&old_refresh_token)
-                                        .query_async(con.as_mut())
-                                        .await;
-                                match delete_result {
-                                    Ok(1) => info!("[LOGIN] delete ref_token->id"),
-                                    Ok(0) => info!("[LOGIN] no ref_token->id found"),
-                                    Ok(_) => {
-                                        error!("[LOGIN] failed to delete refresh_token -> id when login.");
-                                        return (
-                                            Status::InternalServerError,
-                                            Err(Json(ErrorResponse::default())),
-                                        );
-                                    }
-                                    Err(e) => {
-                                        error!("[LOGIN] failed to delete refresh_token -> id when login. RedisError: {:?}", e);
-                                        return (
-                                            Status::InternalServerError,
-                                            Err(Json(ErrorResponse::default())),
-                                        );
-                                    }
-                                };
-                                info!("[LOGIN] set id->token: {} -> {:?}", matched_user.uid, token);
-                            }
-                            None => {
-                                info!("[LOGIN] no id->token found");
-                                info!("[LOGIN] set id->token: {} -> {:?}", matched_user.uid, token);
-                            }
-                        },
-                        Err(e) => {
-                            error!(
-                                "[LOGIN] failed to set id -> token when login. RedisError: {:?}",
-                                e
-                            );
-                            return (
-                                Status::InternalServerError,
-                                Err(Json(ErrorResponse::default())),
-                            );
-                        }
-                    };
+                    let token =
+                        match crate::utils::auth::set_token(matched_user.uid, con.as_mut()).await {
+                            Ok(t) => t,
+                            Err(e) => return (Status::InternalServerError, Err(Json(e))),
+                        };
                     // build cookie
                     let cookie = Cookie::build("token", token).cookie_options().finish();
                     // set cookie

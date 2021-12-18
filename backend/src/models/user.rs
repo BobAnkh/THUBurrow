@@ -1,11 +1,9 @@
-// use std::convert::TryInto;
-
 use rocket::serde::{Deserialize, Serialize};
-// use sea_orm::{DatabaseConnection, EntityTrait, ColumnTrait, QueryFilter};
 use uuid::Uuid;
-
 // use crate::pgdb::{self, prelude::*};
 use super::{burrow::BurrowMetadata, content::Post};
+
+pub static SEND_EMAIL_LIMIT: usize = 3;
 
 #[derive(Serialize, Deserialize)]
 pub struct UserData {
@@ -18,7 +16,20 @@ pub struct UserInfo<'r> {
     pub username: &'r str,
     pub password: &'r str,
     pub email: &'r str,
-    pub verification_code: Option<&'r str>,
+    pub verification_code: &'r str,
+}
+
+#[derive(Deserialize)]
+pub struct UserResetInfo<'r> {
+    pub password: &'r str,
+    pub email: &'r str,
+    pub verification_code: &'r str,
+}
+
+#[derive(Deserialize)]
+pub struct UserChangePassword<'r> {
+    pub password: &'r str,
+    pub new_password: &'r str,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -49,7 +60,6 @@ pub struct UserGetFollowResponse {
     pub is_update: bool,
 }
 
-// #[derive(Serialize, Deserialize)]
 // pub struct UserGetFavResponse {
 //     pub post_id: i64,
 //     pub title: String,
