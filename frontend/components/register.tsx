@@ -27,7 +27,7 @@ type Iprops = {
   switchform: any;
 };
 
-const validate_password = /^(?![0-9]+$)(?![a-zA-Z]+$)[0-9A-Za-z-_]{6,20}$/;
+const validate_password = /^(\w){8,20}$/;
 
 export default function Register({ switchform }: Iprops) {
   const [userName, setUserName] = useState('');
@@ -154,9 +154,7 @@ export default function Register({ switchform }: Iprops) {
           <Form name='register' onFinish={onFinish}>
             <Form.Item
               name='username'
-              rules={[
-                { required: true, message: 'Please input your Username!' },
-              ]}
+              rules={[{ required: true, message: '请输入用户名!' }]}
               className={styles.formStyle}
             >
               <Row>
@@ -174,10 +172,10 @@ export default function Register({ switchform }: Iprops) {
             <Form.Item
               name='password'
               rules={[
-                { required: true, message: 'Please input your password!' },
+                { required: true, message: '请输入密码!' },
                 {
                   pattern: validate_password,
-                  message: '请输入字母和数字的6到20位组合',
+                  message: '请输入字母、数字和下划线的8到20位组合',
                 },
                 ({ getFieldValue }) => ({
                   validator(role, value) {
@@ -204,9 +202,7 @@ export default function Register({ switchform }: Iprops) {
             </Form.Item>
             <Form.Item
               name='password_confirm'
-              rules={[
-                { required: true, message: 'Please input your password!' },
-              ]}
+              rules={[{ required: true, message: '请确认密码!' }]}
               className={styles.formStyle}
             >
               <Row>
@@ -225,12 +221,11 @@ export default function Register({ switchform }: Iprops) {
               rules={[
                 {
                   required: true,
-                  message: 'Please input a valid email address!',
+                  message: '请填写有效邮箱地址!',
                 },
                 {
                   pattern: /^[0-9a-z-A-Z-]{1,}$/,
-                  message:
-                    "the address should only contains letters, numbers and '-'",
+                  message: "地址只能是字母，数字和'-'的组合",
                 },
               ]}
               className={styles.formStyle}
