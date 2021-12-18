@@ -27,7 +27,7 @@ appenders:
 root:
   level: warn
   appenders:
-    - stdout
+    # - stdout
     - file
 
 # loggers:

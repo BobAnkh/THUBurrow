@@ -1,19 +1,23 @@
+//! # Database Pool
+//!
+//! `pool` is a collection of `Database Connection Pool`s that can be used to perform
+//! operations on multiple databases, e.g. PostgreSQL, Redis, Pulsar, Typesense, Minio, etc.
+
 use deadpool::managed::{self, Manager, Object, PoolConfig, PoolError};
 use deadpool::Runtime;
+use pulsar::MultiTopicProducer;
 use pulsar::{message::proto, producer, Error as PulsarError, Pulsar, TokioExecutor};
 use reqwest;
 use rocket::State;
 use rocket_db_pools::{rocket::figment::Figment, Config, Database, Error, Pool};
-use s3::BucketConfiguration;
-use sea_orm::{DatabaseConnection, DbErr};
-
-use std::time::Duration;
-
 use s3::bucket::Bucket;
 use s3::creds::Credentials;
 use s3::region::Region;
+use s3::BucketConfiguration;
+use sea_orm::{DatabaseConnection, DbErr};
+use std::time::Duration;
 
-// redis for keydb
+/// Manager used for managing redis connection pool.
 pub trait DeadManager: Manager + Sized + Send + Sync + 'static {
     fn new(config: &Config) -> Result<Self, Self::Error>;
 }
@@ -24,6 +28,7 @@ impl DeadManager for deadpool_redis::Manager {
     }
 }
 
+/// Redis Connection Pool
 #[derive(Database)]
 #[database("keydb")]
 pub struct RedisDb(RedisPoolWrapper);
@@ -71,7 +76,7 @@ where
     }
 }
 
-// sql for postgres
+/// PostgreSQL Connection Pool
 #[derive(Database)]
 #[database("pgdb")]
 pub struct PgDb(SeaOrmPool);
@@ -98,47 +103,30 @@ impl Pool for SeaOrmPool {
     }
 }
 
-// pulsar
+/// Pulsar Connection Pool
 #[derive(Database)]
 #[database("pulsar-mq")]
-pub struct PulsarSearchProducerMq(PulsarSearchProducerPool);
+pub struct PulsarSearchProducerMq(PulsarProducerPool);
 
-pub struct PulsarSearchProducerPool {
+pub struct PulsarProducerPool {
     pub pulsar: Pulsar<TokioExecutor>,
 }
 
 #[rocket::async_trait]
-impl Pool for PulsarSearchProducerPool {
-    type Connection = Pulsar<TokioExecutor>;
+impl Pool for PulsarProducerPool {
+    type Connection = MultiTopicProducer<TokioExecutor>;
     type Error = PulsarError;
 
     async fn init(figment: &Figment) -> Result<Self, Self::Error> {
         let config: Config = figment.extract().unwrap();
         let pulsar = Pulsar::builder(&config.url, TokioExecutor).build().await?;
-        Ok(PulsarSearchProducerPool { pulsar })
+        Ok(PulsarProducerPool { pulsar })
     }
 
     async fn get(&self) -> Result<Self::Connection, Self::Error> {
-        Ok(self.pulsar.clone())
-    }
-}
-
-#[rocket::async_trait]
-pub trait RocketPulsarProducer {
-    async fn get_producer(
-        &self,
-        topic: &str,
-    ) -> Result<producer::Producer<TokioExecutor>, PulsarError>;
-}
-
-#[rocket::async_trait]
-impl RocketPulsarProducer for Pulsar<TokioExecutor> {
-    async fn get_producer(
-        &self,
-        topic: &str,
-    ) -> Result<producer::Producer<TokioExecutor>, PulsarError> {
-        self.producer()
-            .with_topic(topic)
+        Ok(self
+            .pulsar
+            .producer()
             .with_options(producer::ProducerOptions {
                 schema: Some(proto::Schema {
                     r#type: proto::schema::Type::String as i32,
@@ -146,11 +134,39 @@ impl RocketPulsarProducer for Pulsar<TokioExecutor> {
                 }),
                 ..Default::default()
             })
-            .build()
-            .await
+            .build_multi_topic())
     }
 }
 
+// #[rocket::async_trait]
+// pub trait RocketPulsarProducer {
+//     async fn get_producer(
+//         &self,
+//         topic: &str,
+//     ) -> Result<producer::Producer<TokioExecutor>, PulsarError>;
+// }
+
+// #[rocket::async_trait]
+// impl RocketPulsarProducer for Pulsar<TokioExecutor> {
+//     async fn get_producer(
+//         &self,
+//         topic: &str,
+//     ) -> Result<producer::Producer<TokioExecutor>, PulsarError> {
+//         self.producer()
+//             .with_topic(topic)
+//             .with_options(producer::ProducerOptions {
+//                 schema: Some(proto::Schema {
+//                     r#type: proto::schema::Type::String as i32,
+//                     ..Default::default()
+//                 }),
+//                 ..Default::default()
+//             })
+//             .build()
+//             .await
+//     }
+// }
+
+/// Minio Connection Pool
 #[derive(Database)]
 #[database("minio")]
 pub struct MinioImageStorage(MinioImagePool);
@@ -222,7 +238,7 @@ impl Pool for MinioImagePool {
     }
 }
 
-// typesense
+/// Typesense Connection Pool
 #[derive(Database)]
 #[database("search")]
 pub struct TypesenseSearch(TypesenseSearchPool);

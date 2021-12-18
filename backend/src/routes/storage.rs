@@ -1,19 +1,16 @@
-use rocket::http::Status;
-use rocket::response::status;
+use chrono::{FixedOffset, Utc};
+use crypto::digest::Digest;
+use crypto::md5::Md5;
+use rocket::http::{ContentType, Status};
 use rocket::serde::json::Json;
 use rocket::{Build, Rocket};
 use rocket_db_pools::Connection;
-
-use crypto::digest::Digest;
-use crypto::md5::Md5;
 use sea_orm::{entity::*, ActiveModelTrait};
 
+use crate::models::error::*;
+use crate::models::storage::{ReferrerCheck, SaveImage};
 use crate::pgdb::image;
 use crate::pool::{MinioImageStorage, PgDb};
-use crate::req::storage::{ReferrerCheck, SaveImage};
-
-use chrono::{FixedOffset, Utc};
-
 use crate::utils::auth::Auth;
 
 pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
@@ -29,14 +26,20 @@ async fn upload_image(
     db: Connection<PgDb>,
     bucket: Connection<MinioImageStorage>,
     image: SaveImage,
-) -> (Status, String) {
+) -> (Status, Result<String, Json<ErrorResponse>>) {
     info!("[IMAGE] User {} id uploading image.", auth.id);
     // put a file
     // check content type
     match image.content_type.as_str() {
         "jpg" | "jpeg" | "png" | "gif" => {}
         _ => {
-            return (Status::UnsupportedMediaType, "".to_string());
+            return (
+                Status::UnsupportedMediaType,
+                Err(Json(ErrorResponse::build(
+                    ErrorCode::UnsupportedMediaType,
+                    "",
+                ))),
+            );
         }
     }
     let mut hash_md5 = Md5::new();
@@ -64,21 +67,33 @@ async fn upload_image(
                     log::warn!("[Image-Storage] Same image: {}", e);
                 }
             }
-            (Status::Ok, filename)
+            (Status::Ok, Ok(filename))
         }
-        Ok((_, code)) => (Status::new(code), "".to_string()),
-        Err(e) => (Status::InternalServerError, format!("{}", e)),
+        Ok((_, code)) => (
+            Status::InternalServerError,
+            Err(Json(ErrorResponse::build(
+                ErrorCode::Unknown,
+                format!("code: {}", code),
+            ))),
+        ),
+        Err(e) => {
+            log::error!("[Image-Storage] Database Error {:?}", e);
+            (
+                Status::InternalServerError,
+                Err(Json(ErrorResponse::default())),
+            )
+        }
     }
 }
 
-#[get("/image/<filename>")]
+#[get("/images/<filename>")]
 async fn download_image(
     auth: Auth,
     _ref: ReferrerCheck,
     db: Connection<PgDb>,
     bucket: Connection<MinioImageStorage>,
     filename: &str,
-) -> Result<Vec<u8>, status::NotFound<String>> {
+) -> (Status, (ContentType, Result<Vec<u8>, Json<ErrorResponse>>)) {
     info!("[IMAGE] User {} id downloading image.", auth.id);
     // get a file
     let (data, code) = bucket.get_object(filename).await.unwrap();
@@ -92,25 +107,54 @@ async fn download_image(
                 ..Default::default()
             };
             let _ = record.update(&pg_con).await;
-            Ok(data)
+            match filename.split('.').last().unwrap() {
+                "png" => (Status::Ok, (ContentType::PNG, Ok(data))),
+                "git" => (Status::Ok, (ContentType::GIF, Ok(data))),
+                _ => (Status::Ok, (ContentType::JPEG, Ok(data))),
+            }
         }
-        _ => Err(status::NotFound(format!("Error code: {}", code))),
+        _ => (
+            Status::NotFound,
+            (
+                ContentType::JSON,
+                Err(Json(ErrorResponse::build(ErrorCode::FileNotExist, ""))),
+            ),
+        ),
     }
 }
 
 #[get("/images")]
-async fn get_images(auth: Auth, bucket: Connection<MinioImageStorage>) -> Json<Vec<(String, u64)>> {
+async fn get_images(
+    auth: Auth,
+    bucket: Connection<MinioImageStorage>,
+) -> (
+    Status,
+    Result<Json<Vec<Vec<(String, u64)>>>, Json<ErrorResponse>>,
+) {
     // list files
     info!("[IMAGE] User {} id fetching image list.", auth.id);
-    let bucket_list = bucket
-        .list("/".to_owned(), Some("/".to_owned()))
-        .await
-        .expect("Can not list");
-    let mut results: Vec<(String, u64)> = Vec::new();
-    for result in bucket_list {
-        for item in result.contents {
-            results.push((item.key, item.size));
+    let bucket_list = bucket.list("/".to_owned(), Some("/".to_owned())).await;
+    match bucket_list {
+        Ok(list) => {
+            let results: Vec<Vec<(String, u64)>> = list
+                .iter()
+                .map(|item| {
+                    let r: Vec<(String, u64)> = item
+                        .contents
+                        .iter()
+                        .map(|c| (c.key.to_owned(), c.size))
+                        .collect();
+                    r
+                })
+                .collect();
+            (Status::Ok, Ok(Json(results)))
+        }
+        Err(e) => {
+            log::error!("[Image-Storage] Database Error {:?}", e);
+            (
+                Status::InternalServerError,
+                Err(Json(ErrorResponse::default())),
+            )
         }
     }
-    Json(results)
 }
