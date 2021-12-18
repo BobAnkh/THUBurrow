@@ -19,6 +19,13 @@ pub struct UserInfo<'r> {
     pub verification_code: &'r str,
 }
 
+#[derive(Deserialize)]
+pub struct UserResetInfo<'r> {
+    pub password: &'r str,
+    pub email: &'r str,
+    pub verification_code: &'r str,
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct UserEmail {
     pub email: String,

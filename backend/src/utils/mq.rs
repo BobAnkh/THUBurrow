@@ -13,8 +13,8 @@ use std::env;
 use std::iter;
 use tokio::time::Duration;
 
-use super::email::check_email_exist;
-use super::email_send;
+use super::email::{self, check_email_exist};
+use crate::config::BACKEND_TEST_MODE;
 use crate::models::{pulsar::*, search::*, user::SEND_EMAIL_LIMIT};
 use crate::pgdb::{content_post, prelude::*, user_collection, user_follow, user_like};
 use crate::routes::trending::select_trending;
@@ -140,10 +140,6 @@ lazy_static! {
         };
         url
     };
-    static ref BACKEND_TEST_MODE: bool = env::var("BACKEND_TEST_MODE")
-        .map(|x| x.parse::<bool>().unwrap_or(true))
-        .ok()
-        .unwrap_or(true);
 }
 
 async fn create_typesense_collections() -> Result<(), reqwest::Error> {
@@ -801,9 +797,13 @@ pub async fn pulsar_email() -> Result<(), pulsar::Error> {
                 continue;
             }
         };
+        let (email, repeat_times) = match data {
+            PulsarSendEmail::Sign { email } => (email, 6),
+            PulsarSendEmail::Reset { email } => (email, 10),
+        };
         if *BACKEND_TEST_MODE {
-            let verification_code = "666666";
-            match get_set_redis(&mut kv_conn, &data.email, verification_code).await {
+            let verification_code = "6".repeat(repeat_times);
+            match get_set_redis(&mut kv_conn, &email, &verification_code).await {
                 Ok(_) => log::info!("[PULSAR-EMAIL] Redis get & set success, Email send success"),
                 Err(e) => match e.kind() {
                     redis::ErrorKind::ExtensionError => {
@@ -816,18 +816,18 @@ pub async fn pulsar_email() -> Result<(), pulsar::Error> {
                     }
                 },
             }
-        } else if check_email_exist(&data.email).await.0 {
+        } else if check_email_exist(&email).await.0 {
             // generate verification code
             let verification_code: String = iter::repeat(())
                 .map(|()| thread_rng().sample(Alphanumeric))
                 .map(char::from)
-                .take(6)
+                .take(repeat_times)
                 .collect();
             // println!("{}", verification_code);
-            match get_set_redis(&mut kv_conn, &data.email, &verification_code).await {
+            match get_set_redis(&mut kv_conn, &email, &verification_code).await {
                 Ok(_) => {
                     log::info!("[PULSAR-EMAIL] Redis get & set success");
-                    match email_send::post(data.email.clone(), &verification_code).await {
+                    match email::send(email, verification_code).await {
                         Ok(res) => {
                             log::info!("[PULSAR-EMAIL] Email send success, response: {}", res);
                             // println!("{}", res);
@@ -849,10 +849,11 @@ pub async fn pulsar_email() -> Result<(), pulsar::Error> {
                 },
             }
         } else {
+            let verification_code = "6".repeat(repeat_times);
             let set_redis_result: Result<String, redis::RedisError> = redis::cmd("SETEX")
-                .arg(&data.email)
+                .arg(&email)
                 .arg(EMAIL_TOKEN_EX)
-                .arg((SEND_EMAIL_LIMIT + 1).to_string() + ":" + "666666")
+                .arg((SEND_EMAIL_LIMIT + 1).to_string() + ":" + &verification_code)
                 .query_async(&mut kv_conn)
                 .await;
             match set_redis_result {

@@ -68,8 +68,9 @@ pub enum PulsarRelationData {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-pub struct PulsarSendEmail {
-    pub email: String,
+pub enum PulsarSendEmail {
+    Sign {email: String},
+    Reset {email: String},
 }
 
 impl RelationData {
