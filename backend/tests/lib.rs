@@ -1742,13 +1742,23 @@ fn test_search() {
         .take(16)
         .collect();
 
+    // set verification code
+    client
+        .post("/users/email")
+        .json(&json!({
+            "email": format!("{}@mails.tsinghua.edu.cn", name)
+        }))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    std::thread::sleep(std::time::Duration::from_secs(1));
     // sign up a user
     let response = client
         .post("/users/sign-up")
         .json(&json!({
             "username": name,
             "password": "testpassword",
-            "email": format!("{}@mails.tsinghua.edu.cn", name)}))
+            "email": format!("{}@mails.tsinghua.edu.cn", name),
+            "verification_code": "666666"}))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
@@ -1983,13 +1993,23 @@ fn test_storage() {
         .take(16)
         .collect();
 
+    // set verification code
+    client
+        .post("/users/email")
+        .json(&json!({
+            "email": format!("{}@mails.tsinghua.edu.cn", name)
+        }))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    std::thread::sleep(std::time::Duration::from_secs(1));
     // sign up a user
     let response = client
         .post("/users/sign-up")
         .json(&json!({
-        "username": name,
-        "password": "testpassword",
-        "email": format!("{}@mails.tsinghua.edu.cn", name)}))
+            "username": name,
+            "password": "testpassword",
+            "email": format!("{}@mails.tsinghua.edu.cn", name),
+            "verification_code": "666666"}))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
