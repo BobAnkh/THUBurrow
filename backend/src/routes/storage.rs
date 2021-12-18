@@ -107,7 +107,12 @@ async fn download_image(
                 ..Default::default()
             };
             let _ = record.update(&pg_con).await;
-            (Status::Ok, (ContentType::JPEG, Ok(data)))
+            match filename.split('.').last().unwrap() {
+                "png" => (Status::Ok, (ContentType::PNG, Ok(data))),
+                "git" => (Status::Ok, (ContentType::GIF, Ok(data))),
+                _ => (Status::Ok, (ContentType::JPEG, Ok(data)))
+            }
+
         }
         _ => (
             Status::NotFound,
