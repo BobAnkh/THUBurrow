@@ -18,6 +18,7 @@ type IconProps = {
 type Props = {
   listData: any;
   setPage: any;
+  totalNum: number;
 };
 
 axios.defaults.withCredentials = true;
@@ -35,7 +36,7 @@ function showtag1(tag: string) {
 const showtag = (value: Array<string>) => {
   return value.map(showtag1);
 };
-export default function PostList({ listData, setPage }: Props) {
+export default function PostList({ listData, setPage, totalNum }: Props) {
   const initialchange1 = new Array(10).fill(false);
   const initialchange2 = new Array(10).fill(false);
   const initialnum1 = new Array(10).fill(0);
@@ -119,7 +120,7 @@ export default function PostList({ listData, setPage }: Props) {
         pageSize: 10,
         showQuickJumper: true,
         showSizeChanger: false,
-        total: 2000,
+        total: totalNum,
       }}
       dataSource={listData}
       renderItem={(item: any, index: number) => (
