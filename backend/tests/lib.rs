@@ -1,7 +1,6 @@
 mod common;
 use backend::models::content::PostSection;
 use backend::models::error::*;
-use backend::models::error::{ErrorCode, ErrorCode::*, ErrorMessage, ErrorResponse};
 use backend::models::search::*;
 use backend::utils::mq::*;
 use rand::distributions::Alphanumeric;
@@ -9,7 +8,6 @@ use rand::{thread_rng, Rng};
 use reqwest::StatusCode;
 use rocket::http::{ContentType, Header, Status};
 use serde_json::json;
-use std::fs;
 use tokio::runtime::Runtime;
 
 #[test]
@@ -32,7 +30,7 @@ fn test_change_password() {
     let name: String = std::iter::repeat(())
         .map(|()| thread_rng().sample(Alphanumeric))
         .map(char::from)
-        .take(16)
+        .take(8)
         .collect();
     // set verification code (sign up)
     let response = client
@@ -112,12 +110,12 @@ fn test_reset() {
     let name: String = std::iter::repeat(())
         .map(|()| thread_rng().sample(Alphanumeric))
         .map(char::from)
-        .take(16)
+        .take(9)
         .collect();
     let new_name: String = std::iter::repeat(())
         .map(|()| thread_rng().sample(Alphanumeric))
         .map(char::from)
-        .take(16)
+        .take(9)
         .collect();
     // email reset: perform a wrong action (invalid email address)
     let response = client
@@ -340,12 +338,12 @@ fn test_email() {
     let name: String = std::iter::repeat(())
         .map(|()| thread_rng().sample(Alphanumeric))
         .map(char::from)
-        .take(16)
+        .take(10)
         .collect();
     let new_name: String = std::iter::repeat(())
         .map(|()| thread_rng().sample(Alphanumeric))
         .map(char::from)
-        .take(16)
+        .take(10)
         .collect();
     // set verification code: perform a wrong action (invalid email address)
     let response = client
@@ -458,13 +456,13 @@ fn test_user() {
     let name: String = std::iter::repeat(())
         .map(|()| thread_rng().sample(Alphanumeric))
         .map(char::from)
-        .take(16)
+        .take(11)
         .collect();
     // sign up a user: perform a wrong action (wrong verification code)
     let new_name: String = std::iter::repeat(())
         .map(|()| thread_rng().sample(Alphanumeric))
         .map(char::from)
-        .take(16)
+        .take(11)
         .collect();
 
     // 1. test user_sign_up
@@ -655,7 +653,7 @@ fn test_burrow() {
     let name: String = std::iter::repeat(())
         .map(|()| thread_rng().sample(Alphanumeric))
         .map(char::from)
-        .take(16)
+        .take(12)
         .collect();
     // set verification code
     client
@@ -1000,7 +998,7 @@ fn test_content() {
     let name: String = std::iter::repeat(())
         .map(|()| thread_rng().sample(Alphanumeric))
         .map(char::from)
-        .take(16)
+        .take(13)
         .collect();
     // set verification code
     client
@@ -1764,7 +1762,7 @@ fn test_search() {
     let name: String = std::iter::repeat(())
         .map(|()| thread_rng().sample(Alphanumeric))
         .map(char::from)
-        .take(16)
+        .take(14)
         .collect();
 
     // set verification code
@@ -2021,7 +2019,7 @@ fn test_storage() {
     let name: String = std::iter::repeat(())
         .map(|()| thread_rng().sample(Alphanumeric))
         .map(char::from)
-        .take(16)
+        .take(15)
         .collect();
 
     // set verification code
