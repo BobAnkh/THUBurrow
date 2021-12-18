@@ -19,7 +19,7 @@ pub enum PulsarSearchData {
     DeleteReply(i64, i32),
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct PulsarSearchBurrowData {
     pub burrow_id: i64,
     pub title: String,
@@ -27,7 +27,7 @@ pub struct PulsarSearchBurrowData {
     pub update_time: DateTimeWithTimeZone,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct PulsarSearchPostData {
     pub post_id: i64,
     pub title: String,
@@ -37,7 +37,7 @@ pub struct PulsarSearchPostData {
     pub update_time: DateTimeWithTimeZone,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct PulsarSearchReplyData {
     pub reply_id: i32,
     pub post_id: i64,
