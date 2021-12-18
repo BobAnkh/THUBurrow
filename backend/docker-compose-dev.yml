@@ -14,22 +14,22 @@ services:
     ports:
       - 5432:5432
 
-  pgadmin:
-    container_name: pgadmin_container
-    image: dpage/pgadmin4
-    restart: unless-stopped
-    environment:
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-pgadmin4@pgadmin.org}
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
-      PGADMIN_CONFIG_SERVER_MODE: 'False'
-    depends_on:
-      - db
-    volumes:
-        - ./data/pgadmin:/var/lib/pgadmin
-    links:
-      - "db:database"
-    ports:
-      - "${PGADMIN_PORT:-8080}:80"
+  # pgadmin:
+  #   container_name: pgadmin_container
+  #   image: dpage/pgadmin4
+  #   restart: unless-stopped
+  #   environment:
+  #     PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-pgadmin4@pgadmin.org}
+  #     PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
+  #     PGADMIN_CONFIG_SERVER_MODE: 'False'
+  #   depends_on:
+  #     - db
+  #   volumes:
+  #       - ./data/pgadmin:/var/lib/pgadmin
+  #   links:
+  #     - "db:database"
+  #   ports:
+  #     - "${PGADMIN_PORT:-8080}:80"
 
   minio:
     image: quay.io/minio/minio
@@ -98,3 +98,8 @@ services:
       - "8108:8108"
     volumes:
       - ./data/typesense-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8108/health"]
+      interval: 30s
+      timeout: 20s
+      retries: 3

@@ -1,10 +1,11 @@
-use crate::pgdb;
-use crate::pool::PgDb;
 use rocket::{fairing, Build, Rocket};
 use rocket_db_pools::Database;
-use sea_orm::query::ConnectionTrait;
-use sea_orm::sea_query::{ColumnDef, Index, PostgresQueryBuilder, SchemaStatementBuilder};
-use sea_orm::{error::*, query::Statement, sea_query, DbConn, ExecResult};
+use sea_orm::query::{ConnectionTrait, Statement};
+use sea_orm::sea_query::{self, ColumnDef, Index, PostgresQueryBuilder, SchemaStatementBuilder};
+use sea_orm::{error::*, DbConn, ExecResult};
+
+use crate::pgdb;
+use crate::pool::PgDb;
 
 async fn build_statement<T>(db: &DbConn, stmt: &T) -> Result<ExecResult, DbErr>
 where
@@ -375,6 +376,34 @@ pub async fn create_burrow_table(db: &DbConn) -> Result<ExecResult, DbErr> {
                 .integer()
                 .not_null()
                 .default(0),
+        )
+        .col(
+            ColumnDef::new(pgdb::burrow::Column::CreateTime)
+                .timestamp_with_time_zone()
+                .not_null(),
+        )
+        .col(
+            ColumnDef::new(pgdb::burrow::Column::UpdateTime)
+                .timestamp_with_time_zone()
+                .not_null(),
+        )
+        .col(
+            ColumnDef::new(pgdb::burrow::Column::Credit)
+                .integer()
+                .not_null()
+                .default(0),
+        )
+        .col(
+            ColumnDef::new(pgdb::burrow::Column::Badge)
+                .text()
+                .not_null()
+                .default("".to_string()),
+        )
+        .col(
+            ColumnDef::new(pgdb::burrow::Column::Avatar)
+                .text()
+                .not_null()
+                .default("default.jpg".to_string()),
         )
         .to_owned();
     build_statement(db, &stmt).await
