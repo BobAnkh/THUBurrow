@@ -104,6 +104,7 @@ mod tests {
             update_time: now,
             credit: 0i32,
             badge: "badge".to_string(),
+            avatar: "default.jpg".to_string(),
         };
         // let burrow_banned = burrow::Model {
         //     burrow_id,
