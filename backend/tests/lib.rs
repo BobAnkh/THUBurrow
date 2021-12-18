@@ -13,24 +13,6 @@ use std::fs;
 use tokio::runtime::Runtime;
 
 #[test]
-fn integration_test() {
-    let rt = Runtime::new().unwrap();
-    rt.spawn(generate_trending());
-    rt.spawn(pulsar_relation());
-    rt.spawn(pulsar_typesense());
-    rt.spawn(pulsar_email());
-    test_reset();
-    test_connected();
-    test_change_password();
-    test_email();
-    test_user();
-    test_burrow();
-    test_content();
-    test_search();
-    test_storage();
-}
-
-// #[test]
 fn test_connected() {
     let client = common::get_client().lock();
     let response = client
@@ -41,7 +23,11 @@ fn test_connected() {
     assert_eq!(response.into_string().unwrap(), "Ok");
 }
 
+#[test]
 fn test_change_password() {
+    let rt = Runtime::new().unwrap();
+    let h4 = rt.spawn(pulsar_email());
+    std::thread::sleep(std::time::Duration::from_secs(1));
     let client = common::get_client().lock();
     let name: String = std::iter::repeat(())
         .map(|()| thread_rng().sample(Alphanumeric))
@@ -114,9 +100,14 @@ fn test_change_password() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     assert_eq!(response.into_string().unwrap(), "Success");
+    h4.abort();
 }
 
+#[test]
 fn test_reset() {
+    let rt = Runtime::new().unwrap();
+    let h4 = rt.spawn(pulsar_email());
+    std::thread::sleep(std::time::Duration::from_secs(1));
     let client = common::get_client().lock();
     let name: String = std::iter::repeat(())
         .map(|()| thread_rng().sample(Alphanumeric))
@@ -337,10 +328,14 @@ fn test_reset() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     assert_eq!(response.into_string().unwrap(), "Success");
+    h4.abort();
 }
 
-// #[test]
+#[test]
 fn test_email() {
+    let rt = Runtime::new().unwrap();
+    let h4 = rt.spawn(pulsar_email());
+    std::thread::sleep(std::time::Duration::from_secs(1));
     let client = common::get_client().lock();
     let name: String = std::iter::repeat(())
         .map(|()| thread_rng().sample(Alphanumeric))
@@ -451,10 +446,14 @@ fn test_email() {
             "This Email address is already in use",
         )
     );
+    h4.abort();
 }
 
-// #[test]
+#[test]
 fn test_user() {
+    let rt = Runtime::new().unwrap();
+    let h4 = rt.spawn(pulsar_email());
+    std::thread::sleep(std::time::Duration::from_secs(1));
     let client = common::get_client().lock();
     let name: String = std::iter::repeat(())
         .map(|()| thread_rng().sample(Alphanumeric))
@@ -639,10 +638,17 @@ fn test_user() {
         response.into_json::<ErrorResponse>().unwrap(),
         ErrorResponse::build(ErrorCode::CredentialInvalid, "Wrong username or password.",)
     );
+    h4.abort();
 }
 
-// #[test]
+#[test]
 fn test_burrow() {
+    let rt = Runtime::new().unwrap();
+    let h1 = rt.spawn(generate_trending());
+    let h2 = rt.spawn(pulsar_relation());
+    let h3 = rt.spawn(pulsar_typesense());
+    let h4 = rt.spawn(pulsar_email());
+    std::thread::sleep(std::time::Duration::from_secs(1));
     // get the client
     let client = common::get_client().lock();
     // generate a random name
@@ -974,10 +980,20 @@ fn test_burrow() {
         response.into_json::<ErrorResponse>().unwrap(),
         ErrorResponse::build(ErrorCode::EmptyField, "Burrow title cannot be empty",)
     );
+    h1.abort();
+    h2.abort();
+    h3.abort();
+    h4.abort();
 }
 
-// #[test]
+#[test]
 fn test_content() {
+    let rt = Runtime::new().unwrap();
+    let h1 = rt.spawn(generate_trending());
+    let h2 = rt.spawn(pulsar_relation());
+    let h3 = rt.spawn(pulsar_typesense());
+    let h4 = rt.spawn(pulsar_email());
+    std::thread::sleep(std::time::Duration::from_secs(1));
     // get the client
     let client = common::get_client().lock();
     // generate a random name
@@ -1729,10 +1745,19 @@ fn test_content() {
         "This is a updated reply no.1 for post no.1".to_string(),
         res.reply_page[1].content
     );
+    h1.abort();
+    h2.abort();
+    h3.abort();
+    h4.abort();
 }
 
-// #[test]
+#[test]
 fn test_search() {
+    let rt = Runtime::new().unwrap();
+    let h2 = rt.spawn(pulsar_relation());
+    let h3 = rt.spawn(pulsar_typesense());
+    let h4 = rt.spawn(pulsar_email());
+    std::thread::sleep(std::time::Duration::from_secs(1));
     // get the client
     let client = common::get_client().lock();
     // generate a random name
@@ -1981,10 +2006,16 @@ fn test_search() {
     // println!("Retrieve result: {}", response.into_string().unwrap());
     assert_eq!(res.error.code, ErrorCode::PostNotExist);
     assert_eq!(res.error.message, "Cannot find post -1".to_string());
+    h2.abort();
+    h3.abort();
+    h4.abort();
 }
 
-// #[test]
+#[test]
 fn test_storage() {
+    let rt = Runtime::new().unwrap();
+    let h4 = rt.spawn(pulsar_email());
+    std::thread::sleep(std::time::Duration::from_secs(1));
     let client = common::get_client().lock();
     // generate a random name
     let name: String = std::iter::repeat(())
@@ -2122,4 +2153,5 @@ fn test_storage() {
     assert_eq!(response.status(), Status::Ok);
     let res = response.into_bytes().unwrap();
     assert_eq!(res, png_buf);
+    h4.abort();
 }
