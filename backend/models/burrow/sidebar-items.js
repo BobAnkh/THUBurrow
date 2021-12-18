@@ -1,0 +1,1 @@
+initSidebarItems({"static":[["BURROW_LIMIT",""],["BURROW_PER_PAGE",""]],"struct":[["BurrowCreateResponse",""],["BurrowInfo",""],["BurrowMetadata",""],["BurrowShowResponse",""],["BurrowTotalCount",""],["LastBurrowSeq",""]]});

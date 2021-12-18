@@ -1,0 +1,1 @@
+initSidebarItems({"static":[["SEND_EMAIL_LIMIT",""]],"struct":[["UserChangePassword",""],["UserData",""],["UserEmail",""],["UserGetCollectionResponse",""],["UserGetFollowResponse",""],["UserInfo",""],["UserLoginInfo",""],["UserResetInfo",""],["UserResponse",""]]});

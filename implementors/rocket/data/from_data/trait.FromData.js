@@ -1,0 +1,3 @@
+(function() {var implementors = {};
+implementors["backend"] = [{"text":"impl&lt;'r&gt; <a class=\"trait\" href=\"https://api.rocket.rs/v0.5-rc/rocket/data/from_data/trait.FromData.html\" title=\"trait rocket::data::from_data::FromData\">FromData</a>&lt;'r&gt; for <a class=\"struct\" href=\"backend/models/storage/struct.SaveImage.html\" title=\"struct backend::models::storage::SaveImage\">SaveImage</a>","synthetic":false,"types":["backend::models::storage::SaveImage"]}];
+if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

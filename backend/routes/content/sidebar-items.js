@@ -1,0 +1,1 @@
+initSidebarItems({"fn":[["create_post",""],["create_reply",""],["delete_post",""],["get_total_post_count",""],["init",""],["read_post",""],["read_post_list",""],["update_post",""],["update_reply",""]]});
