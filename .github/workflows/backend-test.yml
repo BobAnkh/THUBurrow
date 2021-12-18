@@ -39,7 +39,6 @@ jobs:
         run: docker-compose -f docker-compose-dev.yml up -d
       - name: cargo test
         run: |
-          rm -rf target
           # cargo build --bin consumer
           # cargo run --bin consumer &
           cargo test --no-fail-fast --verbose
