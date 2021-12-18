@@ -21,6 +21,7 @@ import {
   Dropdown,
   Row,
   Popconfirm,
+  Spin,
 } from 'antd';
 import { MessageOutlined, LikeOutlined, StarOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/router';
@@ -59,8 +60,7 @@ const Burrow: NextPage = () => {
   const [description, setDescription] = useState('Welcome!');
   const [burrowTitle, setBurrowTitle] = useState(0);
   const [page, setPage] = useState(1);
-  const [isHost, setIsHost] = useState(true);
-  const [isAlive, setIsAlive] = useState(true);
+  const [isHost, setIsHost] = useState(false);
 
   const [editing, setEditing] = useState(false);
   const [descriptionTemp, setDescriptionTemp] = useState('');
@@ -85,7 +85,6 @@ const Burrow: NextPage = () => {
         setDescription(postlist.description);
         setBurrowTitle(postlist.title);
         setIsHost(postlist.isHost);
-        setIsAlive(postlist.isAlive);
       };
       fetchListData();
     } catch (e) {
@@ -104,9 +103,31 @@ const Burrow: NextPage = () => {
     setEditing(true);
   };
 
-  const ConfirmEdit = () => {
+  const ConfirmEdit = async () => {
     setDescription(descriptionTemp);
     setEditing(false);
+    const data = {
+      title: { burrowTitle },
+      description: { descriptionTemp },
+    };
+    try {
+      console.log(data);
+      const res = await axios.post(
+        `${process.env.NEXT_PUBLIC_BASEURL}/${bid}`,
+        data
+      );
+      var json = await res.data;
+      if (json.error) {
+        message.error('修改信息失败');
+        window.location.reload();
+      } else {
+        message.success('修改成功');
+        window.location.reload();
+      }
+    } catch (e) {
+      message.error('修改信息失败');
+      alert(e);
+    }
   };
 
   const CancelEdit = () => {
@@ -204,7 +225,7 @@ const Burrow: NextPage = () => {
   };
 
   return (
-    <Layout>
+    <Layout id='main'>
       <Header style={{ position: 'fixed', zIndex: 1, width: '100%' }}>
         <title>{`# ${bid} 地洞`}</title>
         <GlobalHeader />
@@ -226,52 +247,36 @@ const Burrow: NextPage = () => {
           <Card>
             <div>
               <h2>
-                <Form style={{ display: isAlive ? 'none' : 'block' }}>
-                  <Alert
-                    banner
-                    type='warning'
-                    showIcon
-                    closeText='Close Now'
-                    message={
-                      <TextLoop mask>
-                        <div>该洞已废弃</div>
-                        <div>仅支持浏览帖子</div>
-                        <div>您无法在本洞发表新帖</div>
-                      </TextLoop>
-                    }
-                  />
-                </Form>
                 <table>
-                  <td style={{ width: '100%' }}>
-                    <div
-                      style={{
-                        color: isAlive ? 'black' : 'grey',
-                      }}
-                    >
-                      # {bid}&emsp;{burrowTitle}
-                    </div>
-                  </td>
-                  <td style={{ width: '30%' }}>
-                    <Popconfirm
-                      placement='topRight'
-                      title='确认废弃此洞?'
-                      onConfirm={onConfirm}
-                      okText='Yes'
-                      cancelText='No'
-                    >
-                      <Button
-                        type='primary'
-                        danger
-                        shape='round'
-                        style={{
-                          display:
-                            isHost && !editing && isAlive ? 'block' : 'none',
-                        }}
-                      >
-                        废弃此洞
-                      </Button>
-                    </Popconfirm>
-                  </td>
+                  <tbody>
+                    <tr>
+                      <td style={{ width: '100%' }}>
+                        <div style={{ color: 'black' }}>
+                          # {bid}&emsp;{burrowTitle}
+                        </div>
+                      </td>
+                      <td>
+                        <Popconfirm
+                          placement='topRight'
+                          title='确认废弃此洞?（此操作不可逆）'
+                          onConfirm={onConfirm}
+                          okText='Yes'
+                          cancelText='No'
+                        >
+                          <Button
+                            type='primary'
+                            danger
+                            shape='round'
+                            style={{
+                              display: isHost && !editing ? 'block' : 'none',
+                            }}
+                          >
+                            废弃此洞
+                          </Button>
+                        </Popconfirm>
+                      </td>
+                    </tr>
+                  </tbody>
                 </table>
               </h2>
               <div className={styles.Descript}>
@@ -282,7 +287,7 @@ const Burrow: NextPage = () => {
                   onClick={EditIntro}
                   style={{
                     float: 'right',
-                    display: isHost && !editing && isAlive ? 'block' : 'none',
+                    display: isHost && !editing ? 'block' : 'none',
                   }}
                 >
                   编辑
