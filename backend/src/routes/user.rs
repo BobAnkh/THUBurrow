@@ -41,6 +41,7 @@ pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
             user_email_activate,
             user_reset,
             user_reset_email,
+            user_change_password,
         ],
     )
 }
@@ -586,7 +587,7 @@ pub async fn user_reset(
             }
         };
 
-        // generate salt
+        // get salt
         let salt = user_stored.salt.clone();
         let uid = user_stored.uid;
         // encrypt password
@@ -616,6 +617,86 @@ pub async fn user_reset(
                     Err(Json(ErrorResponse::default())),
                 )
             }
+        }
+    }
+}
+
+#[post("/change", data = "<user_info>", format = "json")]
+pub async fn user_change_password(
+    auth: Auth,
+    db: Connection<PgDb>,
+    kvdb: Connection<RedisDb>,
+    cookies: &CookieJar<'_>,
+    user_info: Json<UserChangePassword<'_>>,
+) -> (Status, Result<String, Json<ErrorResponse>>) {
+    let pg_con = db.into_inner();
+    let mut kv_conn = kvdb.into_inner();
+    // get user info from request
+    let user = user_info.into_inner();
+    // check if email address is valid, add corresponding error if so
+    // check if email address is in use
+    let user_stored = match User::find_by_id(auth.id).one(&pg_con).await {
+        Ok(res) => match res {
+            None => {
+                return (
+                    Status::BadRequest,
+                    Err(Json(ErrorResponse::build(
+                        ErrorCode::UserNotExist,
+                        "User not exist.",
+                    ))),
+                );
+            }
+            Some(u) => u,
+        },
+        Err(e) => {
+            log::error!("[RESET] Database Error: {:?}", e);
+            return (
+                Status::InternalServerError,
+                Err(Json(ErrorResponse::default())),
+            );
+        }
+    };
+    // get salt
+    let salt = user_stored.salt.clone();
+    let uid = user_stored.uid;
+    let old_password = user_stored.password.clone();
+    // encrypt password
+    let mut hash_sha3 = Sha3::sha3_256();
+    hash_sha3.input_str(&(salt.clone() + user.password));
+    let password = hash_sha3.result_str();
+    if password != old_password {
+        return (
+            Status::BadRequest,
+            Err(Json(ErrorResponse::build(
+                ErrorCode::CredentialInvalid,
+                "Wrong password.",
+            ))),
+        );
+    }
+    hash_sha3.input_str(&(salt + user.new_password));
+    let new_password = hash_sha3.result_str();
+    let mut users: pgdb::user::ActiveModel = user_stored.into();
+    users.password = Set(new_password);
+    // insert rows in database
+    match users.update(&pg_con).await {
+        Ok(_) => {
+            let token = match crate::utils::auth::set_token(uid, kv_conn.as_mut()).await {
+                Ok(t) => t,
+                Err(e) => return (Status::InternalServerError, Err(Json(e))),
+            };
+            // build cookie
+            let cookie = Cookie::build("token", token).cookie_options().finish();
+            // set cookie
+            cookies.add_private(cookie);
+            info!("[RESET] User login complete.");
+            (Status::Ok, Ok("Success".to_string()))
+        }
+        Err(e) => {
+            error!("[RESET] Database error: {:?}", e);
+            (
+                Status::InternalServerError,
+                Err(Json(ErrorResponse::default())),
+            )
         }
     }
 }

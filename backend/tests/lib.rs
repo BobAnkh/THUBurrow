@@ -48,9 +48,9 @@ fn test_reset() {
         .collect();
     // try to reset a non-existed user
     let response = client
-        .post("/users/reset")
+        .post("/users/reset/email")
         .json(&json!({
-            "email": format!("{}@mails.tsinghua.edu.cn", name)
+            "email": format!("{}@mails.tsinghua.edu.cn", name),
         }))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
@@ -66,7 +66,7 @@ fn test_reset() {
     let response = client
         .post("/users/email")
         .json(&json!({
-            "email": format!("{}@mails.tsinghua.edu.cn", name)
+            "email": format!("{}@mails.tsinghua.edu.cn", name),
         }))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
