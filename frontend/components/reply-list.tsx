@@ -1,12 +1,66 @@
-import React from 'react';
-import { List } from 'antd';
+import React, { useState } from 'react';
+import { Button, Form, List, message, Space } from 'antd';
+import TextArea from 'antd/lib/input/TextArea';
+import axios, { AxiosError } from 'axios';
+
+axios.defaults.withCredentials = true;
+axios.defaults.headers.post['Content-Type'] = 'application/json';
 
 type Props = {
   listData: any;
   setPage: any;
+  userBid: number[];
+  totalNum: number;
 };
 
-export default function ReplyList({ listData, setPage }: Props) {
+export default function ReplyList({
+  listData,
+  userBid,
+  setPage,
+  totalNum,
+}: Props) {
+  const initialEdit = new Array(20).fill(false);
+  const [edit, setEdit] = useState(initialEdit);
+
+  const onEdit = (index: number) => {
+    let newEdit: boolean[] = edit;
+    newEdit[index] = true;
+    setEdit([...newEdit]);
+  };
+
+  const onSave = async (values: any, index: number) => {
+    try {
+      const res = await axios.post(
+        `${process.env.NEXT_PUBLIC_BASEURL}/content/reply/update`,
+        {
+          post_id: listData[0].post_id,
+          reply_id: listData[0].reply_id,
+          ...values,
+        }
+      );
+      let newEdit: boolean[] = edit;
+      newEdit[index] = false;
+      setEdit([...newEdit]);
+      message.success('修改成功');
+      window.location.reload();
+    } catch (e) {
+      const err = e as AxiosError;
+      if (err.response?.status == 400) {
+        message.error('请求有误！');
+      } else if (err.response?.status == 403) {
+        message.error('禁止修改！');
+      } else {
+        message.error('未知错误！');
+      }
+    }
+  };
+
+  const onCancel = (index: number) => {
+    let newEdit: boolean[] = edit;
+    newEdit[index] = false;
+    setEdit([...newEdit]);
+  };
+
   return (
     <List
       itemLayout='vertical'
@@ -18,10 +72,10 @@ export default function ReplyList({ listData, setPage }: Props) {
         pageSize: 20,
         showQuickJumper: true,
         showSizeChanger: false,
-        total: 2000,
+        total: totalNum,
       }}
       dataSource={listData}
-      renderItem={(item: any) => (
+      renderItem={(item: any, index: number) => (
         <List.Item key={item.reply_id}>
           <List.Item.Meta
             title={
@@ -31,7 +85,54 @@ export default function ReplyList({ listData, setPage }: Props) {
             }
             description={`#${item.reply_id}`}
           />
-          {item.content}
+          {userBid.indexOf(item.burrow_id) === -1 ? (
+            item.content
+          ) : edit[index] === false ? (
+            <>
+              <p>{item.content}</p>
+              <Button
+                type='link'
+                htmlType='button'
+                onClick={() => {
+                  onEdit(index);
+                }}
+                style={{ float: 'right' }}
+              >
+                编辑
+              </Button>
+              <br />
+            </>
+          ) : (
+            <Form
+              initialValues={{ content: item.content }}
+              onFinish={(values) => {
+                onSave(values, index);
+              }}
+            >
+              <Form.Item name='content'>
+                <TextArea rows={4} bordered={false} />
+              </Form.Item>
+              <Form.Item>
+                <Button
+                  type='link'
+                  htmlType='button'
+                  onClick={() => {
+                    onCancel(index);
+                  }}
+                  style={{ float: 'right' }}
+                >
+                  取消
+                </Button>
+                <Button
+                  type='link'
+                  style={{ float: 'right' }}
+                  htmlType='submit'
+                >
+                  确认修改
+                </Button>
+              </Form.Item>
+            </Form>
+          )}
         </List.Item>
       )}
     />

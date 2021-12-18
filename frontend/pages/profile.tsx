@@ -166,7 +166,11 @@ const UserPage: NextPage = () => {
           />
         </Card>
         <Card title='收藏的帖子'>
-          <PostList listData={postList} setPage={setPage} />
+          <PostList
+            listData={postList}
+            setPage={setPage}
+            totalNum={postList.length}
+          />
         </Card>
       </Content>
     </Layout>
