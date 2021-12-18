@@ -7,6 +7,8 @@ import axios, { AxiosError } from 'axios';
 import CryptoJS from 'crypto-js';
 
 const { Option } = Select;
+axios.defaults.withCredentials = true;
+axios.defaults.headers.post['Content-Type'] = 'application/json';
 
 type Iprops = {
   switchform: any;
