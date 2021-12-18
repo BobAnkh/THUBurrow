@@ -17,6 +17,12 @@ services:
       innerdb:
         aliases:
           - pgdb
+    healthcheck:
+      test: ["CMD", "pg_isready"]
+      interval: 180s
+      timeout: 20s
+      retries: 3
+      start_period: 60s
 
   keydb:
     image: eqalpha/keydb:latest
@@ -33,6 +39,12 @@ services:
       innerdb:
         aliases:
           - keydb
+    healthcheck:
+      test: ["CMD", "keydb-cli", "-a", "${KEYDB_PASSWORD:-keypassword}", "ping"]
+      interval: 180s
+      timeout: 20s
+      retries: 3
+      start_period: 60s
 
   pulsar:
     image: apachepulsar/pulsar:2.8.1
@@ -49,6 +61,12 @@ services:
       messagequeue:
         aliases:
           - pulsar
+    healthcheck:
+      test: ["CMD-SHELL", "curl -I http://localhost:8080/admin/v2/namespaces/public/default | grep '200' || exit 1"]
+      interval: 180s
+      timeout: 20s
+      retries: 3
+      start_period: 60s
 
   minio:
     image: quay.io/minio/minio
@@ -69,12 +87,13 @@ services:
           - minio
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-      interval: 30s
+      interval: 180s
       timeout: 20s
       retries: 3
+      start_period: 60s
 
   typesense:
-    image: typesense/typesense:0.21.0
+    image: typesense/typesense:0.22.1
     container_name: typesense-container
     restart: unless-stopped
     expose:
@@ -88,9 +107,10 @@ services:
       messagequeue:
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8108/health"]
-      interval: 30s
+      interval: 180s
       timeout: 20s
       retries: 3
+      start_period: 60s
 
 networks:
   innerdb:
