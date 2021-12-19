@@ -23,7 +23,7 @@ use crate::models::{
 use crate::pgdb;
 use crate::pgdb::prelude::*;
 use crate::pool::{PgDb, PulsarSearchProducerMq, RedisDb};
-use crate::utils::auth::{Auth, CookieOptions};
+use crate::utils::auth::{delete_token, set_token, Auth, CookieOptions};
 use crate::utils::burrow_valid::*;
 use crate::utils::email;
 
@@ -725,11 +725,10 @@ pub async fn user_log_in(
                 // check if password is wrong, add corresponding error if so
                 if matched_user.password.eq(&password) {
                     info!("[LOGIN] password correct, continue...");
-                    let token =
-                        match crate::utils::auth::set_token(matched_user.uid, con.as_mut()).await {
-                            Ok(t) => t,
-                            Err(e) => return (Status::InternalServerError, Err(Json(e))),
-                        };
+                    let token = match set_token(matched_user.uid, con.as_mut()).await {
+                        Ok(t) => t,
+                        Err(e) => return (Status::InternalServerError, Err(Json(e))),
+                    };
                     // build cookie
                     let cookie = Cookie::build("token", token).cookie_options().finish();
                     // set cookie
@@ -760,6 +759,57 @@ pub async fn user_log_in(
         },
         Err(e) => {
             error!("[LOGIN] Database error: {:?}", e);
+            (
+                Status::InternalServerError,
+                Err(Json(ErrorResponse::default())),
+            )
+        }
+    }
+}
+
+#[post("/logout")]
+pub async fn user_logout(
+    auth: Auth,
+    kvdb: Connection<RedisDb>,
+    cookies: &CookieJar<'_>,
+) -> (Status, Result<String, Json<ErrorResponse>>) {
+    let mut kv_conn = kvdb.into_inner();
+    // get user info from request
+    let uid = auth.id;
+    match delete_token(uid, kv_conn.as_mut()).await {
+        Ok(_) => {
+            let delete_result: Result<i64, redis::RedisError> = redis::cmd("DEL")
+                .arg(uid)
+                .query_async(kv_conn.as_mut())
+                .await;
+            match delete_result {
+                Ok(1) => info!("[TOKEN] delete id->token"),
+                Ok(0) => info!("[TOKEN] no id->token found"),
+                Ok(_) => {
+                    error!("[TOKEN] failed to delete refresh_token -> id when login.");
+                    return (
+                        Status::InternalServerError,
+                        Err(Json(ErrorResponse::default())),
+                    );
+                }
+                Err(e) => {
+                    error!(
+                        "[TOKEN] failed to delete token -> id when login. RedisError: {:?}",
+                        e
+                    );
+                    return (
+                        Status::InternalServerError,
+                        Err(Json(ErrorResponse::default())),
+                    );
+                }
+            };
+            let mut cookie = Cookie::named("token");
+            cookie.set_domain(".thuburrow.com");
+            cookies.remove_private(cookie);
+            (Status::Ok, Ok("Success".to_string()))
+        }
+        Err(e) => {
+            error!("[LOGOUT] Database error: {:?}", e);
             (
                 Status::InternalServerError,
                 Err(Json(ErrorResponse::default())),
