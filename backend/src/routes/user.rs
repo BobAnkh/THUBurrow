@@ -1,3 +1,4 @@
+//! Routes for user
 use chrono::{FixedOffset, Utc};
 use crypto::digest::Digest;
 use crypto::sha3::Sha3;
@@ -767,7 +768,7 @@ pub async fn user_log_in(
     }
 }
 
-#[post("/logout")]
+#[get("/logout")]
 pub async fn user_logout(
     auth: Auth,
     kvdb: Connection<RedisDb>,
