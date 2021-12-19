@@ -42,7 +42,7 @@ const Create: NextPage = () => {
       }
     };
     fetchBid();
-  }, []);
+  }, [router]);
   const onFinish = async (values: any) => {
     const data = {
       ...values,

@@ -97,7 +97,7 @@ const Burrow: NextPage = () => {
         window.location.reload();
       }
     }
-  }, [router, page]);
+  }, [router, page, bid]);
 
   const EditIntro = () => {
     setEditing(true);

@@ -1,16 +1,7 @@
 import type { NextPage } from 'next';
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import {
-  Layout,
-  Breadcrumb,
-  Form,
-  Button,
-  Input,
-  message,
-  Card,
-  Select,
-} from 'antd';
+import { Layout, Form, Button, Input, message, Card, Select } from 'antd';
 import {
   LikeOutlined,
   LikeTwoTone,
