@@ -20,6 +20,24 @@ pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
     )
 }
 
+/// Upload image
+///
+/// ## Parameter
+///
+/// - `Auth`: Aythenticated User
+/// - `Connection<PgDb>`: Postgres connection
+/// - `Connection<MinioImageStorage>`: Image storage connection
+///
+/// ## Returns
+///
+/// - `Status`: HTTP status
+/// - `String`: Filename of image
+///
+/// ## Errors
+///
+/// - `ErrorResponse`: Error message
+///     - `ErrorCode::DatabaseErr`
+///
 #[post("/images", data = "<image>")]
 async fn upload_image(
     auth: Auth,
@@ -86,6 +104,26 @@ async fn upload_image(
     }
 }
 
+/// Download image
+///
+/// ## Parameter
+///
+/// - `Auth`: Aythenticated User
+/// - `ReferrerCheck`: Check request header
+/// - `Connection<PgDb>`: Postgres connection
+/// - `Connection<MinioImageStorage>`: Image storage connection
+/// - `&str`: Filename
+///
+/// ## Returns
+///
+/// - `Status`: HTTP status
+/// - `Vec<u8>`: Image as bytes
+///
+/// ## Errors
+///
+/// - `ErrorResponse`: Error message
+///     - `ErrorCode::FileNotExist`
+///
 #[get("/images/<filename>")]
 async fn download_image(
     auth: Auth,
@@ -123,6 +161,23 @@ async fn download_image(
     }
 }
 
+/// Download image
+///
+/// ## Parameter
+///
+/// - `Auth`: Aythenticated User
+/// - `Connection<MinioImageStorage>`: Image storage connection
+///
+/// ## Returns
+///
+/// - `Status`: HTTP status
+/// - `Json<Vec<Vec<(String, u64)>>>`: List of storaged image
+///
+/// ## Errors
+///
+/// - `ErrorResponse`: Error message
+///     - `ErrorCode::DatabaseErr`
+///
 #[get("/images")]
 async fn get_images(
     auth: Auth,

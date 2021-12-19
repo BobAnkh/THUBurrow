@@ -4,6 +4,16 @@ use serde::{Deserialize, Serialize};
 use super::content::PostSection;
 use super::pulsar::*;
 
+/// Burrow struct in typesense database
+///
+/// ## Fields
+///
+/// - `id`: Burrow id in String for searchengine index
+/// - `burrow_id`: Burrow id in i64
+/// - `title`: Burrow title in String
+/// - `description`: Burrow description in String
+/// - `update_time`: Update time in DataTimeWithTimeZone struct
+///
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct TypesenseBurrowData {
     pub id: String,
@@ -13,6 +23,18 @@ pub struct TypesenseBurrowData {
     pub update_time: DateTimeWithTimeZone,
 }
 
+/// Post struct in typesense database
+///
+/// ## Fields
+///
+/// - `id`: Post id in String for searchengine index
+/// - `post_id`: Post id in i64
+/// - `burrow_id`: i64 id of burrow to which the post belongs
+/// - `title`: Post title in String
+/// - `section`: vector of Postsection
+/// - `tag`: vector of tag in String
+/// - `update_time`: Update time in DataTimeWithTimeZone struct
+///
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct TypesensePostData {
     pub id: String,
@@ -24,6 +46,17 @@ pub struct TypesensePostData {
     pub update_time: DateTimeWithTimeZone,
 }
 
+/// Post struct in typesense database
+///
+/// ## Fields
+///
+/// - `id`: Reply id in String for searchengine index
+/// - `reply_id`: Reply id in i64
+/// - `post_id`: i64 id of post to which the reply belongs
+/// - `burrow_id`: i64 id of burrow to which the post belongs
+/// - `content`: Reply content in String
+/// - `update_time`: Update time in DataTimeWithTimeZone struct
+///
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct TypesenseReplyData {
     pub id: String,
@@ -34,6 +67,17 @@ pub struct TypesenseReplyData {
     pub update_time: DateTimeWithTimeZone,
 }
 
+/// Different kinds of earch request
+///
+/// ## enum
+///
+/// - `id`: Reply id in String for searchengine index
+/// - `reply_id`: Reply id in i64
+/// - `post_id`: i64 id of post to which the reply belongs
+/// - `burrow_id`: i64 id of burrow to which the post belongs
+/// - `content`: Reply content in String
+/// - `update_time`: Update time in DataTimeWithTimeZone struct
+///
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub enum SearchRequest {
     RetrieveBurrow { burrow_id: i64 },

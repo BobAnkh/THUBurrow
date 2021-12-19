@@ -13,6 +13,29 @@ pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
     rocket.mount("/", routes![search,])
 }
 
+/// Search
+///
+/// ## Parameter
+///
+/// - `Auth`: Aythenticated User
+/// - `Connection<PgDb>`: Postgres connection
+/// - `Connection<TypesenseSearch>`: Searchengine connection
+/// - `Json<SearchRequest>`: Search request struct in Json
+/// - `Option<usize>`: Result page
+///
+/// ## Returns
+///
+/// - `Status`: HTTP status
+/// - `String`: Json string of search result
+///
+/// ## Errors
+///
+/// - `ErrorResponse`: Error message
+///     - `ErrorCode::DatabaseErr`
+///     - `ErrorCode::BurrowNotExist`
+///     - `ErrorCode::PostNotExist`
+///     - `ErrorCode::EmptyField`
+///
 #[post("/search?<page>", data = "<data>", format = "json")]
 async fn search(
     auth: Auth,
