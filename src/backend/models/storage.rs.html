@@ -100,7 +100,29 @@
 <span id="100">100</span>
 <span id="101">101</span>
 <span id="102">102</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">rocket::data</span>::{<span class="self">self</span>, <span class="ident">Data</span>, <span class="ident">FromData</span>, <span class="ident">ToByteUnit</span>};
+<span id="103">103</span>
+<span id="104">104</span>
+<span id="105">105</span>
+<span id="106">106</span>
+<span id="107">107</span>
+<span id="108">108</span>
+<span id="109">109</span>
+<span id="110">110</span>
+<span id="111">111</span>
+<span id="112">112</span>
+<span id="113">113</span>
+<span id="114">114</span>
+<span id="115">115</span>
+<span id="116">116</span>
+<span id="117">117</span>
+<span id="118">118</span>
+<span id="119">119</span>
+<span id="120">120</span>
+<span id="121">121</span>
+<span id="122">122</span>
+<span id="123">123</span>
+</pre><pre class="rust"><code><span class="doccomment">//! Models of storage</span>
+<span class="kw">use</span> <span class="ident">rocket::data</span>::{<span class="self">self</span>, <span class="ident">Data</span>, <span class="ident">FromData</span>, <span class="ident">ToByteUnit</span>};
 <span class="kw">use</span> <span class="ident">rocket::http</span>::{<span class="ident">ContentType</span>, <span class="ident">Status</span>};
 <span class="kw">use</span> <span class="ident">rocket::outcome::Outcome</span>::<span class="kw-2">*</span>;
 <span class="kw">use</span> <span class="ident">rocket::request</span>::{<span class="self">self</span>, <span class="ident">FromRequest</span>, <span class="ident">Request</span>};
@@ -109,12 +131,25 @@
 <span class="kw">use</span> <span class="ident">lazy_static::lazy_static</span>;
 <span class="kw">use</span> <span class="ident">regex::Regex</span>;
 
+<span class="doccomment">/// Request guard for save image</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// ## Fields</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// - `content_type`: String, the converted content type of the image</span>
+<span class="doccomment">/// - `content`: Vec&lt;u8&gt;, the content of the image</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Deserialize</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">SaveImage</span> {
     <span class="kw">pub</span> <span class="ident">content_type</span>: <span class="ident">String</span>,
     <span class="kw">pub</span> <span class="ident">content</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>,
 }
 
+<span class="doccomment">/// Error type of saving image</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// ## Fields</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// - `ImageError::TooLarge`: The image is too large, more than the limit</span>
+<span class="doccomment">/// - `ImageError::InvalidType`: The content type is invalid</span>
+<span class="doccomment">/// - `ImageError::Io`: Io error</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
 <span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">ImageError</span> {
     <span class="ident">TooLarge</span>,
@@ -122,12 +157,19 @@
     <span class="ident">Io</span>(<span class="ident">std::io::Error</span>),
 }
 
+<span class="doccomment">/// Error type for referer check</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// ## Fields</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// - `RefererError::Empty`: The referer is empty</span>
+<span class="doccomment">/// - `RefererError::Invalid`: The referer is invalid</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
 <span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">ReferrerError</span> {
     <span class="ident">Empty</span>,
     <span class="ident">Invalid</span>,
 }
 
+<span class="doccomment">/// Request guard for referer check</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ReferrerCheck</span> {}
 
 <span class="attribute">#[<span class="ident">rocket::async_trait</span>]</span>

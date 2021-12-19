@@ -1,1 +1,1 @@
-initSidebarItems({"mod":[["auth",""],["burrow_valid",""],["cors",""],["dedup",""],["email",""],["id_gen",""],["mq",""]]});
+initSidebarItems({"mod":[["auth",""],["burrow_valid",""],["dedup",""],["email",""],["mq",""]]});

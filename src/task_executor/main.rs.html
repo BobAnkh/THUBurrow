@@ -75,6 +75,8 @@
 <span id="75">75</span>
 <span id="76">76</span>
 <span id="77">77</span>
+<span id="78">78</span>
+<span id="79">79</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">backend::utils::mq</span>::<span class="kw-2">*</span>;
 <span class="kw">use</span> <span class="ident">tokio::signal</span>;
 <span class="kw">use</span> <span class="ident">tokio::signal::unix</span>::{<span class="ident">signal</span>, <span class="ident">SignalKind</span>};
@@ -95,16 +97,18 @@
     <span class="comment">// futures::future::join_all(scheduler).await;</span>
     <span class="macro">tokio::select!</span> {
         <span class="kw">_</span> <span class="op">=</span> <span class="ident">signal::ctrl_c</span>() =&gt; {
-            <span class="macro">println!</span>(<span class="string">&quot;\n[TASK-EXEC] Gracefully shutdown. Wait for 5 seconds...\n&quot;</span>);
+            <span class="macro">log::warn!</span>(<span class="string">&quot;\n[TASK-EXEC] Gracefully shutdown. Wait for 5 seconds...\n&quot;</span>);
             <span class="ident">std::thread::sleep</span>(<span class="ident">Duration::from_millis</span>(<span class="number">5000</span>));
             <span class="ident">drop</span>(<span class="ident">notify_shutdown</span>);
             <span class="ident">std::thread::sleep</span>(<span class="ident">Duration::from_millis</span>(<span class="number">1000</span>));
+            <span class="macro">log::warn!</span>(<span class="string">&quot;\n[TASK-EXEC] Shutdown finished\n&quot;</span>);
         },
         <span class="kw">_</span> <span class="op">=</span> <span class="ident">shutdown_recv</span>.<span class="ident">recv</span>() =&gt; {
-            <span class="macro">println!</span>(<span class="string">&quot;\n[TASK-EXEC] Gracefully shutdown. Wait for 5 seconds...\n&quot;</span>);
+            <span class="macro">log::warn!</span>(<span class="string">&quot;\n[TASK-EXEC] Gracefully shutdown. Wait for 5 seconds...\n&quot;</span>);
             <span class="ident">std::thread::sleep</span>(<span class="ident">Duration::from_millis</span>(<span class="number">5000</span>));
             <span class="ident">drop</span>(<span class="ident">notify_shutdown</span>);
             <span class="ident">std::thread::sleep</span>(<span class="ident">Duration::from_millis</span>(<span class="number">1000</span>));
+            <span class="macro">log::warn!</span>(<span class="string">&quot;\n[TASK-EXEC] Shutdown finished\n&quot;</span>);
         },
     }
 }

@@ -1,1 +1,1 @@
-initSidebarItems({"enum":[["ErrorCode",""]],"struct":[["ErrorMessage",""],["ErrorResponse",""]]});
+initSidebarItems({"enum":[["ErrorCode","ErrorCode for all the public interfaces"]],"struct":[["ErrorMessage","Body of ErrorResponse"],["ErrorResponse","Error Response for all the public interfaces"]]});

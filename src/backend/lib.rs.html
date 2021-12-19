@@ -49,12 +49,10 @@
 <span id="49">49</span>
 <span id="50">50</span>
 <span id="51">51</span>
-<span id="52">52</span>
 </pre><pre class="rust"><code><span class="attribute">#[<span class="ident">macro_use</span>]</span>
 <span class="kw">extern</span> <span class="kw">crate</span> <span class="ident">rocket</span>;
 
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">config</span>;
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">db</span>;
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">models</span>;
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">pgdb</span>;
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">pool</span>;
@@ -85,8 +83,8 @@
 
 <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">rocket_init</span>() -&gt; <span class="ident">Rocket</span><span class="op">&lt;</span><span class="ident">Build</span><span class="op">&gt;</span> {
     <span class="ident">log_init</span>();
-    <span class="ident">utils::id_gen::init</span>(<span class="number">1</span>);
-    <span class="kw">let</span> <span class="ident">cors_handler</span> <span class="op">=</span> <span class="ident">utils::cors::init</span>();
+    <span class="ident">setup::id_generator::init</span>(<span class="number">1</span>);
+    <span class="kw">let</span> <span class="ident">cors_handler</span> <span class="op">=</span> <span class="ident">setup::cors::init</span>();
     <span class="ident">rocket::build</span>()
         .<span class="ident">mount</span>(<span class="string">&quot;/&quot;</span>, <span class="ident">rocket_cors::catch_all_options_routes</span>())
         .<span class="ident">attach</span>(<span class="ident">cors_handler</span>.<span class="ident">clone</span>())
@@ -99,7 +97,7 @@
         .<span class="ident">attach</span>(<span class="ident">AdHoc::on_ignite</span>(<span class="string">&quot;mount_routes&quot;</span>, <span class="ident">routes::routes_init</span>))
         .<span class="ident">attach</span>(<span class="ident">AdHoc::try_on_ignite</span>(
             <span class="string">&quot;setup_postgresql_tables&quot;</span>,
-            <span class="ident">setup::postgres_table_setup</span>,
+            <span class="ident">setup::postgres::postgres_table_setup</span>,
         ))
 }
 </code></pre></div>
