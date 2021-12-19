@@ -61,6 +61,30 @@ pub async fn get_total_burrow_count(
     }
 }
 
+/// Create Burrow
+///
+/// ## Parameters
+///
+/// - `Auth`: Authenticated user
+/// - `Connection<PgDb>`: Postgres connection
+/// - `Json<BurrowInfo>`: Burrow information
+/// - `Connection<PulsarSearchProducerMq>`: Pulsar connection
+///
+/// ## Returns
+///
+/// - `Status`: HTTP status
+/// - `BurrowCreateResponse`: Response of create burrow
+///
+/// ## Errors
+///
+/// - `ErrorResponse`: Error message
+///   - `ErrorCode::EmptyField`
+///   - `ErrorCode::RateLimit`
+///   - `ErrorCode::UserNotExist`
+///   - `ErrorCode::UserForbidden`
+///   - `ErrorCode::BurrowNumLimit`
+///   - `ErrorCode::DatabaseErr`
+///
 #[post("/", data = "<burrow_info>", format = "json")]
 pub async fn create_burrow(
     db: Connection<PgDb>,
@@ -208,6 +232,26 @@ pub async fn create_burrow(
     }
 }
 
+/// Discard Burrow
+///
+/// ## Parameters
+///
+/// - `Auth`: Authenticated user
+/// - `Connection<PgDb>`: Postgres connection
+/// - `i64`: Burrow id
+///
+/// ## Returns
+///
+/// - `Status`: HTTP status
+/// - `String`: "Success"
+///
+/// ## Errors
+///
+/// - `ErrorResponse`: Error message
+///   - `ErrorCode::UserNotExist`
+///   - `ErrorCode::UserForbidden`
+///   - `ErrorCode::DatabaseErr`
+///
 #[delete("/<burrow_id>")]
 pub async fn discard_burrow(
     db: Connection<PgDb>,
@@ -327,6 +371,26 @@ pub async fn discard_burrow(
     }
 }
 
+/// Show a Specific Burrow with Up to Ten Posts
+///
+/// ## Parameters
+///
+/// - `Auth`: Authenticated user
+/// - `Connection<PgDb>`: Postgres connection
+/// - `i64`: Burrow id
+/// - `Option<usize>`: Page number for burrow
+///
+/// ## Returns
+///
+/// - `Status`: HTTP status
+/// - `BurrowShowResponse`: Burrow detail information, including burrow information and up to 10 posts
+///
+/// ## Errors
+///
+/// - `ErrorResponse`: Error message
+///   - `ErrorCode::BurrowNotExist`
+///   - `ErrorCode::DatabaseErr`
+///
 #[get("/<burrow_id>?<page>")]
 pub async fn show_burrow(
     db: Connection<PgDb>,
@@ -391,6 +455,29 @@ pub async fn show_burrow(
     }
 }
 
+/// Update Burrow
+///
+/// ## Parameters
+///
+/// - `Auth`: Authenticated user
+/// - `Connection<PgDb>`: Postgres connection
+/// - `i64`: Burrow id
+/// - `Json<BurrowInfo>`: Burrow information
+/// - `Connection<PulsarSearchProducerMq>`: Pulsar connection
+///
+/// ## Returns
+///
+/// - `Status`: HTTP status
+/// - `String`: "Success"
+///
+/// ## Errors
+///
+/// - `ErrorResponse`: Error message
+///   - `ErrorCode::EmptyField`
+///   - `ErrorCode::UserNotExist`
+///   - `ErrorCode::UserForbidden`
+///   - `ErrorCode::DatabaseErr`
+///
 #[patch("/<burrow_id>", data = "<burrow_info>", format = "json")]
 pub async fn update_burrow(
     db: Connection<PgDb>,
