@@ -1,17 +1,5 @@
 import { LoadingOutlined } from '@ant-design/icons';
-import {
-  Layout,
-  Button,
-  Card,
-  Col,
-  Form,
-  List,
-  Row,
-  Breadcrumb,
-  Select,
-  Tag,
-  message,
-} from 'antd';
+import { Layout, Button, Card, Form, Select, message } from 'antd';
 import { FC, useEffect } from 'react';
 import React from 'react';
 import styles from '../styles/search.module.css';
@@ -24,7 +12,6 @@ import Searchburrowid from '../components/search/search-burrowid';
 import Searchpost from '../components/search/search-post';
 import Searchreply from '../components/search/search-reply';
 import Searchpostid from '../components/search/search-postid';
-import { string } from 'prop-types';
 
 axios.defaults.withCredentials = true;
 axios.defaults.headers.post['Content-Type'] = 'application/json';
