@@ -2,7 +2,6 @@
 extern crate rocket;
 
 pub mod config;
-pub mod db;
 pub mod models;
 pub mod pgdb;
 pub mod pool;
@@ -33,8 +32,8 @@ pub fn log_init() {
 
 pub fn rocket_init() -> Rocket<Build> {
     log_init();
-    utils::id_gen::init(1);
-    let cors_handler = utils::cors::init();
+    setup::id_generator::init(1);
+    let cors_handler = setup::cors::init();
     rocket::build()
         .mount("/", rocket_cors::catch_all_options_routes())
         .attach(cors_handler.clone())
@@ -47,6 +46,6 @@ pub fn rocket_init() -> Rocket<Build> {
         .attach(AdHoc::on_ignite("mount_routes", routes::routes_init))
         .attach(AdHoc::try_on_ignite(
             "setup_postgresql_tables",
-            setup::postgres_table_setup,
+            setup::postgres::postgres_table_setup,
         ))
 }

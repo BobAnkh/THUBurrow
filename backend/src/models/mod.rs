@@ -1,3 +1,4 @@
+//! Models of backend
 pub mod burrow;
 pub mod content;
 pub mod error;
