@@ -1,4 +1,0 @@
-var N = null;var sourcesIndex = {};
-sourcesIndex["backend"] = {"name":"","dirs":[{"name":"config","files":["email.rs","mod.rs","mq.rs","user.rs"]},{"name":"db","files":["mod.rs","prelude.rs","user.rs"]},{"name":"models","files":["burrow.rs","content.rs","error.rs","mod.rs","pulsar.rs","search.rs","storage.rs","user.rs"]},{"name":"pgdb","files":["burrow.rs","content_post.rs","content_reply.rs","image.rs","mod.rs","prelude.rs","user.rs","user_collection.rs","user_follow.rs","user_like.rs","user_status.rs"]},{"name":"routes","files":["burrow.rs","content.rs","health.rs","mod.rs","search.rs","storage.rs","trending.rs","user.rs"]},{"name":"utils","files":["auth.rs","burrow_valid.rs","cors.rs","dedup.rs","email.rs","id_gen.rs","mod.rs","mq.rs"]}],"files":["lib.rs","pool.rs","setup.rs"]};
-sourcesIndex["task_executor"] = {"name":"","files":["main.rs"]};
-createSourceSidebar();
