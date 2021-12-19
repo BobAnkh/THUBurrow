@@ -42,11 +42,11 @@ const Home: NextPage = () => {
       try {
         var url;
         if (section == '') {
-          url = `${process.env.NEXT_PUBLIC_BASEURL}/content/list?page=${
+          url = `${process.env.NEXT_PUBLIC_BASEURL}/content/posts/list?page=${
             page - 1
           }`;
         } else {
-          url = `${process.env.NEXT_PUBLIC_BASEURL}/content/list?page=${
+          url = `${process.env.NEXT_PUBLIC_BASEURL}/content/posts/list?page=${
             page - 1
           }&section=${section}`;
         }
@@ -55,7 +55,20 @@ const Home: NextPage = () => {
         });
         const postlist = res.data.list_page.post_page;
         setPostList(postlist);
-        setPostNum(res.data.post_num);
+      } catch (error) {
+        const err = error as AxiosError;
+        if (err.response?.status == 401) {
+          message.error('请先登录！');
+          router.push('/login');
+        }
+      }
+    };
+    const fetchPostNum = async () => {
+      try {
+        const res = await axios.get(
+          `${process.env.NEXT_PUBLIC_BASEURL}/content/posts/total`
+        );
+        setPostNum(res.data.total);
       } catch (error) {
         const err = error as AxiosError;
         if (err.response?.status == 401) {
@@ -65,6 +78,7 @@ const Home: NextPage = () => {
       }
     };
     fetchPostList();
+    fetchPostNum();
   }, [page, router, section]);
 
   const changesection = (value: string) => {
