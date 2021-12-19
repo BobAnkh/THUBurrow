@@ -18,16 +18,18 @@ async fn main() {
     // futures::future::join_all(scheduler).await;
     tokio::select! {
         _ = signal::ctrl_c() => {
-            println!("\n[TASK-EXEC] Gracefully shutdown. Wait for 5 seconds...\n");
+            log::warn!("\n[TASK-EXEC] Gracefully shutdown. Wait for 5 seconds...\n");
             std::thread::sleep(Duration::from_millis(5000));
             drop(notify_shutdown);
             std::thread::sleep(Duration::from_millis(1000));
+            log::warn!("\n[TASK-EXEC] Shutdown finished\n");
         },
         _ = shutdown_recv.recv() => {
-            println!("\n[TASK-EXEC] Gracefully shutdown. Wait for 5 seconds...\n");
+            log::warn!("\n[TASK-EXEC] Gracefully shutdown. Wait for 5 seconds...\n");
             std::thread::sleep(Duration::from_millis(5000));
             drop(notify_shutdown);
             std::thread::sleep(Duration::from_millis(1000));
+            log::warn!("\n[TASK-EXEC] Shutdown finished\n");
         },
     }
 }
