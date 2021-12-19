@@ -31,7 +31,9 @@ jobs:
           working-directory: backend
     
       - name: cargo doc
-        run: cargo doc --no-deps -p backend
+        run: |
+            cargo doc --no-deps
+            echo "<meta http-equiv=\"refresh\" content=\"0; url=backend\">" > target/doc/index.html
 
       - name: Deploy to GitHub Pages
         uses: Cecilapp/GitHub-Pages-deploy@v3
@@ -39,7 +41,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           email: 41898282+github-actions[bot]@users.noreply.github.com>
-          build_dir: backend/target/doc/backend
+          build_dir: backend/target/doc
           branch: gh-page
           cname: docs.thuburrow.com
           commit_message: "docs(backend): update api documentations"

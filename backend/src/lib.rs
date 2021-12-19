@@ -36,7 +36,9 @@ pub fn rocket_init() -> Rocket<Build> {
     utils::id_gen::init(1);
     let cors_handler = utils::cors::init();
     rocket::build()
-        .attach(cors_handler)
+        .mount("/", rocket_cors::catch_all_options_routes())
+        .attach(cors_handler.clone())
+        .manage(cors_handler)
         .attach(pool::PgDb::init())
         .attach(pool::RedisDb::init())
         .attach(pool::PulsarSearchProducerMq::init())
