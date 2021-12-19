@@ -1,7 +1,5 @@
 import { List, Tag } from 'antd';
-import styles from '../../styles/search.module.css';
 import { BurrowDataType } from '../../models/search/data.d';
-import moment from 'moment';
 import {
   LikeOutlined,
   DislikeOutlined,
@@ -53,8 +51,8 @@ const IconText: React.FC<{
   }
 };
 
-function showtag1(tag: string) {
-  return <Tag>{tag}</Tag>;
+function showtag1(tag: string, index: number) {
+  return <Tag key={index}>{tag}</Tag>;
 }
 const showtag = (value: Array<string>) => {
   return value.map(showtag1);

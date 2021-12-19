@@ -2,7 +2,6 @@ import { List, Tag } from 'antd';
 import styles from '../../styles/search.module.css';
 import { Reply } from '../../models/search/data.d';
 import moment from 'moment';
-import Link from 'next/link';
 
 type Iprops = {
   replylist: any;
