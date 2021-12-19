@@ -86,14 +86,12 @@ services:
   #     SPRING_CONFIGURATION_FILE: /pulsar-manager/pulsar-manager/application.properties
 
   typesense:
-    image: typesense/typesense:0.21.0
+    image: typesense/typesense:0.22.1
     container_name: typesense_container
     restart: unless-stopped
     environment:
       TYPESENSE_API_KEY: ${TYPESENSE_API_KEY:-8Dz4jRrsBjYgdCD/VGP1bleph7oBThJr5IcF43l0U24=}
       TYPESENSE_DATA_DIR: "/data"
-    depends_on:
-      - pulsar
     ports:
       - "8108:8108"
     volumes:
