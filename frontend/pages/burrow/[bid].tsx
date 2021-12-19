@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { NextPage } from 'next';
 import { StarTwoTone, LikeTwoTone } from '@ant-design/icons';
-import Link from 'next/link';
 import styles from './burrow.module.css';
-import { TextLoop } from 'react-text-loop-next';
 import {
   Alert,
   Layout,
@@ -17,11 +15,7 @@ import {
   Input,
   Card,
   Tag,
-  Col,
-  Dropdown,
-  Row,
   Popconfirm,
-  Spin,
 } from 'antd';
 import { MessageOutlined, LikeOutlined, StarOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/router';
@@ -78,7 +72,7 @@ const Burrow: NextPage = () => {
     try {
       const fetchListData = async () => {
         const res = await axios.get(
-          `${process.env.NEXT_PUBLIC_BASEURL}/${bid}?page=${page - 1}`
+          `${process.env.NEXT_PUBLIC_BASEURL}/burrows/${bid}?page=${page - 1}`
         );
         const postlist = await res.data;
         setListData(postlist.posts);
@@ -97,7 +91,7 @@ const Burrow: NextPage = () => {
         window.location.reload();
       }
     }
-  }, [router, page, bid]);
+  }, [router, page]);
 
   const EditIntro = () => {
     setEditing(true);
@@ -111,8 +105,8 @@ const Burrow: NextPage = () => {
       description: { descriptionTemp },
     };
     try {
-      const res = await axios.post(
-        `${process.env.NEXT_PUBLIC_BASEURL}/${bid}`,
+      const res = await axios.patch(
+        `${process.env.NEXT_PUBLIC_BASEURL}/burrows/${bid}`,
         data
       );
       var json = await res.data;
@@ -233,6 +227,12 @@ const Burrow: NextPage = () => {
         className='site-Layout'
         style={{ padding: '0 50px', marginTop: 64 }}
       >
+        <Breadcrumb style={{ margin: '16px 0' }}>
+          <Breadcrumb.Item>Home</Breadcrumb.Item>
+          <Breadcrumb.Item>List</Breadcrumb.Item>
+          <Breadcrumb.Item>App</Breadcrumb.Item>
+        </Breadcrumb>
+
         <div
           className='site-layout-background'
           style={{ padding: 24, minHeight: 380 }}
