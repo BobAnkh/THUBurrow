@@ -42,14 +42,14 @@ const Create: NextPage = () => {
       }
     };
     fetchBid();
-  }, []);
+  }, [router]);
   const onFinish = async (values: any) => {
     const data = {
       ...values,
     };
     try {
       const res = await axios.post(
-        `${process.env.NEXT_PUBLIC_BASEURL}/content/post`,
+        `${process.env.NEXT_PUBLIC_BASEURL}/content/posts`,
         { ...data },
         { headers: { 'Content-Type': 'application/json' } }
       );
@@ -127,9 +127,10 @@ const Create: NextPage = () => {
                   style={{ width: '100%' }}
                   placeholder='分区'
                 >
-                  <Option value='分区1'>分区1</Option>
-                  <Option value='分区2'>分区2</Option>
-                  <Option value='分区3'>分区3</Option>
+                  <Option value='Life'>日常生活</Option>
+                  <Option value='Learning'>学习科研</Option>
+                  <Option value='Entertainment'>休闲娱乐</Option>
+                  <Option value='NSFW'>NSFW</Option>
                 </Select>
               </Form.Item>
             </Form.Item>

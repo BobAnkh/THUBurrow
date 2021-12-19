@@ -13,12 +13,20 @@ const operationTabList = [
     tab: <span>全部</span>,
   },
   {
-    key: '学习',
-    tab: <span>学习</span>,
+    key: 'Life',
+    tab: <span>日常生活</span>,
   },
   {
-    key: '生活',
-    tab: <span>生活</span>,
+    key: 'Learning',
+    tab: <span>学习科研</span>,
+  },
+  {
+    key: 'Entertainment',
+    tab: <span>休闲娱乐</span>,
+  },
+  {
+    key: 'NSFW',
+    tab: <span>NSFW</span>,
   },
 ];
 
@@ -42,11 +50,11 @@ const Home: NextPage = () => {
       try {
         var url;
         if (section == '') {
-          url = `${process.env.NEXT_PUBLIC_BASEURL}/content/list?page=${
+          url = `${process.env.NEXT_PUBLIC_BASEURL}/content/posts/list?page=${
             page - 1
           }`;
         } else {
-          url = `${process.env.NEXT_PUBLIC_BASEURL}/content/list?page=${
+          url = `${process.env.NEXT_PUBLIC_BASEURL}/content/posts/list?page=${
             page - 1
           }&section=${section}`;
         }
@@ -55,7 +63,20 @@ const Home: NextPage = () => {
         });
         const postlist = res.data.list_page.post_page;
         setPostList(postlist);
-        setPostNum(res.data.post_num);
+      } catch (error) {
+        const err = error as AxiosError;
+        if (err.response?.status == 401) {
+          message.error('请先登录！');
+          router.push('/login');
+        }
+      }
+    };
+    const fetchPostNum = async () => {
+      try {
+        const res = await axios.get(
+          `${process.env.NEXT_PUBLIC_BASEURL}/content/posts/total`
+        );
+        setPostNum(res.data.total);
       } catch (error) {
         const err = error as AxiosError;
         if (err.response?.status == 401) {
@@ -65,6 +86,7 @@ const Home: NextPage = () => {
       }
     };
     fetchPostList();
+    fetchPostNum();
   }, [page, router, section]);
 
   const changesection = (value: string) => {
