@@ -875,7 +875,7 @@
         <span class="kw">let</span> <span class="ident">title</span> <span class="op">=</span> <span class="string">&quot;test_title&quot;</span>.<span class="ident">to_string</span>();
         <span class="kw">let</span> <span class="ident">burrow_id</span> <span class="op">=</span> <span class="number">100</span>;
         <span class="kw">let</span> <span class="ident">update_time</span> <span class="op">=</span> <span class="ident">Utc::now</span>().<span class="ident">with_timezone</span>(<span class="kw-2">&amp;</span><span class="ident">FixedOffset::east</span>(<span class="number">8</span> <span class="op">*</span> <span class="number">3600</span>));
-        <span class="kw">let</span> <span class="ident">section</span> <span class="op">=</span> <span class="macro">vec!</span>[<span class="ident">PostSection::XXG</span>, <span class="ident">PostSection::Learning</span>];
+        <span class="kw">let</span> <span class="ident">section</span> <span class="op">=</span> <span class="macro">vec!</span>[<span class="ident">PostSection::NSFW</span>, <span class="ident">PostSection::Learning</span>];
         <span class="kw">let</span> <span class="ident">tag</span> <span class="op">=</span> <span class="macro">vec!</span>[<span class="string">&quot;test&quot;</span>.<span class="ident">to_string</span>()];
         <span class="kw">let</span> <span class="ident">data</span> <span class="op">=</span> <span class="ident">PulsarSearchPostData</span> {
             <span class="ident">post_id</span>,
@@ -907,7 +907,7 @@
         <span class="kw">let</span> <span class="ident">title</span> <span class="op">=</span> <span class="string">&quot;test_title&quot;</span>.<span class="ident">to_string</span>();
         <span class="kw">let</span> <span class="ident">burrow_id</span> <span class="op">=</span> <span class="number">100</span>;
         <span class="kw">let</span> <span class="ident">update_time</span> <span class="op">=</span> <span class="ident">Utc::now</span>().<span class="ident">with_timezone</span>(<span class="kw-2">&amp;</span><span class="ident">FixedOffset::east</span>(<span class="number">8</span> <span class="op">*</span> <span class="number">3600</span>));
-        <span class="kw">let</span> <span class="ident">section</span> <span class="op">=</span> <span class="macro">vec!</span>[<span class="ident">PostSection::XXG</span>, <span class="ident">PostSection::Learning</span>];
+        <span class="kw">let</span> <span class="ident">section</span> <span class="op">=</span> <span class="macro">vec!</span>[<span class="ident">PostSection::NSFW</span>, <span class="ident">PostSection::Learning</span>];
         <span class="kw">let</span> <span class="ident">tag</span> <span class="op">=</span> <span class="macro">vec!</span>[<span class="string">&quot;test&quot;</span>.<span class="ident">to_string</span>()];
         <span class="kw">let</span> <span class="ident">data</span> <span class="op">=</span> <span class="ident">TypesensePostData</span> {
             <span class="ident">id</span>: <span class="ident">post_id</span>.<span class="ident">to_string</span>(),

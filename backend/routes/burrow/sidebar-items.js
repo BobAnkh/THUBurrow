@@ -1,1 +1,1 @@
-initSidebarItems({"fn":[["create_burrow",""],["discard_burrow",""],["get_total_burrow_count",""],["init",""],["show_burrow",""],["update_burrow",""]]});
+initSidebarItems({"fn":[["create_burrow","Create Burrow"],["discard_burrow","Discard Burrow"],["get_total_burrow_count",""],["init",""],["show_burrow","Show a Specific Burrow with Up to Ten Posts"],["update_burrow","Update Burrow"]]});

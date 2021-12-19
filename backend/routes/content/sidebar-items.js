@@ -1,1 +1,1 @@
-initSidebarItems({"fn":[["create_post",""],["create_reply",""],["delete_post",""],["get_total_post_count",""],["init",""],["read_post",""],["read_post_list",""],["update_post",""],["update_reply",""]]});
+initSidebarItems({"fn":[["create_post","Create Post"],["create_reply","Create Reply"],["delete_post","Delete Post"],["get_total_post_count",""],["init",""],["read_post","Read a Specific Post"],["read_post_list","Read a List of Posts with Number Up to Ten"],["update_post","Update Post"],["update_reply","Update Reply"]]});
