@@ -51,7 +51,9 @@ const PostDetial: NextPage = () => {
     const fetchReplyList = async () => {
       try {
         const res = await axios.get(
-          `${process.env.NEXT_PUBLIC_BASEURL}/content/${pid}?page=${page - 1}`,
+          `${process.env.NEXT_PUBLIC_BASEURL}/content/posts/${pid}?page=${
+            page - 1
+          }`,
           {
             headers: { 'Content-Type': 'application/json' },
           }
@@ -166,7 +168,7 @@ const PostDetial: NextPage = () => {
     };
     try {
       const res = await axios.post(
-        `${process.env.NEXT_PUBLIC_BASEURL}/content/reply`,
+        `${process.env.NEXT_PUBLIC_BASEURL}/content/replies`,
         { ...data, post_id: pid },
         { headers: { 'Content-Type': 'application/json' } }
       );
