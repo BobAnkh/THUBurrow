@@ -182,10 +182,6 @@ const PostDetial: NextPage = () => {
     }
   };
 
-  const onFinishFailed = (errorInfo: any) => {
-    message.error(errorInfo);
-  };
-
   return (
     <Layout className='layout'>
       <Header>
@@ -248,7 +244,6 @@ const PostDetial: NextPage = () => {
             wrapperCol={{ span: 14 }}
             layout='horizontal'
             onFinish={onFinish}
-            onFinishFailed={onFinishFailed}
             style={{ padding: '20px' }}
           >
             <Form.Item

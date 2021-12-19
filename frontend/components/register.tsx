@@ -3,11 +3,11 @@ import styles from '../styles/register.module.css';
 import 'antd/dist/antd.css';
 import { Form, Input, Select, Row, Col, Checkbox, Button, message } from 'antd';
 import axios from 'axios';
+import CryptoJS from 'crypto-js';
 
 axios.defaults.withCredentials = true;
 axios.defaults.headers.post['Content-Type'] = 'application/json';
 
-type RegisProps = {};
 const { Option } = Select;
 
 const tailFormItemLayout = {
@@ -39,7 +39,7 @@ export default function Register({ switchform }: Iprops) {
   const [verCode, setVerCode] = useState('');
 
   async function sendCode() {
-    let maxTime = 5;
+    let maxTime = 60;
     const timer = setInterval(() => {
       if (maxTime > 0) {
         --maxTime;
@@ -84,6 +84,7 @@ export default function Register({ switchform }: Iprops) {
       defaultValue='@mails.tsinghua.edu.cn'
       onChange={handleSuffix}
       className={styles.select_after}
+      style={{ width: '200px' }}
     >
       <Option value='@pku.edu.cn'>@pku.edu.cn</Option>
       <Option value='@mails.tsinghua.edu.cn'>@mails.tsinghua.edu.cn</Option>
@@ -121,11 +122,12 @@ export default function Register({ switchform }: Iprops) {
   async function onFinish() {
     const data = {
       username: userName,
-      password: passWord,
+      password: CryptoJS.MD5(passWord).toString(),
       email: email + suffix,
       verification_code: verCode,
     };
     try {
+      console.log(data);
       const res = await axios.post(
         `${process.env.NEXT_PUBLIC_BASEURL}/users/sign-up`,
         data

@@ -1,17 +1,7 @@
-import type { NextPage, GetStaticProps } from 'next';
+import type { NextPage } from 'next';
 import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/router';
-import {
-  Layout,
-  Breadcrumb,
-  message,
-  Card,
-  PageHeader,
-  Button,
-  Menu,
-  Tag,
-} from 'antd';
+import { Layout, message, Card } from 'antd';
 import PostList from '../components/post-list';
 import GlobalHeader from '../components/header/header';
 import '../node_modules/antd/dist/antd.css';
@@ -34,6 +24,7 @@ const operationTabList = [
 
 const { Header, Content, Footer } = Layout;
 
+React.useLayoutEffect = React.useEffect;
 axios.defaults.withCredentials = true;
 axios.defaults.headers.post['Content-Type'] = 'application/json';
 
