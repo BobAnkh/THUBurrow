@@ -49,7 +49,7 @@ const Create: NextPage = () => {
     };
     try {
       const res = await axios.post(
-        `${process.env.NEXT_PUBLIC_BASEURL}/content/post`,
+        `${process.env.NEXT_PUBLIC_BASEURL}/content/posts`,
         { ...data },
         { headers: { 'Content-Type': 'application/json' } }
       );
