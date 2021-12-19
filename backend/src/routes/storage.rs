@@ -1,3 +1,4 @@
+//! Routes for storage
 use chrono::{FixedOffset, Utc};
 use crypto::digest::Digest;
 use crypto::md5::Md5;

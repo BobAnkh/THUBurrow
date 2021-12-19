@@ -1,3 +1,4 @@
+//! Routes for content
 use chrono::{prelude::*, Duration};
 use rocket::http::Status;
 use rocket::serde::json::Json;

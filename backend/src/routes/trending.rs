@@ -1,3 +1,4 @@
+//! Routes for trending.
 use rocket::http::Status;
 use rocket::serde::json::Json;
 use rocket::{Build, Rocket};
@@ -15,6 +16,23 @@ pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
     rocket.mount("/", routes![read_trending])
 }
 
+/// Get Trending
+///
+/// ## Parameters
+///
+/// - `Auth`: Authenticated user
+/// - `Connection<PgDb>`: Postgres connection
+/// - `Connection<RedisDb>`: Redis connection
+///
+/// ## Returns
+///
+/// - `Status`: HTTP status
+/// - `String`: Json string of posts
+///
+/// ## Errors
+///
+/// - `ErrorResponse`: Error message
+///   - `ErrorCode::DatabaseErr`
 #[get("/trending")]
 pub async fn read_trending(
     _auth: Auth,
@@ -57,6 +75,22 @@ pub async fn read_trending(
     }
 }
 
+/// Generate Trending
+///
+/// Get trending from database and store it to redis
+///
+/// ## Parameters
+///
+/// - `DatabaseConnection`: Postgres connection
+/// - `redis::aio::Connection`: Redis connection
+///
+/// ## Returns
+///
+/// - `String`: Json string of posts
+///
+/// ## Errors
+///
+/// - `String`: Database error message
 pub async fn select_trending(
     pg_con: &DatabaseConnection,
     kv_conn: &mut redis::aio::Connection,

@@ -31,7 +31,9 @@ jobs:
           working-directory: backend
     
       - name: cargo doc
-        run: cargo doc --no-deps
+        run: |
+            cargo doc --no-deps
+            echo "<meta http-equiv=\"refresh\" content=\"0; url=backend\">" > target/doc/index.html
 
       - name: Deploy to GitHub Pages
         uses: Cecilapp/GitHub-Pages-deploy@v3

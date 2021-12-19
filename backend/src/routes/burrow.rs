@@ -1,3 +1,4 @@
+//! Routes for burow
 use chrono::{Duration, FixedOffset, Utc};
 use rocket::http::Status;
 use rocket::serde::json::Json;

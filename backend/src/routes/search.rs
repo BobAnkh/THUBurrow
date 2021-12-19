@@ -1,3 +1,4 @@
+//! Routes for search
 use rocket::http::Status;
 use rocket::serde::json::Json;
 use rocket::{Build, Rocket};
