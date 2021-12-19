@@ -8,6 +8,15 @@ pub static REPLY_PER_PAGE: usize = 20;
 pub static MAX_SECTION: usize = 3;
 pub static MAX_TAG: usize = 10;
 
+/// Section of post
+///
+/// ## Fields
+///
+/// - `PostSection::Entertainment`: Entertainment activities
+/// - `PostSection::Learning`: Learning issues
+/// - `PostSection::Life`: Everyday events
+/// - `PostSection::NSFW`: No safe for work
+///
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Serialize, Deserialize, Clone)]
 pub enum PostSection {
     Entertainment,
@@ -16,34 +25,62 @@ pub enum PostSection {
     NSFW,
 }
 
+/// Last Post Sequence Number
+///
+/// ## Fields
+///
+/// - `LastPostSeq::last_value`: Last post sequence number
+///
 #[derive(Debug, FromQueryResult)]
 pub struct LastPostSeq {
     last_value: i64,
 }
 
+/// Total Number of Posts
+///
+/// ## Fields
+///
+/// - `PostTotalCount::total`: Total number of posts
+///
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct PostTotalCount {
     pub total: i64,
 }
 
+/// Post Create Response
+///
+/// ## Fields
+///
+/// - `PostCreateResponse::post_id`: Post id of created post
+///
 #[derive(Serialize, Deserialize)]
 pub struct PostCreateResponse {
     pub post_id: i64,
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct PostUpdateInfo {
-    pub title: String,
-    pub section: Vec<PostSection>,
-    pub tag: Vec<String>,
-}
-
+/// Reply Create Response
+///
+/// ## Fields
+///
+/// - `ReplyCreateResponse::post_id`: Post id of post for created reply
+/// - `ReplyCreateResponse::reply_id`: Reply id of created reply
+///
 #[derive(Serialize, Deserialize)]
 pub struct ReplyCreateResponse {
     pub post_id: i64,
     pub reply_id: i32,
 }
 
+/// Post detail information
+///
+/// ## Fields
+///
+/// - `PostPage::post_desc`: Post information of the post
+/// - `PostPage::reply_page`: Reply information vector of the post, with the length up to ten
+/// - `PostPage::page`: Page number of the post
+/// - `PostPage::like`: Flag indicating whether the user liked the post
+/// - `PostPage::collection`: Flag indicating whether the user collected the post
+///
 #[derive(Serialize, Deserialize)]
 pub struct PostPage {
     pub post_desc: Post,
@@ -53,12 +90,29 @@ pub struct PostPage {
     pub collection: bool,
 }
 
+/// Post general information for one page
+///
+/// ## Fields
+///
+/// - `ListPage::post_page`: Post general information vector of the posts, with the length up to ten
+/// - `ListPage::page`: Page number of the list
+///
 #[derive(Serialize, Deserialize)]
 pub struct ListPage {
     pub post_page: Vec<PostDisplay>,
     pub page: usize,
 }
 
+/// Post create information of request
+///
+/// ## Fields
+///
+/// - `PostInfo::title`: Title of the post
+/// - `PostInfo::burrow_id`: Burrow id of the post
+/// - `PostInfo::section`: Section of the post
+/// - `PostInfo::tag`: Tag of the post
+/// - `PostInfo::content`: Content of the post
+///
 #[derive(Serialize, Deserialize)]
 pub struct PostInfo {
     pub title: String,
@@ -68,6 +122,29 @@ pub struct PostInfo {
     pub content: String,
 }
 
+/// Post updated information of request
+///
+/// ## Fields
+///
+/// - `PostUpdateInfo::title`: New title of updated post
+/// - `PostUpdateInfo::section`: New section of updated post
+/// - `PostUpdateInfo::tag`: New tag of updated post
+///
+#[derive(Serialize, Deserialize)]
+pub struct PostUpdateInfo {
+    pub title: String,
+    pub section: Vec<PostSection>,
+    pub tag: Vec<String>,
+}
+
+/// Reply create information of request
+///
+/// ## Fields
+///
+/// - `ReplyInfo::post_id`: Post id of the reply
+/// - `ReplyInfo::burrow_id`: Burrow id of the reply
+/// - `ReplyInfo::content`: Content of the reply
+///
 #[derive(Deserialize)]
 pub struct ReplyInfo {
     pub post_id: i64,
@@ -75,6 +152,14 @@ pub struct ReplyInfo {
     pub content: String,
 }
 
+/// Reply update information of request
+///
+/// ## Fields
+///
+/// - `ReplyUpdateInfo::post_id`: Post id of updated reply
+/// - `ReplyUpdateInfo::reply_id`: Reply id of updated reply
+/// - `ReplyUpdateInfo::content`: New content of updated reply
+///
 #[derive(Deserialize)]
 pub struct ReplyUpdateInfo {
     pub post_id: i64,
@@ -82,6 +167,15 @@ pub struct ReplyUpdateInfo {
     pub content: String,
 }
 
+/// Post general information
+///
+/// ## Fields
+///
+/// - `PostDisplay::post`: Post information of the post
+/// - `PostDisplay::like`: Flag indicating whether the user liked the post
+/// - `PostDisplay::collection`: Flag indicating whether the user collected the post
+/// - `PostDisplay::is_update`: Flag indicating whether the post has new reply, in case that the user collected the post
+///
 #[derive(Serialize, Deserialize)]
 pub struct PostDisplay {
     pub post: Post,
@@ -90,6 +184,23 @@ pub struct PostDisplay {
     pub is_update: bool,
 }
 
+/// Post information of database
+///
+/// ## Fields
+///
+/// - `Post::post_id`: Post id of the post
+/// - `Post::title`: Title of the post
+/// - `Post::burrow_id`: Burrow id of the post
+/// - `Post::section`: Section of the post
+/// - `Post::tag`: Tag of the post
+/// - `Post::create_time`: Created time of the post
+/// - `Post::update_time`: Updated time of the post
+/// - `Post::post_state`: State of the post
+/// - `Post::post_type`: Type of the post
+/// - `Post::like_num`: Total number of likes of the post
+/// - `Post::collection_num`: Total number of collections of the post
+/// - `Post::post_len`: Total number of replies of the post
+///
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct Post {
     pub post_id: i64,
@@ -106,6 +217,18 @@ pub struct Post {
     pub post_len: i32,
 }
 
+/// Reply information of database
+///
+/// ## Fields
+///
+/// - `Reply::post_id`: Post id of the reply
+/// - `Reply::reply_id`: Reply id of the reply
+/// - `Reply::burrow_id`: Burrow id of the reply
+/// - `Reply::create_time`: Created time of the reply
+/// - `Reply::update_time`: Updated time of the reply
+/// - `Reply::content`: Content of the reply
+/// - `Reply::reply_state`: State of the post
+///
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct Reply {
     pub post_id: i64,
