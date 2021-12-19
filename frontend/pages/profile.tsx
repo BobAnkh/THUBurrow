@@ -1,4 +1,4 @@
-import { ColumnsType } from 'antd/es/table';
+import { ColumnsType, ColumnType } from 'antd/es/table';
 import type { NextPage } from 'next';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -24,9 +24,11 @@ import {
   Card,
 } from 'antd';
 import React, { useState, useEffect, useRef, useContext } from 'react';
+import GlobalHeader from '../components/header/header';
 import 'antd/dist/antd.css';
 import '../styles/profile.module.css';
-
+axios.defaults.withCredentials = true;
+axios.defaults.headers.post['Content-Type'] = 'application/json';
 const { Header, Content, Footer } = Layout;
 interface User {
   key: number;
@@ -428,10 +430,8 @@ const UserPage: NextPage = () => {
   };
 
   const site = router.pathname.split('/')[1];
-  const myBurrowColumns: (ColumnTypes[number] & {
-    editable?: boolean;
-    dataIndex: string;
-  })[] = [
+  type MyColumnsType<T> = (ColumnType<T> & {editable?:boolean})[];
+  const myBurrowColumns: MyColumnsType<MyBurrowInfo> = [
     {
       key: 'id',
       title: '洞号',
@@ -506,57 +506,12 @@ const UserPage: NextPage = () => {
       }),
     };
   });
-  const menu = (
-    <Menu
-      id='nav'
-      key='nav'
-      theme='dark'
-      mode={'horizontal'}
-      defaultSelectedKeys={['home']}
-      selectedKeys={[site]}
-    >
-      <Menu.Item key='home'>
-        <Link href='/home'>首页</Link>
-      </Menu.Item>
-      <Menu.Item key='message'>
-        <Link href='/message'>消息</Link>
-      </Menu.Item>
-      <Menu.Item key='trending'>
-        <Link href='/trending'>热榜</Link>
-      </Menu.Item>
-      <Menu.Item key='search'>
-        <Link href='/searchpage'>搜索</Link>
-      </Menu.Item>
-    </Menu>
-  );
-  const UserMenu = (
-    <Menu>
-      <Menu.Item>
-        <Link href='/profile'>个人信息</Link>
-      </Menu.Item>
-      <Menu.Divider />
-      <Menu.Item
-        onClick={() => {
-          localStorage.removeItem('token');
-          window.location.reload();
-        }}
-      >
-        退出
-      </Menu.Item>
-    </Menu>
-  );
+
   return (
     <Layout className='layout'>
       <Header>
-        <Row>
-          <div className='logo' />
-          <Col offset={2}>{menu}</Col>
-          <Col offset={16} span={1}>
-            <Dropdown overlay={UserMenu} placement='bottomCenter'>
-              <Button icon={<UserOutlined />} />
-            </Dropdown>
-          </Col>
-        </Row>
+        <title> 个人主页 </title>
+        <GlobalHeader/>
       </Header>
       <Content>
         <Card title='我的地洞'>
