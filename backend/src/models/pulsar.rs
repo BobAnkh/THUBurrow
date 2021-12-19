@@ -363,7 +363,7 @@ mod tests {
         let title = "test_title".to_string();
         let burrow_id = 100;
         let update_time = Utc::now().with_timezone(&FixedOffset::east(8 * 3600));
-        let section = vec![PostSection::XXG, PostSection::Learning];
+        let section = vec![PostSection::NSFW, PostSection::Learning];
         let tag = vec!["test".to_string()];
         let data = PulsarSearchPostData {
             post_id,
@@ -395,7 +395,7 @@ mod tests {
         let title = "test_title".to_string();
         let burrow_id = 100;
         let update_time = Utc::now().with_timezone(&FixedOffset::east(8 * 3600));
-        let section = vec![PostSection::XXG, PostSection::Learning];
+        let section = vec![PostSection::NSFW, PostSection::Learning];
         let tag = vec!["test".to_string()];
         let data = TypesensePostData {
             id: post_id.to_string(),

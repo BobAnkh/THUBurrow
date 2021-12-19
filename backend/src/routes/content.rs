@@ -69,6 +69,30 @@ pub async fn get_total_post_count(
     }
 }
 
+/// Create Post
+///
+/// ## Parameters
+///
+/// - `Auth`: Authenticated user
+/// - `Connection<PgDb>`: Postgres connection
+/// - `Json<PostInfo>`: Post information
+/// - `Connection<PulsarSearchProducerMq>`: Pulsar connection
+///
+/// ## Returns
+///
+/// - `Status`: HTTP status
+/// - `PostCreateResponse`: Response of create post
+///
+/// ## Errors
+///
+/// - `ErrorResponse`: Error message
+///   - `ErrorCode::EmptyField`
+///   - `ErrorCode::SectionInvalid`
+///   - `ErrorCode::UserNotExist`
+///   - `ErrorCode::UserForbidden`
+///   - `ErrorCode::BurrowInvalid`
+///   - `ErrorCode::DatabaseErr`
+///
 #[post("/posts", data = "<post_info>", format = "json")]
 pub async fn create_post(
     auth: Auth,
@@ -245,6 +269,26 @@ pub async fn create_post(
     }
 }
 
+/// Read a Specific Post
+///
+/// ## Parameters
+///
+/// - `Auth`: Authenticated user
+/// - `Connection<PgDb>`: Postgres connection
+/// - `i64`: Post id
+/// - `Option<usize>`: Page number for post
+///
+/// ## Returns
+///
+/// - `Status`: HTTP status
+/// - `PostPage`: Post detail information, including post and up to 10 replies
+///
+/// ## Errors
+///
+/// - `ErrorResponse`: Error message
+///   - `ErrorCode::PostNotExist`
+///   - `ErrorCode::DatabaseErr`
+///
 #[get("/posts/<post_id>?<page>")]
 pub async fn read_post(
     auth: Auth,
@@ -332,6 +376,31 @@ pub async fn read_post(
     }
 }
 
+/// Update Post
+///
+/// ## Parameters
+///
+/// - `Auth`: Authenticated user
+/// - `Connection<PgDb>`: Postgres connection
+/// - `i64`: Post id
+/// - `Json<PostUpdateInfo>`: Updated post information
+///
+/// ## Returns
+///
+/// - `Status`: HTTP status
+/// - `String`: "Success"
+///
+/// ## Errors
+///
+/// - `ErrorResponse`: Error message
+///   - `ErrorCode::EmptyField`
+///   - `ErrorCode::SectionInvalid`
+///   - `ErrorCode::PostNotExist`
+///   - `ErrorCode::UserNotExist`
+///   - `ErrorCode::UserForbidden`
+///   - `ErrorCode::BurrowInvalid`
+///   - `ErrorCode::DatabaseErr`
+///
 #[patch("/posts/<post_id>", data = "<post_info>", format = "json")]
 pub async fn update_post(
     auth: Auth,
@@ -469,6 +538,29 @@ pub async fn update_post(
     }
 }
 
+/// Delete Post
+///
+/// ## Parameters
+///
+/// - `Auth`: Authenticated user
+/// - `Connection<PgDb>`: Postgres connection
+/// - `i64`: Post id
+/// - `Connection<PulsarSearchProducerMq>`: Pulsar connection
+///
+/// ## Returns
+///
+/// - `Status`: HTTP status
+/// - `String`: "Success"
+///
+/// ## Errors
+///
+/// - `ErrorResponse`: Error message
+///   - `ErrorCode::PostNotExist`
+///   - `ErrorCode::UserNotExist`
+///   - `ErrorCode::UserForbidden`
+///   - `ErrorCode::BurrowInvalid`
+///   - `ErrorCode::DatabaseErr`
+///
 #[delete("/posts/<post_id>")]
 pub async fn delete_post(
     auth: Auth,
@@ -588,6 +680,27 @@ pub async fn delete_post(
     }
 }
 
+/// Read a List of Posts with Number Up to Ten
+///
+/// ## Parameters
+///
+/// - `Auth`: Authenticated user
+/// - `Connection<PgDb>`: Postgres connection
+/// - `Option<usize>`: Page number for post
+/// - `Vec<String>`: Section of Post
+/// - `Connection<TypesenseSearch>`: Typesense connection
+///
+/// ## Returns
+///
+/// - `Status`: HTTP status
+/// - `ListPage`: A List of post information
+///
+/// ## Errors
+///
+/// - `ErrorResponse`: Error message
+///   - `ErrorCode::PostNotExist`
+///   - `ErrorCode::DatabaseErr`
+///
 #[get("/posts/list?<page>&<section>")]
 pub async fn read_post_list(
     auth: Auth,
@@ -746,6 +859,29 @@ pub async fn read_post_list(
     (Status::Ok, Ok(Json(ListPage { post_page, page })))
 }
 
+/// Create Reply
+///
+/// ## Parameters
+///
+/// - `Auth`: Authenticated user
+/// - `Connection<PgDb>`: Postgres connection
+/// - `Json<ReplyInfo>`: Reply information
+/// - `Connection<PulsarSearchProducerMq>`: Pulsar connection
+///
+/// ## Returns
+///
+/// - `Status`: HTTP status
+/// - `PostCreateResponse`: Response of create reply
+///
+/// ## Errors
+///
+/// - `ErrorResponse`: Error message
+///   - `ErrorCode::PostNotExist`
+///   - `ErrorCode::UserNotExist`
+///   - `ErrorCode::UserForbidden`
+///   - `ErrorCode::BurrowInvalid`
+///   - `ErrorCode::DatabaseErr`
+///
 #[post("/replies", data = "<reply_info>", format = "json")]
 pub async fn create_reply(
     auth: Auth,
@@ -888,6 +1024,28 @@ pub async fn create_reply(
     }
 }
 
+/// Update Reply
+///
+/// ## Parameters
+///
+/// - `Auth`: Authenticated user
+/// - `Connection<PgDb>`: Postgres connection
+/// - `Json<ReplyUpdateInfo>`: Updated reply information
+///
+/// ## Returns
+///
+/// - `Status`: HTTP status
+/// - `String`: "Success"
+///
+/// ## Errors
+///
+/// - `ErrorResponse`: Error message
+///   - `ErrorCode::PostNotExist`
+///   - `ErrorCode::UserNotExist`
+///   - `ErrorCode::UserForbidden`
+///   - `ErrorCode::BurrowInvalid`
+///   - `ErrorCode::DatabaseErr`
+///
 #[patch("/replies", data = "<reply_update_info>", format = "json")]
 pub async fn update_reply(
     auth: Auth,
