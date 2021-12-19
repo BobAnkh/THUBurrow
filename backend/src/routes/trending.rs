@@ -15,6 +15,23 @@ pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
     rocket.mount("/", routes![read_trending])
 }
 
+/// Get Trending
+///
+/// ## Parameters
+///
+/// - `Auth`: Authenticated user
+/// - `Connection<PgDb>`: Postgres connection
+/// - `Connection<RedisDb>`: Redis connection
+///
+/// ## Returns
+///
+/// - `Status`: HTTP status
+/// - `String`: Json string of posts
+///
+/// ## Errors
+///
+/// - `ErrorResponse`: Error message
+///   - `ErrorCode::DatabaseErr`
 #[get("/trending")]
 pub async fn read_trending(
     _auth: Auth,
