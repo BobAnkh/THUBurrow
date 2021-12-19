@@ -42,6 +42,7 @@ const Home: NextPage = () => {
   const [menuMode, setMenuMode] = useState<'inline' | 'horizontal'>(
     'horizontal'
   );
+  const [postNum, setPostNum] = useState(1);
   const [postList, setPostList] = useState([]);
   const [page, setPage] = useState(1);
   const [section, setsection] = useState('');
@@ -63,6 +64,7 @@ const Home: NextPage = () => {
         });
         const postlist = res.data.list_page.post_page;
         setPostList(postlist);
+        setPostNum(res.data.post_num);
       } catch (error) {
         const err = error as AxiosError;
         if (err.response?.status == 401) {
@@ -93,7 +95,11 @@ const Home: NextPage = () => {
           onTabChange={changesection}
         >
           <Card>
-            <PostList listData={postList} setPage={setPage} />
+            <PostList
+              listData={postList}
+              totalNum={postNum}
+              setPage={setPage}
+            />
           </Card>
         </Card>
       </Content>

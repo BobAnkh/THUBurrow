@@ -38,6 +38,7 @@ interface BurrowInfo {
   id: string;
   description: string;
   title: string;
+  post_num: number;
 }
 
 interface EditableCellProps {
@@ -55,7 +56,6 @@ interface EditableRowProps {
 }
 interface MyBurrowInfo extends BurrowInfo {
   added?: boolean;
-  post_num: number;
 }
 
 interface FollowedBurrowInfo extends BurrowInfo {
@@ -76,6 +76,7 @@ const followedBurrowColumns: ColumnsType<FollowedBurrowInfo> = [
     key: 'id',
     title: '洞号',
     dataIndex: 'id',
+    width: '10%',
     render: (text, record, index) => {
       return record.update ? <Badge dot>{text}</Badge> : <Badge>{text}</Badge>;
     },
@@ -83,12 +84,20 @@ const followedBurrowColumns: ColumnsType<FollowedBurrowInfo> = [
   {
     key: 'title',
     title: '名称',
+    width: '20%',
     dataIndex: 'title',
   },
   {
     key: 'description',
     title: '描述',
+    width: '60%',
     dataIndex: 'description',
+  },
+  {
+    key: 'post_num',
+    title: '帖子数',
+    dataIndex: 'post_num',
+    width: '10%',
   },
 ];
 
@@ -256,6 +265,7 @@ const UserPage: NextPage = () => {
       try {
         const res = await axios.get(
           `${process.env.NEXT_PUBLIC_BASEURL}/users/follow`
+          // 'http://127.0.0.1:4523/mock2/435762/6973421'
         );
         const followedlist = res.data;
         setFollowedList(followedlist);
@@ -574,7 +584,11 @@ const UserPage: NextPage = () => {
           />
         </Card>
         <Card title='收藏的帖子'>
-          <PostList listData={postList} postNum={postNum} setPage={setPage} />
+          <PostList
+            listData={postList}
+            setPage={setPage}
+            totalNum={postList.length}
+          />
         </Card>
       </Content>
     </Layout>

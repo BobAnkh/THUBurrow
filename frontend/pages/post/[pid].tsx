@@ -21,6 +21,7 @@ import ReplyList from '../../components/reply-list';
 import '../../node_modules/antd/dist/antd.css';
 import axios, { AxiosError } from 'axios';
 import GlobalHeader from '../../components/header/header';
+import Title from 'antd/lib/typography/Title';
 
 axios.defaults.withCredentials = true;
 axios.defaults.headers.post['Content-Type'] = 'application/json';
@@ -31,10 +32,12 @@ const { Option } = Select;
 
 const PostDetial: NextPage = () => {
   const router = useRouter();
+  const { pid } = router.query;
+  const pid_ = Number(pid);
   const [page, setPage] = useState(1);
   const [bid, setBid] = useState(1);
-  const [pid, setPid] = useState(1);
   const [replyList, setReplyList] = useState();
+  const [postLen, setPostLen] = useState(1);
   const [title, setTitle] = useState('');
   const [bidList, setBidList] = useState([]);
   const [like, setLike] = useState(false);
@@ -43,6 +46,7 @@ const PostDetial: NextPage = () => {
   const initialchange2 = false;
   const [changeLike, setChangeLike] = useState(initialchange1);
   const [changeCol, setChangeCol] = useState(initialchange2);
+
   useEffect(() => {
     const fetchReplyList = async () => {
       try {
@@ -52,13 +56,13 @@ const PostDetial: NextPage = () => {
             headers: { 'Content-Type': 'application/json' },
           }
         );
-        const replylist = res.data.post_page.reply_page;
+        const replylist = await res.data.post_page.reply_page;
+        setReplyList(res.data.post_page.reply_page);
         setBid(res.data.post_page.post_desc.burrow_id);
-        setPid(res.data.post_page.post_desc.post_id);
         setTitle(res.data.post_page.post_desc.title);
         setLike(res.data.post_page.like);
         setCollection(res.data.post_page.collection);
-        setReplyList(replylist);
+        setPostLen(res.data.post_page.post_desc.post_len);
       } catch (error) {
         const err = error as AxiosError;
         if (err.response?.status == 401) {
@@ -72,7 +76,7 @@ const PostDetial: NextPage = () => {
         const res = await axios.get(
           `${process.env.NEXT_PUBLIC_BASEURL}/users/valid-burrows`
         );
-        const bidlist = res.data;
+        const bidlist = await res.data;
         setBidList(bidlist);
       } catch (error) {
         const err = error as AxiosError;
@@ -84,20 +88,20 @@ const PostDetial: NextPage = () => {
     };
     fetchReplyList();
     fetchBid();
-  }, []);
+  }, [page, pid, router]);
   const toOption = (bidList: number[], bid: number) => {
     const bidOptionList = [];
     for (let i = 0; i < bidList.length; i++) {
       if (bid === bidList[i]) {
         bidOptionList.push(
           <Option key={bidList[i].toString()} value={bidList[i]}>
-            {bidList[i].toString() + '(发帖人)'}
+            {'#' + bidList[i].toString() + ' 洞主 (发帖人)'}
           </Option>
         );
       } else {
         bidOptionList.push(
           <Option key={bidList[i].toString()} value={bidList[i]}>
-            {bidList[i].toString()}
+            {'#' + bidList[i].toString() + ' 洞主'}
           </Option>
         );
       }
@@ -185,48 +189,60 @@ const PostDetial: NextPage = () => {
   return (
     <Layout className='layout'>
       <Header>
-        <title>{title}</title>
         <GlobalHeader />
       </Header>
       <Content style={{ padding: '0 50px' }}>
-        <Breadcrumb style={{ margin: '16px 0' }}>
-          <Breadcrumb.Item>Home</Breadcrumb.Item>
-          <Breadcrumb.Item>List</Breadcrumb.Item>
-          <Breadcrumb.Item>App</Breadcrumb.Item>
-        </Breadcrumb>
-        <Card title={title}>
-          <Button
-            icon={
-              (!like && changeLike) || (like && !changeLike) ? (
-                <LikeTwoTone twoToneColor='#8A2BE2' />
-              ) : (
-                <LikeOutlined />
-              )
-            }
-            onClick={() => {
-              clickLike(pid, (like && changeLike) || (!like && !changeLike));
-            }}
-          >
-            {' ' + '点赞' + ' '}
-          </Button>
-          <Button
-            icon={
-              (!collection && changeCol) || (collection && !changeCol) ? (
-                <StarTwoTone twoToneColor='#FFD700' />
-              ) : (
-                <StarOutlined />
-              )
-            }
-            onClick={() => {
-              clickCol(
-                pid,
-                (collection && changeCol) || (!collection && !changeCol)
-              );
-            }}
-          >
-            {' ' + '收藏' + ' '}
-          </Button>
-          <ReplyList listData={replyList} setPage={setPage} />
+        <Card
+          title={
+            <>
+              <Button
+                icon={
+                  (!like && changeLike) || (like && !changeLike) ? (
+                    <LikeTwoTone twoToneColor='#8A2BE2' />
+                  ) : (
+                    <LikeOutlined />
+                  )
+                }
+                onClick={() => {
+                  clickLike(
+                    pid_,
+                    (like && changeLike) || (!like && !changeLike)
+                  );
+                }}
+                style={{ float: 'right', margin: '10px' }}
+              >
+                {' ' + '点赞' + ' '}
+              </Button>
+              <Button
+                icon={
+                  (!collection && changeCol) || (collection && !changeCol) ? (
+                    <StarTwoTone twoToneColor='#FFD700' />
+                  ) : (
+                    <StarOutlined />
+                  )
+                }
+                onClick={() => {
+                  clickCol(
+                    pid_,
+                    (collection && changeCol) || (!collection && !changeCol)
+                  );
+                }}
+                style={{ float: 'right', margin: '10px' }}
+              >
+                {' ' + '收藏' + ' '}
+              </Button>
+              <Title level={3} style={{ float: 'left', margin: '10px' }}>
+                {title}
+              </Title>
+            </>
+          }
+        >
+          <ReplyList
+            listData={replyList}
+            setPage={setPage}
+            userBid={bidList}
+            totalNum={postLen}
+          />
           <Form
             labelCol={{ span: 5 }}
             wrapperCol={{ span: 14 }}
