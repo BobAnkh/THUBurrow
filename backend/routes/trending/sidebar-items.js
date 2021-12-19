@@ -1,1 +1,1 @@
-initSidebarItems({"fn":[["init",""],["read_trending",""],["select_trending",""]]});
+initSidebarItems({"fn":[["init",""],["read_trending","Get Trending"],["select_trending",""]]});

@@ -419,6 +419,26 @@
 <span id="419">419</span>
 <span id="420">420</span>
 <span id="421">421</span>
+<span id="422">422</span>
+<span id="423">423</span>
+<span id="424">424</span>
+<span id="425">425</span>
+<span id="426">426</span>
+<span id="427">427</span>
+<span id="428">428</span>
+<span id="429">429</span>
+<span id="430">430</span>
+<span id="431">431</span>
+<span id="432">432</span>
+<span id="433">433</span>
+<span id="434">434</span>
+<span id="435">435</span>
+<span id="436">436</span>
+<span id="437">437</span>
+<span id="438">438</span>
+<span id="439">439</span>
+<span id="440">440</span>
+<span id="441">441</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">crypto::digest::Digest</span>;
 <span class="kw">use</span> <span class="ident">crypto::sha3::Sha3</span>;
 <span class="kw">use</span> <span class="ident">rand::distributions::Alphanumeric</span>;
@@ -435,7 +455,7 @@
 
 <span class="doccomment">/// Usage of Auth</span>
 <span class="doccomment">///</span>
-<span class="doccomment">/// # Example</span>
+<span class="doccomment">/// ## Example</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// ```ignore</span>
 <span class="doccomment">/// use rocket::Request;</span>
@@ -508,6 +528,15 @@
     <span class="kw">pub</span> <span class="ident">id</span>: <span class="ident">i64</span>,
 }
 
+<span class="doccomment">/// Message of token check</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// ## Parameter</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// - `ValidToken::Invalid`: Invalid token</span>
+<span class="doccomment">/// - `ValidToken::Missing`: Missing token</span>
+<span class="doccomment">/// - `ValidToken::DatabaseErr`: Database error</span>
+<span class="doccomment">/// - `ValidToken::Valid(id)`: Valid token, will provide uid</span>
+<span class="doccomment">/// - `ValidToken::Refresh(id)`: Refresh token, will provide uid</span>
 <span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">ValidToken</span> {
     <span class="ident">Valid</span>(<span class="ident">i64</span>),
     <span class="ident">Refresh</span>(<span class="ident">i64</span>),
@@ -567,26 +596,52 @@
         }
     };
     <span class="comment">// get old token and set new token by getset id -&gt; token</span>
+    <span class="kw">let</span> <span class="kw">_</span> <span class="op">=</span> <span class="ident">delete_token</span>(<span class="ident">uid</span>, <span class="ident">kv_conn</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let</span> <span class="ident">new_token_set</span>: <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">redis::RedisError</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">redis::cmd</span>(<span class="string">&quot;SETEX&quot;</span>)
+        .<span class="ident">arg</span>(<span class="ident">uid</span>)
+        .<span class="ident">arg</span>(<span class="ident">ID_TO_TOKEN_EX</span>)
+        .<span class="ident">arg</span>(<span class="kw-2">&amp;</span><span class="ident">token</span>)
+        .<span class="ident">query_async</span>(<span class="ident">kv_conn</span>)
+        .<span class="kw">await</span>;
+    <span class="kw">match</span> <span class="ident">new_token_set</span> {
+        <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; {
+            <span class="macro">info!</span>(<span class="string">&quot;[LOGIN] set id-&gt;token: {} -&gt; {:?}&quot;</span>, <span class="ident">uid</span>, <span class="ident">token</span>);
+            <span class="prelude-val">Ok</span>(<span class="ident">token</span>)
+        }
+        <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; {
+            <span class="macro">error!</span>(
+                <span class="string">&quot;[LOGIN] failed to set id -&gt; token when login. RedisError: {:?}&quot;</span>,
+                <span class="ident">e</span>
+            );
+            <span class="prelude-val">Err</span>(<span class="ident">ErrorResponse::default</span>())
+        }
+    }
+}
+
+<span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">delete_token</span>(
+    <span class="ident">uid</span>: <span class="ident">i64</span>,
+    <span class="ident">kv_conn</span>: <span class="kw-2">&amp;mut</span> <span class="ident">redis::aio::Connection</span>,
+) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">ErrorResponse</span><span class="op">&gt;</span> {
     <span class="kw">let</span> <span class="ident">old_token_get</span>: <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span>, <span class="ident">redis::RedisError</span><span class="op">&gt;</span> <span class="op">=</span>
         <span class="ident">redis::cmd</span>(<span class="string">&quot;GET&quot;</span>).<span class="ident">arg</span>(<span class="ident">uid</span>).<span class="ident">query_async</span>(<span class="ident">kv_conn</span>).<span class="kw">await</span>;
     <span class="kw">match</span> <span class="ident">old_token_get</span> {
         <span class="prelude-val">Ok</span>(<span class="ident">res</span>) =&gt; <span class="kw">match</span> <span class="ident">res</span> {
             <span class="comment">// if old token -&gt; id exists</span>
             <span class="prelude-val">Some</span>(<span class="ident">old_token</span>) =&gt; {
-                <span class="macro">info!</span>(<span class="string">&quot;[LOGIN] find old token:{:?}, continue...&quot;</span>, <span class="ident">old_token</span>);
+                <span class="macro">info!</span>(<span class="string">&quot;[TOKEN] find old token: {}, continue...&quot;</span>, <span class="ident">old_token</span>);
                 <span class="comment">// clear old token -&gt; id</span>
                 <span class="kw">let</span> <span class="ident">delete_result</span>: <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">i64</span>, <span class="ident">redis::RedisError</span><span class="op">&gt;</span> <span class="op">=</span>
                     <span class="ident">redis::cmd</span>(<span class="string">&quot;DEL&quot;</span>).<span class="ident">arg</span>(<span class="kw-2">&amp;</span><span class="ident">old_token</span>).<span class="ident">query_async</span>(<span class="ident">kv_conn</span>).<span class="kw">await</span>;
                 <span class="kw">match</span> <span class="ident">delete_result</span> {
-                    <span class="prelude-val">Ok</span>(<span class="number">1</span>) =&gt; <span class="macro">info!</span>(<span class="string">&quot;[LOGIN] delete token-&gt;id&quot;</span>),
-                    <span class="prelude-val">Ok</span>(<span class="number">0</span>) =&gt; <span class="macro">info!</span>(<span class="string">&quot;[LOGIN] no token-&gt;id found&quot;</span>),
+                    <span class="prelude-val">Ok</span>(<span class="number">1</span>) =&gt; <span class="macro">info!</span>(<span class="string">&quot;[TOKEN] delete token-&gt;id&quot;</span>),
+                    <span class="prelude-val">Ok</span>(<span class="number">0</span>) =&gt; <span class="macro">info!</span>(<span class="string">&quot;[TOKEN] no token-&gt;id found&quot;</span>),
                     <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; {
-                        <span class="macro">error!</span>(<span class="string">&quot;[LOGIN] failed to delete refresh_token -&gt; id when login.&quot;</span>);
+                        <span class="macro">error!</span>(<span class="string">&quot;[TOKEN] failed to delete refresh_token -&gt; id when login.&quot;</span>);
                         <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">ErrorResponse::default</span>());
                     }
                     <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; {
                         <span class="macro">error!</span>(
-                            <span class="string">&quot;[LOGIN] failed to delete token -&gt; id when login. RedisError: {:?}&quot;</span>,
+                            <span class="string">&quot;[TOKEN] failed to delete token -&gt; id when login. RedisError: {:?}&quot;</span>,
                             <span class="ident">e</span>
                         );
                         <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">ErrorResponse::default</span>());
@@ -602,42 +657,27 @@
                     .<span class="ident">query_async</span>(<span class="ident">kv_conn</span>)
                     .<span class="kw">await</span>;
                 <span class="kw">match</span> <span class="ident">delete_result</span> {
-                    <span class="prelude-val">Ok</span>(<span class="number">1</span>) =&gt; <span class="macro">info!</span>(<span class="string">&quot;[LOGIN] delete ref_token-&gt;id&quot;</span>),
-                    <span class="prelude-val">Ok</span>(<span class="number">0</span>) =&gt; <span class="macro">info!</span>(<span class="string">&quot;[LOGIN] no ref_token-&gt;id found&quot;</span>),
+                    <span class="prelude-val">Ok</span>(<span class="number">1</span>) =&gt; <span class="macro">info!</span>(<span class="string">&quot;[TOKEN] delete ref_token-&gt;id&quot;</span>),
+                    <span class="prelude-val">Ok</span>(<span class="number">0</span>) =&gt; <span class="macro">info!</span>(<span class="string">&quot;[TOKEN] no ref_token-&gt;id found&quot;</span>),
                     <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; {
-                        <span class="macro">error!</span>(<span class="string">&quot;[LOGIN] failed to delete refresh_token -&gt; id when login.&quot;</span>);
+                        <span class="macro">error!</span>(<span class="string">&quot;[TOKEN] failed to delete refresh_token -&gt; id when login.&quot;</span>);
                         <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">ErrorResponse::default</span>());
                     }
                     <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; {
-                        <span class="macro">error!</span>(<span class="string">&quot;[LOGIN] failed to delete refresh_token -&gt; id when login. RedisError: {:?}&quot;</span>, <span class="ident">e</span>);
+                        <span class="macro">error!</span>(<span class="string">&quot;[TOKEN] failed to delete refresh_token -&gt; id when login. RedisError: {:?}&quot;</span>, <span class="ident">e</span>);
                         <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">ErrorResponse::default</span>());
                     }
                 };
+                <span class="prelude-val">Ok</span>(<span class="string">&quot;Success&quot;</span>.<span class="ident">to_string</span>())
             }
-            <span class="prelude-val">None</span> =&gt; <span class="macro">info!</span>(<span class="string">&quot;[LOGIN] no id -&gt; token found&quot;</span>),
+            <span class="prelude-val">None</span> =&gt; {
+                <span class="macro">info!</span>(<span class="string">&quot;[LOGIN] no id -&gt; token found&quot;</span>);
+                <span class="prelude-val">Ok</span>(<span class="string">&quot;Not-Found&quot;</span>.<span class="ident">to_string</span>())
+            }
         },
         <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; {
             <span class="macro">error!</span>(
                 <span class="string">&quot;[LOGIN] failed to get id -&gt; token when login. RedisError: {:?}&quot;</span>,
-                <span class="ident">e</span>
-            );
-            <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">ErrorResponse::default</span>());
-        }
-    };
-    <span class="kw">let</span> <span class="ident">new_token_set</span>: <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">redis::RedisError</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">redis::cmd</span>(<span class="string">&quot;SETEX&quot;</span>)
-        .<span class="ident">arg</span>(<span class="ident">uid</span>)
-        .<span class="ident">arg</span>(<span class="ident">ID_TO_TOKEN_EX</span>)
-        .<span class="ident">arg</span>(<span class="kw-2">&amp;</span><span class="ident">token</span>)
-        .<span class="ident">query_async</span>(<span class="ident">kv_conn</span>)
-        .<span class="kw">await</span>;
-    <span class="kw">match</span> <span class="ident">new_token_set</span> {
-        <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; {
-            <span class="macro">info!</span>(<span class="string">&quot;[LOGIN] set id-&gt;token: {} -&gt; {:?}&quot;</span>, <span class="ident">uid</span>, <span class="ident">token</span>);
-            <span class="prelude-val">Ok</span>(<span class="ident">token</span>)
-        }
-        <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; {
-            <span class="macro">error!</span>(
-                <span class="string">&quot;[LOGIN] failed to set id -&gt; token when login. RedisError: {:?}&quot;</span>,
                 <span class="ident">e</span>
             );
             <span class="prelude-val">Err</span>(<span class="ident">ErrorResponse::default</span>())

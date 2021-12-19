@@ -1056,6 +1056,56 @@
 <span id="1056">1056</span>
 <span id="1057">1057</span>
 <span id="1058">1058</span>
+<span id="1059">1059</span>
+<span id="1060">1060</span>
+<span id="1061">1061</span>
+<span id="1062">1062</span>
+<span id="1063">1063</span>
+<span id="1064">1064</span>
+<span id="1065">1065</span>
+<span id="1066">1066</span>
+<span id="1067">1067</span>
+<span id="1068">1068</span>
+<span id="1069">1069</span>
+<span id="1070">1070</span>
+<span id="1071">1071</span>
+<span id="1072">1072</span>
+<span id="1073">1073</span>
+<span id="1074">1074</span>
+<span id="1075">1075</span>
+<span id="1076">1076</span>
+<span id="1077">1077</span>
+<span id="1078">1078</span>
+<span id="1079">1079</span>
+<span id="1080">1080</span>
+<span id="1081">1081</span>
+<span id="1082">1082</span>
+<span id="1083">1083</span>
+<span id="1084">1084</span>
+<span id="1085">1085</span>
+<span id="1086">1086</span>
+<span id="1087">1087</span>
+<span id="1088">1088</span>
+<span id="1089">1089</span>
+<span id="1090">1090</span>
+<span id="1091">1091</span>
+<span id="1092">1092</span>
+<span id="1093">1093</span>
+<span id="1094">1094</span>
+<span id="1095">1095</span>
+<span id="1096">1096</span>
+<span id="1097">1097</span>
+<span id="1098">1098</span>
+<span id="1099">1099</span>
+<span id="1100">1100</span>
+<span id="1101">1101</span>
+<span id="1102">1102</span>
+<span id="1103">1103</span>
+<span id="1104">1104</span>
+<span id="1105">1105</span>
+<span id="1106">1106</span>
+<span id="1107">1107</span>
+<span id="1108">1108</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">chrono</span>::{<span class="ident">FixedOffset</span>, <span class="ident">Utc</span>};
 <span class="kw">use</span> <span class="ident">crypto::digest::Digest</span>;
 <span class="kw">use</span> <span class="ident">crypto::sha3::Sha3</span>;
@@ -1081,7 +1131,7 @@
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::pgdb</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::pgdb::prelude</span>::<span class="kw-2">*</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::pool</span>::{<span class="ident">PgDb</span>, <span class="ident">PulsarSearchProducerMq</span>, <span class="ident">RedisDb</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::utils::auth</span>::{<span class="ident">Auth</span>, <span class="ident">CookieOptions</span>};
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::utils::auth</span>::{<span class="ident">delete_token</span>, <span class="ident">set_token</span>, <span class="ident">Auth</span>, <span class="ident">CookieOptions</span>};
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::utils::burrow_valid</span>::<span class="kw-2">*</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::utils::email</span>;
 
@@ -1783,11 +1833,10 @@
                 <span class="comment">// check if password is wrong, add corresponding error if so</span>
                 <span class="kw">if</span> <span class="ident">matched_user</span>.<span class="ident">password</span>.<span class="ident">eq</span>(<span class="kw-2">&amp;</span><span class="ident">password</span>) {
                     <span class="macro">info!</span>(<span class="string">&quot;[LOGIN] password correct, continue...&quot;</span>);
-                    <span class="kw">let</span> <span class="ident">token</span> <span class="op">=</span>
-                        <span class="kw">match</span> <span class="ident"><span class="kw">crate</span>::utils::auth::set_token</span>(<span class="ident">matched_user</span>.<span class="ident">uid</span>, <span class="ident">con</span>.<span class="ident">as_mut</span>()).<span class="kw">await</span> {
-                            <span class="prelude-val">Ok</span>(<span class="ident">t</span>) =&gt; <span class="ident">t</span>,
-                            <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; <span class="kw">return</span> (<span class="ident">Status::InternalServerError</span>, <span class="prelude-val">Err</span>(<span class="ident">Json</span>(<span class="ident">e</span>))),
-                        };
+                    <span class="kw">let</span> <span class="ident">token</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">set_token</span>(<span class="ident">matched_user</span>.<span class="ident">uid</span>, <span class="ident">con</span>.<span class="ident">as_mut</span>()).<span class="kw">await</span> {
+                        <span class="prelude-val">Ok</span>(<span class="ident">t</span>) =&gt; <span class="ident">t</span>,
+                        <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; <span class="kw">return</span> (<span class="ident">Status::InternalServerError</span>, <span class="prelude-val">Err</span>(<span class="ident">Json</span>(<span class="ident">e</span>))),
+                    };
                     <span class="comment">// build cookie</span>
                     <span class="kw">let</span> <span class="ident">cookie</span> <span class="op">=</span> <span class="ident">Cookie::build</span>(<span class="string">&quot;token&quot;</span>, <span class="ident">token</span>).<span class="ident">cookie_options</span>().<span class="ident">finish</span>();
                     <span class="comment">// set cookie</span>
@@ -1818,6 +1867,57 @@
         },
         <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; {
             <span class="macro">error!</span>(<span class="string">&quot;[LOGIN] Database error: {:?}&quot;</span>, <span class="ident">e</span>);
+            (
+                <span class="ident">Status::InternalServerError</span>,
+                <span class="prelude-val">Err</span>(<span class="ident">Json</span>(<span class="ident">ErrorResponse::default</span>())),
+            )
+        }
+    }
+}
+
+<span class="attribute">#[<span class="ident">post</span>(<span class="string">&quot;/logout&quot;</span>)]</span>
+<span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">user_logout</span>(
+    <span class="ident">auth</span>: <span class="ident">Auth</span>,
+    <span class="ident">kvdb</span>: <span class="ident">Connection</span><span class="op">&lt;</span><span class="ident">RedisDb</span><span class="op">&gt;</span>,
+    <span class="ident">cookies</span>: <span class="kw-2">&amp;</span><span class="ident">CookieJar</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>,
+) -&gt; (<span class="ident">Status</span>, <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">Json</span><span class="op">&lt;</span><span class="ident">ErrorResponse</span><span class="op">&gt;</span><span class="op">&gt;</span>) {
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">kv_conn</span> <span class="op">=</span> <span class="ident">kvdb</span>.<span class="ident">into_inner</span>();
+    <span class="comment">// get user info from request</span>
+    <span class="kw">let</span> <span class="ident">uid</span> <span class="op">=</span> <span class="ident">auth</span>.<span class="ident">id</span>;
+    <span class="kw">match</span> <span class="ident">delete_token</span>(<span class="ident">uid</span>, <span class="ident">kv_conn</span>.<span class="ident">as_mut</span>()).<span class="kw">await</span> {
+        <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; {
+            <span class="kw">let</span> <span class="ident">delete_result</span>: <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">i64</span>, <span class="ident">redis::RedisError</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">redis::cmd</span>(<span class="string">&quot;DEL&quot;</span>)
+                .<span class="ident">arg</span>(<span class="ident">uid</span>)
+                .<span class="ident">query_async</span>(<span class="ident">kv_conn</span>.<span class="ident">as_mut</span>())
+                .<span class="kw">await</span>;
+            <span class="kw">match</span> <span class="ident">delete_result</span> {
+                <span class="prelude-val">Ok</span>(<span class="number">1</span>) =&gt; <span class="macro">info!</span>(<span class="string">&quot;[TOKEN] delete id-&gt;token&quot;</span>),
+                <span class="prelude-val">Ok</span>(<span class="number">0</span>) =&gt; <span class="macro">info!</span>(<span class="string">&quot;[TOKEN] no id-&gt;token found&quot;</span>),
+                <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; {
+                    <span class="macro">error!</span>(<span class="string">&quot;[TOKEN] failed to delete refresh_token -&gt; id when login.&quot;</span>);
+                    <span class="kw">return</span> (
+                        <span class="ident">Status::InternalServerError</span>,
+                        <span class="prelude-val">Err</span>(<span class="ident">Json</span>(<span class="ident">ErrorResponse::default</span>())),
+                    );
+                }
+                <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; {
+                    <span class="macro">error!</span>(
+                        <span class="string">&quot;[TOKEN] failed to delete token -&gt; id when login. RedisError: {:?}&quot;</span>,
+                        <span class="ident">e</span>
+                    );
+                    <span class="kw">return</span> (
+                        <span class="ident">Status::InternalServerError</span>,
+                        <span class="prelude-val">Err</span>(<span class="ident">Json</span>(<span class="ident">ErrorResponse::default</span>())),
+                    );
+                }
+            };
+            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">cookie</span> <span class="op">=</span> <span class="ident">Cookie::named</span>(<span class="string">&quot;token&quot;</span>);
+            <span class="ident">cookie</span>.<span class="ident">set_domain</span>(<span class="string">&quot;.thuburrow.com&quot;</span>);
+            <span class="ident">cookies</span>.<span class="ident">remove_private</span>(<span class="ident">cookie</span>);
+            (<span class="ident">Status::Ok</span>, <span class="prelude-val">Ok</span>(<span class="string">&quot;Success&quot;</span>.<span class="ident">to_string</span>()))
+        }
+        <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; {
+            <span class="macro">error!</span>(<span class="string">&quot;[LOGOUT] Database error: {:?}&quot;</span>, <span class="ident">e</span>);
             (
                 <span class="ident">Status::InternalServerError</span>,
                 <span class="prelude-val">Err</span>(<span class="ident">Json</span>(<span class="ident">ErrorResponse::default</span>())),

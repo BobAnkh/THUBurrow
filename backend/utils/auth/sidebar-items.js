@@ -1,1 +1,1 @@
-initSidebarItems({"enum":[["ValidToken",""]],"fn":[["auth_token",""],["set_token",""]],"struct":[["Auth","Usage of Auth"]],"trait":[["CookieOptions",""]]});
+initSidebarItems({"enum":[["ValidToken","Message of token check"]],"fn":[["auth_token",""],["delete_token",""],["set_token",""]],"struct":[["Auth","Usage of Auth"]],"trait":[["CookieOptions",""]]});
