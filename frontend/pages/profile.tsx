@@ -77,7 +77,6 @@ const followedBurrowColumns: ColumnsType<FollowedBurrowInfo> = [
     title: '洞号',
     dataIndex: 'id',
     render: (text, record, index) => {
-      // console.log(text, record.update);
       return record.update ? <Badge dot>{text}</Badge> : <Badge>{text}</Badge>;
     },
   },
@@ -256,8 +255,7 @@ const UserPage: NextPage = () => {
     const fetchFollowedList = async () => {
       try {
         const res = await axios.get(
-          //   `${process.env.NEXT_PUBLIC_BASEURL}/users/follow` // TODO: why this failed
-          'http://127.0.0.1:4523/mock2/435762/6973421'
+          `${process.env.NEXT_PUBLIC_BASEURL}/users/follow`
         );
         const followedlist = res.data;
         setFollowedList(followedlist);
@@ -336,7 +334,7 @@ const UserPage: NextPage = () => {
         } else if (err.response?.status == 429) {
           message.error('新建地洞达到上限，请明天再来吧qwq');
         } else if (err.response?.status == 500) {
-          message.error('服务器出错啦啦啦啦啦啦');
+          message.error('服务器出错啦orz');
         }
       }
     };

@@ -17,7 +17,6 @@ type IconProps = {
 
 type Props = {
   listData: any;
-  postNum: number;
   setPage: any;
 };
 
@@ -36,7 +35,7 @@ function showtag1(tag: string) {
 const showtag = (value: Array<string>) => {
   return value.map(showtag1);
 };
-export default function PostList({ listData, postNum, setPage }: Props) {
+export default function PostList({ listData, setPage }: Props) {
   const initialchange1 = new Array(10).fill(false);
   const initialchange2 = new Array(10).fill(false);
   const initialnum1 = new Array(10).fill(0);
@@ -120,14 +119,9 @@ export default function PostList({ listData, postNum, setPage }: Props) {
         pageSize: 10,
         showQuickJumper: true,
         showSizeChanger: false,
-        total: postNum,
+        total: 2000,
       }}
       dataSource={listData}
-      footer={
-        <div>
-          <b>THU Burrow</b> footer part
-        </div>
-      }
       renderItem={(item: any, index: number) => (
         <List.Item
           key={item.title}

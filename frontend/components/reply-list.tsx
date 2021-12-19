@@ -3,11 +3,10 @@ import { List } from 'antd';
 
 type Props = {
   listData: any;
-  postLen: number;
   setPage: any;
 };
 
-export default function ReplyList({ listData, postLen, setPage }: Props) {
+export default function ReplyList({ listData, setPage }: Props) {
   return (
     <List
       itemLayout='vertical'
@@ -19,14 +18,9 @@ export default function ReplyList({ listData, postLen, setPage }: Props) {
         pageSize: 20,
         showQuickJumper: true,
         showSizeChanger: false,
-        total: postLen,
+        total: 2000,
       }}
       dataSource={listData}
-      footer={
-        <div>
-          <b>THU Burrow</b> footer part
-        </div>
-      }
       renderItem={(item: any) => (
         <List.Item key={item.reply_id}>
           <List.Item.Meta
