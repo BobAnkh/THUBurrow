@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import type { NextPage } from 'next';
 import { StarTwoTone, LikeTwoTone } from '@ant-design/icons';
+import Link from 'next/link';
 import styles from './burrow.module.css';
-
+import { TextLoop } from 'react-text-loop-next';
 import {
+  Alert,
   Layout,
   Menu,
   Breadcrumb,
@@ -15,11 +17,17 @@ import {
   Input,
   Card,
   Tag,
+  Col,
+  Dropdown,
+  Row,
+  Popconfirm,
+  Spin,
 } from 'antd';
 import { MessageOutlined, LikeOutlined, StarOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/router';
 import 'antd/dist/antd.css';
 import axios, { AxiosError } from 'axios';
+import { createRouteLoader } from 'next/dist/client/route-loader';
 import GlobalHeader from '../../components/header/header';
 
 axios.defaults.withCredentials = true;
@@ -35,16 +43,11 @@ const IconText = (props: any) => (
   </Space>
 );
 
-function showtag1(tag: string) {
-  return <Tag>{tag}</Tag>;
+function showtag1(tag: string, index: number) {
+  return <Tag key={index}>{tag}</Tag>;
 }
 const showtag = (value: Array<string>) => {
   return value.map(showtag1);
-};
-
-const onFinishFailed = (errorInfo: any) => {
-  if (errorInfo.values.title == undefined) message.error('标题不能为空！');
-  else message.error('内容不能为空！');
 };
 
 const Burrow: NextPage = () => {
@@ -57,7 +60,8 @@ const Burrow: NextPage = () => {
   const [description, setDescription] = useState('Welcome!');
   const [burrowTitle, setBurrowTitle] = useState(0);
   const [page, setPage] = useState(1);
-  const [isHost, setIsHost] = useState(true);
+  const [isHost, setIsHost] = useState(false);
+
   const [editing, setEditing] = useState(false);
   const [descriptionTemp, setDescriptionTemp] = useState('');
 
@@ -86,22 +90,43 @@ const Burrow: NextPage = () => {
     } catch (e) {
       const err = e as AxiosError;
       if (err.response?.status === 400) {
-        message.info('请先登录！');
+        message.info('请先登录!');
         router.push('/login');
       } else if (err.response?.status === 500) {
-        message.info('服务器错误！');
-        router.push('/404');
+        message.info('服务器错误!');
+        window.location.reload();
       }
     }
-  }, [router, page]);
+  }, [router, page, bid]);
 
   const EditIntro = () => {
     setEditing(true);
   };
 
-  const ConfirmEdit = () => {
+  const ConfirmEdit = async () => {
     setDescription(descriptionTemp);
     setEditing(false);
+    const data = {
+      title: { burrowTitle },
+      description: { descriptionTemp },
+    };
+    try {
+      const res = await axios.post(
+        `${process.env.NEXT_PUBLIC_BASEURL}/${bid}`,
+        data
+      );
+      var json = await res.data;
+      if (json.error) {
+        message.error('修改信息失败');
+        window.location.reload();
+      } else {
+        message.success('修改成功');
+        window.location.reload();
+      }
+    } catch (e) {
+      message.error('修改信息失败');
+      alert(e);
+    }
   };
 
   const CancelEdit = () => {
@@ -114,6 +139,25 @@ const Burrow: NextPage = () => {
       setDescriptionTemp(value);
     }
   };
+
+  async function onConfirm() {
+    try {
+      const res = await axios.delete(
+        `${process.env.NEXT_PUBLIC_BASEURL}/burrows/${bid}`
+      );
+      var json = await res.data;
+      if (json.error) {
+        message.error('操作失败');
+        window.location.reload();
+      } else {
+        message.success('操作成功');
+        window.location.reload();
+      }
+    } catch (e) {
+      message.error('操作失败');
+      alert(e);
+    }
+  }
 
   const clickCol = async (pid: number, activate: Boolean, index: number) => {
     let newChangeCol: boolean[] = changeCol;
@@ -180,7 +224,7 @@ const Burrow: NextPage = () => {
   };
 
   return (
-    <Layout>
+    <Layout id='main'>
       <Header style={{ position: 'fixed', zIndex: 1, width: '100%' }}>
         <title>{`# ${bid} 地洞`}</title>
         <GlobalHeader />
@@ -189,12 +233,6 @@ const Burrow: NextPage = () => {
         className='site-Layout'
         style={{ padding: '0 50px', marginTop: 64 }}
       >
-        <Breadcrumb style={{ margin: '16px 0' }}>
-          <Breadcrumb.Item>Home</Breadcrumb.Item>
-          <Breadcrumb.Item>List</Breadcrumb.Item>
-          <Breadcrumb.Item>App</Breadcrumb.Item>
-        </Breadcrumb>
-
         <div
           className='site-layout-background'
           style={{ padding: 24, minHeight: 380 }}
@@ -202,18 +240,48 @@ const Burrow: NextPage = () => {
           <Card>
             <div>
               <h2>
-                # {bid}&emsp;{burrowTitle}
+                <table>
+                  <tbody>
+                    <tr>
+                      <td style={{ width: '100%' }}>
+                        <div style={{ color: 'black' }}>
+                          # {bid}&emsp;{burrowTitle}
+                        </div>
+                      </td>
+                      <td>
+                        <Popconfirm
+                          placement='topRight'
+                          title='确认废弃此洞?（此操作不可逆）'
+                          onConfirm={onConfirm}
+                          okText='Yes'
+                          cancelText='No'
+                        >
+                          <Button
+                            type='primary'
+                            danger
+                            shape='round'
+                            style={{
+                              display: isHost && !editing ? 'block' : 'none',
+                            }}
+                          >
+                            废弃此洞
+                          </Button>
+                        </Popconfirm>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
               </h2>
               <div className={styles.Descript}>
                 <h3 className={styles.BriefIntro}>简介:</h3>
                 <Button
                   type='primary'
                   shape='round'
+                  onClick={EditIntro}
                   style={{
                     float: 'right',
                     display: isHost && !editing ? 'block' : 'none',
                   }}
-                  onClick={EditIntro}
                 >
                   编辑
                 </Button>
@@ -334,7 +402,7 @@ const Burrow: NextPage = () => {
                 >
                   <List.Item.Meta
                     title={
-                      <a href={`post/${item.post_id}`}>
+                      <a href={`../post/${item.post_id}`}>
                         {item.title}&emsp;
                         <Tag color='yellow'>{item.section}</Tag>
                       </a>

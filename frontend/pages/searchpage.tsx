@@ -319,7 +319,7 @@ const SearchPage: FC = () => {
         />
       );
     } else if (search_text.id == 0) {
-      return <PostList listData={[]} setPage={setpage} />;
+      return <PostList listData={[]} setPage={setpage} totalNum={0} />;
     }
   }
 

@@ -45,13 +45,8 @@ const Trending: NextPage = () => {
         <GlobalHeader />
       </Header>
       <Content style={{ padding: '0 50px' }}>
-        <Breadcrumb style={{ margin: '16px 0' }}>
-          <Breadcrumb.Item>Home</Breadcrumb.Item>
-          <Breadcrumb.Item>List</Breadcrumb.Item>
-          <Breadcrumb.Item>App</Breadcrumb.Item>
-        </Breadcrumb>
         <Card>
-          <PostList listData={postList} setPage={setPage} />
+          <PostList listData={postList} setPage={setPage} totalNum={50} />
         </Card>
       </Content>
       <Footer style={{ textAlign: 'center' }}>THUBurrow © 2021</Footer>

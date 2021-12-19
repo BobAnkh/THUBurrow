@@ -3,11 +3,11 @@ import styles from '../styles/register.module.css';
 import 'antd/dist/antd.css';
 import { Form, Input, Select, Row, Col, Checkbox, Button, message } from 'antd';
 import axios from 'axios';
+import CryptoJS from 'crypto-js';
 
 axios.defaults.withCredentials = true;
 axios.defaults.headers.post['Content-Type'] = 'application/json';
 
-type RegisProps = {};
 const { Option } = Select;
 
 const tailFormItemLayout = {
@@ -27,7 +27,7 @@ type Iprops = {
   switchform: any;
 };
 
-const validate_password = /^(?![0-9]+$)(?![a-zA-Z]+$)[0-9A-Za-z-_]{6,20}$/;
+const validate_password = /^(\w){8,20}$/;
 
 export default function Register({ switchform }: Iprops) {
   const [userName, setUserName] = useState('');
@@ -39,7 +39,7 @@ export default function Register({ switchform }: Iprops) {
   const [verCode, setVerCode] = useState('');
 
   async function sendCode() {
-    let maxTime = 5;
+    let maxTime = 60;
     const timer = setInterval(() => {
       if (maxTime > 0) {
         --maxTime;
@@ -84,6 +84,7 @@ export default function Register({ switchform }: Iprops) {
       defaultValue='@mails.tsinghua.edu.cn'
       onChange={handleSuffix}
       className={styles.select_after}
+      style={{ width: '200px' }}
     >
       <Option value='@pku.edu.cn'>@pku.edu.cn</Option>
       <Option value='@mails.tsinghua.edu.cn'>@mails.tsinghua.edu.cn</Option>
@@ -121,13 +122,14 @@ export default function Register({ switchform }: Iprops) {
   async function onFinish() {
     const data = {
       username: userName,
-      password: passWord,
+      password: CryptoJS.MD5(passWord).toString(),
       email: email + suffix,
       verification_code: verCode,
     };
     try {
+      console.log(data);
       const res = await axios.post(
-        `${process.env.NEXT_PUBLIC_BASEURL}/6381347`,
+        `${process.env.NEXT_PUBLIC_BASEURL}/users/sign-up`,
         data
       );
       var json = await res.data;
@@ -154,9 +156,7 @@ export default function Register({ switchform }: Iprops) {
           <Form name='register' onFinish={onFinish}>
             <Form.Item
               name='username'
-              rules={[
-                { required: true, message: 'Please input your Username!' },
-              ]}
+              rules={[{ required: true, message: '请输入用户名!' }]}
               className={styles.formStyle}
             >
               <Row>
@@ -174,10 +174,10 @@ export default function Register({ switchform }: Iprops) {
             <Form.Item
               name='password'
               rules={[
-                { required: true, message: 'Please input your password!' },
+                { required: true, message: '请输入密码!' },
                 {
                   pattern: validate_password,
-                  message: '请输入字母和数字的6到20位组合',
+                  message: '请输入字母、数字和下划线的8到20位组合',
                 },
                 ({ getFieldValue }) => ({
                   validator(role, value) {
@@ -204,9 +204,7 @@ export default function Register({ switchform }: Iprops) {
             </Form.Item>
             <Form.Item
               name='password_confirm'
-              rules={[
-                { required: true, message: 'Please input your password!' },
-              ]}
+              rules={[{ required: true, message: '请确认密码!' }]}
               className={styles.formStyle}
             >
               <Row>
@@ -225,12 +223,11 @@ export default function Register({ switchform }: Iprops) {
               rules={[
                 {
                   required: true,
-                  message: 'Please input a valid email address!',
+                  message: '请填写有效邮箱地址!',
                 },
                 {
                   pattern: /^[0-9a-z-A-Z-]{1,}$/,
-                  message:
-                    "the address should only contains letters, numbers and '-'",
+                  message: "地址只能是字母，数字和'-'的组合",
                 },
               ]}
               className={styles.formStyle}
