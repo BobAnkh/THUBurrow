@@ -6,6 +6,20 @@ use serde::{Deserialize, Serialize};
 use super::content::PostSection;
 use super::search::*;
 
+/// Record of data operation, send to search engine
+///
+/// ## enum
+///
+/// - `PulsarSearchData::CreateBurrow`: Create a new burrow with struct PulsarSearchBurrowData
+/// - `PulsarSearchData::UpdateBurrow`: Update a burrow with struct PulsarSearchBurrowData
+/// - `PulsarSearchData::DeleteBurrow`: Delete a burrow with burrow id in i64
+/// - `PulsarSearchData::CreatePost`: Create a new post with struct PulsarSearchPostData
+/// - `PulsarSearchData::UpdatePost`: Update a post with struct PulsarSearchPostData
+/// - `PulsarSearchData::DeletePost`: Delete a burrow with post id in i64
+/// - `PulsarSearchData::CreateReply`: Create a new reply with struct PulsarSearchReplyData
+/// - `PulsarSearchData::UpdateReply`: Update a reply with struct PulsarSearchReplyData
+/// - `PulsarSearchData::DeleteReply`: Delete a reply with (post_id, reply_id) in (i64, i32)
+///
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub enum PulsarSearchData {
     CreateBurrow(PulsarSearchBurrowData),
@@ -19,6 +33,15 @@ pub enum PulsarSearchData {
     DeleteReply(i64, i32),
 }
 
+/// Burrow data send to search engine
+///
+/// ## Fields
+///
+/// - `burrow_id`: Burrow id in i64
+/// - `title`: Burrow title in String
+/// - `description`: Burrow description in String
+/// - `update_time`: Update time in DataTimeWithTimeZone struct
+///
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct PulsarSearchBurrowData {
     pub burrow_id: i64,
@@ -27,6 +50,16 @@ pub struct PulsarSearchBurrowData {
     pub update_time: DateTimeWithTimeZone,
 }
 
+/// Post data send to search engine
+///
+///
+/// - `post_id`: Post id in i64
+/// - `burrow_id`: i64 id of burrow to which the post belongs
+/// - `title`: Post title in String
+/// - `section`: vector of Postsection
+/// - `tag`: vector of tag in String
+/// - `update_time`: Update time in DataTimeWithTimeZone struct
+///
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct PulsarSearchPostData {
     pub post_id: i64,
@@ -37,6 +70,16 @@ pub struct PulsarSearchPostData {
     pub update_time: DateTimeWithTimeZone,
 }
 
+/// Replt data send to search engine
+///
+/// ## Fields
+///
+/// - `reply_id`: Reply id in i64
+/// - `post_id`: i64 id of post to which the reply belongs
+/// - `burrow_id`: i64 id of burrow to which the post belongs
+/// - `content`: Reply content in String
+/// - `update_time`: Update time in DataTimeWithTimeZone struct
+///
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct PulsarSearchReplyData {
     pub reply_id: i32,

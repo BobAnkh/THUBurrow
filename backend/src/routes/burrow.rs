@@ -31,6 +31,23 @@ pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
     )
 }
 
+/// Get total burrow count
+///
+/// ## Parameter
+///
+/// - `Auth`: Aythenticated User
+/// - `Connection<PgDb>`: Postgres connection
+///
+/// ## Returns
+///
+/// - `Status`: HTTP status
+/// - `Json<BurrowTotalCount>`: Number of total burrow
+///
+/// ## Errors
+///
+/// - `ErrorResponse`: Error message
+///     - `ErrorCode::DatabaseErr`
+///
 #[get("/total")]
 pub async fn get_total_burrow_count(
     _auth: Auth,

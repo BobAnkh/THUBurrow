@@ -38,6 +38,23 @@ pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
     )
 }
 
+/// Get total post count
+///
+/// ## Parameter
+///
+/// - `Auth`: Aythenticated User
+/// - `Connection<PgDb>`: Postgres connection
+///
+/// ## Returns
+///
+/// - `Status`: HTTP status
+/// - `Json<PostTotalCount>`: Number of total post
+///
+/// ## Errors
+///
+/// - `ErrorResponse`: Error message
+///     - `ErrorCode::DatabaseErr`
+///
 #[get("/posts/total")]
 pub async fn get_total_post_count(
     _auth: Auth,
