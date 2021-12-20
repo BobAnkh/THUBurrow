@@ -42,7 +42,7 @@ pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
 ///
 /// ## Parameters
 ///
-/// - `Auth`: Aythenticated User
+/// - `Auth`: Authenticated User
 /// - `Connection<PgDb>`: Postgres connection
 ///
 /// ## Returns
