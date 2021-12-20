@@ -6,9 +6,9 @@ use serde::{Deserialize, Serialize};
 use super::content::PostSection;
 use super::search::*;
 
-/// Record of data operation, send to search engine
+/// Content operation sent to search engine
 ///
-/// ## enum
+/// ## Fields
 ///
 /// - `PulsarSearchData::CreateBurrow`: Create a new burrow with struct PulsarSearchBurrowData
 /// - `PulsarSearchData::UpdateBurrow`: Update a burrow with struct PulsarSearchBurrowData
@@ -33,7 +33,7 @@ pub enum PulsarSearchData {
     DeleteReply(i64, i32),
 }
 
-/// Burrow data send to search engine
+/// Burrow data sent to search engine
 ///
 /// ## Fields
 ///
@@ -50,8 +50,9 @@ pub struct PulsarSearchBurrowData {
     pub update_time: DateTimeWithTimeZone,
 }
 
-/// Post data send to search engine
+/// Post data sent to search engine
 ///
+/// ## Fields
 ///
 /// - `post_id`: Post id in i64
 /// - `burrow_id`: i64 id of burrow to which the post belongs
@@ -70,7 +71,7 @@ pub struct PulsarSearchPostData {
     pub update_time: DateTimeWithTimeZone,
 }
 
-/// Replt data send to search engine
+/// Reply data sent to search engine
 ///
 /// ## Fields
 ///
@@ -89,7 +90,18 @@ pub struct PulsarSearchReplyData {
     pub update_time: DateTimeWithTimeZone,
 }
 
-/// `{"ActivateLike":10}` or `{"DeactivateFollow": 10}`, where 10 is the post_id or burrow_id
+/// User relation operation sent to task executor
+///
+/// Example of request of frontend: `{"ActivateLike":10}` or `{"DeactivateFollow": 10}`, where 10 is the post_id or burrow_id
+///
+/// ## Fields
+///
+/// - `RelationData::ActivateLike`: activate like
+/// - `RelationData::DeactivateLike`: deactivate like
+/// - `RelationData::ActivateCollection`: activate collection
+/// - `RelationData::DeactivateCollection`: deactivate collection
+/// - `RelationData::ActivateFollow`: activate follow
+/// - `RelationData::DeactivateFollow`: deactivate follow
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub enum RelationData {
     ActivateLike(i64),
@@ -100,6 +112,7 @@ pub enum RelationData {
     DeactivateFollow(i64),
 }
 
+/// Wrap RelationData with uid
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub enum PulsarRelationData {
     ActivateLike(i64, i64),
@@ -110,6 +123,12 @@ pub enum PulsarRelationData {
     DeactivateFollow(i64, i64),
 }
 
+/// Email operation sent to task executor
+///
+/// ## Fields
+///
+/// - `PulsarSendEmail::Sign`: send sign-up email
+/// - `PulsarSendEmail::Reset`: send reset password email
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub enum PulsarSendEmail {
     Sign { email: String },
