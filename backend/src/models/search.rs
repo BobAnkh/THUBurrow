@@ -36,6 +36,7 @@ pub struct TypesenseBurrowData {
 ///
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct TypesensePostData {
+    pub id: String,
     pub post_id: i64,
     pub burrow_id: i64,
     pub title: String,
@@ -44,7 +45,7 @@ pub struct TypesensePostData {
     pub update_time: DateTimeWithTimeZone,
 }
 
-/// Post struct in typesense database
+/// Reply struct in typesense database
 ///
 /// ## Fields
 ///
