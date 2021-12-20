@@ -468,6 +468,15 @@ fn test_user() {
         .collect();
 
     // 1. test user_sign_up
+    // create burrow: perform a wrong action (need authentication)
+        let response = client
+        .post("/burrows")
+        .json(&json!({
+            "description": format!("Second burrow of {}", name),
+            "title": "Burrow 2"}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Unauthorized);
     // set verification code
     let response = client
         .post("/users/email")
@@ -592,6 +601,15 @@ fn test_user() {
     );
 
     // 2. test user_log_in
+    // create burrow: perform a wrong action (need authentication)
+        let response = client
+        .post("/burrows")
+        .json(&json!({
+            "description": format!("Second burrow of {}", name),
+            "title": "Burrow 2"}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Unauthorized);
     // user log in
     let response = client
         .post("/users/login")
@@ -638,8 +656,6 @@ fn test_user() {
         response.into_json::<ErrorResponse>().unwrap(),
         ErrorResponse::build(ErrorCode::CredentialInvalid, "Wrong username or password.",)
     );
-    h4.abort();
-    std::thread::sleep(std::time::Duration::from_secs(1));
 
     // 3. test user_logout
     // user log out
@@ -658,6 +674,9 @@ fn test_user() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Unauthorized);
+
+    h4.abort();
+    std::thread::sleep(std::time::Duration::from_secs(1));
 }
 
 #[test]
