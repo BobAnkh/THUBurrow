@@ -40,7 +40,7 @@ pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
 
 /// Get total post count
 ///
-/// ## Parameter
+/// ## Parameters
 ///
 /// - `Auth`: Aythenticated User
 /// - `Connection<PgDb>`: Postgres connection
