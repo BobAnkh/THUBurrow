@@ -1,9 +1,8 @@
-use crate::{models::content::Post, pgdb::burrow};
+//! Models of burrow
+
+use crate::{db::burrow, models::content::Post};
 use rocket::serde::{Deserialize, Serialize};
 use sea_orm::FromQueryResult;
-
-pub static BURROW_PER_PAGE: usize = 10;
-pub static BURROW_LIMIT: usize = 5;
 
 /// Largest burrow_id from query
 ///
@@ -80,22 +79,38 @@ pub struct BurrowMetadata {
 // TODO: According to burrow state to determine whether to show burrow
 impl From<burrow::Model> for BurrowMetadata {
     fn from(burrow: burrow::Model) -> BurrowMetadata {
-        BurrowMetadata {
-            burrow_id: burrow.burrow_id,
-            title: burrow.title.clone(),
-            description: burrow.description.clone(),
-            post_num: burrow.post_num,
+        match burrow.burrow_state {
+            0 => BurrowMetadata {
+                burrow_id: burrow.burrow_id,
+                title: burrow.title,
+                description: burrow.description,
+                post_num: burrow.post_num,
+            },
+            _ => BurrowMetadata {
+                burrow_id: burrow.burrow_id,
+                title: "Admin has banned this burrow".to_string(),
+                description: "Admin has banned this burrow".to_string(),
+                post_num: burrow.post_num,
+            },
         }
     }
 }
 
 impl From<&burrow::Model> for BurrowMetadata {
     fn from(burrow: &burrow::Model) -> BurrowMetadata {
-        BurrowMetadata {
-            burrow_id: burrow.burrow_id,
-            title: burrow.title.clone(),
-            description: burrow.description.clone(),
-            post_num: burrow.post_num,
+        match burrow.burrow_state {
+            0 => BurrowMetadata {
+                burrow_id: burrow.burrow_id,
+                title: burrow.title.clone(),
+                description: burrow.description.clone(),
+                post_num: burrow.post_num,
+            },
+            _ => BurrowMetadata {
+                burrow_id: burrow.burrow_id,
+                title: "Admin has banned this burrow".to_string(),
+                description: "Admin has banned this burrow".to_string(),
+                post_num: burrow.post_num,
+            },
         }
     }
 }

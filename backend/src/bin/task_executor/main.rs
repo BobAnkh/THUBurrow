@@ -1,6 +1,8 @@
 use backend::utils::mq::*;
-use tokio::signal;
-use tokio::signal::unix::{signal, SignalKind};
+use tokio::signal::{
+    self,
+    unix::{signal, SignalKind},
+};
 use tokio::sync::broadcast;
 use tokio::time::Duration;
 

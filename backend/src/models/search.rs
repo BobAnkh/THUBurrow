@@ -1,3 +1,5 @@
+//! Models for search
+
 use sea_orm::prelude::DateTimeWithTimeZone;
 use serde::{Deserialize, Serialize};
 

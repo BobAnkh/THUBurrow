@@ -1,9 +1,9 @@
+//! Models for user
+
 use rocket::serde::{Deserialize, Serialize};
 use uuid::Uuid;
 // use crate::pgdb::{self, prelude::*};
 use super::{burrow::BurrowMetadata, content::Post};
-
-pub static SEND_EMAIL_LIMIT: usize = 3;
 
 /// User data
 ///

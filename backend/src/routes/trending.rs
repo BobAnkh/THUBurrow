@@ -1,4 +1,5 @@
-//! Routes for trending.
+//! Routes for trending
+
 use rocket::http::Status;
 use rocket::serde::json::Json;
 use rocket::{Build, Rocket};
@@ -6,9 +7,8 @@ use rocket_db_pools::Connection;
 use sea_orm::sea_query::Expr;
 use sea_orm::{entity::*, DatabaseConnection, PaginatorTrait, QueryFilter, QueryOrder};
 
-use crate::models::content::*;
-use crate::models::error::*;
-use crate::pgdb::{content_post, prelude::*};
+use crate::db::{content_post, prelude::*};
+use crate::models::{content::*, error::*};
 use crate::pool::{PgDb, RedisDb};
 use crate::utils::auth::Auth;
 

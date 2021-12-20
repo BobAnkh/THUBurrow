@@ -1,145 +1,60 @@
-extern crate serde;
-use crate::config::mq::*;
+//! Tasks for task_executor
+//!
+//! This module contains a bunch of functions, each of which represents a background
+//! task behind Message Queue executed by task_executor.
+
 use futures::TryStreamExt;
-use lazy_static::lazy_static;
 use pulsar::{Consumer, Pulsar, SubType, TokioExecutor};
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 use sea_orm::sea_query::Expr;
 use sea_orm::{entity::*, ConnectionTrait, Database, DatabaseConnection, DbErr, QueryFilter};
 use serde_json::json;
-use std::collections::HashMap;
-use std::env;
-use std::iter;
 use tokio::time::Duration;
 
 use super::email::{self, check_email_exist};
+use crate::config::mq::*;
+use crate::config::user::SEND_EMAIL_LIMIT;
 use crate::config::BACKEND_TEST_MODE;
-use crate::models::{pulsar::*, search::*, user::SEND_EMAIL_LIMIT};
-use crate::pgdb::{content_post, prelude::*, user_collection, user_follow, user_like};
+use crate::db::{content_post, prelude::*, user_collection, user_follow, user_like};
+use crate::models::{pulsar::*, search::*};
 use crate::routes::trending::select_trending;
 
-lazy_static! {
-    static ref TYPESENSE_API_KEY: String = {
-        let env_v = "ROCKET_DATABASES=".to_string() + &env::var("ROCKET_DATABASES").ok().unwrap_or_else(|| r#"{search={url="http://127.0.0.1:8108@8Dz4jRrsBjYgdCD/VGP1bleph7oBThJr5IcF43l0U24="}}"#.to_string());
-        let env_v =
-            toml::from_str::<HashMap<String, HashMap<String, HashMap<String, String>>>>(&env_v)
-                .unwrap();
-        let url: String = match env_v.get("ROCKET_DATABASES") {
-            Some(r) => match r.get("search") {
-                Some(r) => match r.get("url") {
-                    Some(r) => r.to_owned(),
-                    None => "http://127.0.0.1:8108@8Dz4jRrsBjYgdCD/VGP1bleph7oBThJr5IcF43l0U24="
-                        .to_string(),
-                },
-                None => {
-                    "http://127.0.0.1:8108@8Dz4jRrsBjYgdCD/VGP1bleph7oBThJr5IcF43l0U24=".to_string()
-                }
-            },
-            None => {
-                "http://127.0.0.1:8108@8Dz4jRrsBjYgdCD/VGP1bleph7oBThJr5IcF43l0U24=".to_string()
-            }
-        };
-        let info: Vec<&str> = url.split('@').collect();
-        let api_key: String;
-        if info.len() == 1 {
-            api_key = "8Dz4jRrsBjYgdCD/VGP1bleph7oBThJr5IcF43l0U24=".to_owned();
-        } else if info.len() == 2 {
-            api_key = info[1].to_owned();
-        } else {
-            panic!("Invalid typesense url.");
-        }
-        api_key
-    };
-    static ref TYPESENSE_ADDR: String = {
-        let env_v = "ROCKET_DATABASES=".to_string() + &env::var("ROCKET_DATABASES").ok().unwrap_or_else(|| r#"{search={url="http://127.0.0.1:8108@8Dz4jRrsBjYgdCD/VGP1bleph7oBThJr5IcF43l0U24="}}"#.to_string());
-        let env_v =
-            toml::from_str::<HashMap<String, HashMap<String, HashMap<String, String>>>>(&env_v)
-                .unwrap();
-        let url: String = match env_v.get("ROCKET_DATABASES") {
-            Some(r) => match r.get("search") {
-                Some(r) => match r.get("url") {
-                    Some(r) => r.to_owned(),
-                    None => "http://127.0.0.1:8108@8Dz4jRrsBjYgdCD/VGP1bleph7oBThJr5IcF43l0U24="
-                        .to_string(),
-                },
-                None => {
-                    "http://127.0.0.1:8108@8Dz4jRrsBjYgdCD/VGP1bleph7oBThJr5IcF43l0U24=".to_string()
-                }
-            },
-            None => {
-                "http://127.0.0.1:8108@8Dz4jRrsBjYgdCD/VGP1bleph7oBThJr5IcF43l0U24=".to_string()
-            }
-        };
-        let info: Vec<&str> = url.split('@').collect();
-        let addr: String;
-        if info.len() == 1 || info.len() == 2 {
-            addr = info[0].to_owned();
-        } else {
-            panic!("Invalid typesense url.");
-        }
-        addr
-    };
-    static ref POSTGRES_ADDR: String = {
-        let env_v = "ROCKET_DATABASES=".to_string()
-            + &env::var("ROCKET_DATABASES").ok().unwrap_or_else(|| {
-                r#"{pgdb={url="postgres://postgres:postgres@127.0.0.1:5432/pgdb"}}"#.to_string()
-            });
-        let env_v =
-            toml::from_str::<HashMap<String, HashMap<String, HashMap<String, String>>>>(&env_v)
-                .unwrap();
-        let url: String = match env_v.get("ROCKET_DATABASES") {
-            Some(r) => match r.get("pgdb") {
-                Some(r) => match r.get("url") {
-                    Some(r) => r.to_owned(),
-                    None => "postgres://postgres:postgres@127.0.0.1:5432/pgdb".to_string(),
-                },
-                None => "postgres://postgres:postgres@127.0.0.1:5432/pgdb".to_string(),
-            },
-            None => "postgres://postgres:postgres@127.0.0.1:5432/pgdb".to_string(),
-        };
-        url
-    };
-    static ref PULSAR_ADDR: String = {
-        let env_v = "ROCKET_DATABASES=".to_string()
-            + &env::var("ROCKET_DATABASES")
-                .ok()
-                .unwrap_or_else(|| r#"{pulsar-mq={url="pulsar://127.0.0.1:6650"}}"#.to_string());
-        let env_v =
-            toml::from_str::<HashMap<String, HashMap<String, HashMap<String, String>>>>(&env_v)
-                .unwrap();
-        let url: String = match env_v.get("ROCKET_DATABASES") {
-            Some(r) => match r.get("pulsar-mq") {
-                Some(r) => match r.get("url") {
-                    Some(r) => r.to_owned(),
-                    None => "pulsar://127.0.0.1:6650".to_string(),
-                },
-                None => "pulsar://127.0.0.1:6650".to_string(),
-            },
-            None => "pulsar://127.0.0.1:6650".to_string(),
-        };
-        url
-    };
-    static ref REDIS_ADDR: String = {
-        let env_v = "ROCKET_DATABASES=".to_string()
-            + &env::var("ROCKET_DATABASES").ok().unwrap_or_else(|| {
-                r#"{keydb={url="redis://:keypassword@127.0.0.1:6300"}}"#.to_string()
-            });
-        let env_v =
-            toml::from_str::<HashMap<String, HashMap<String, HashMap<String, String>>>>(&env_v)
-                .unwrap();
-        let url: String = match env_v.get("ROCKET_DATABASES") {
-            Some(r) => match r.get("keydb") {
-                Some(r) => match r.get("url") {
-                    Some(r) => r.to_owned(),
-                    None => "redis://:keypassword@127.0.0.1:6300".to_string(),
-                },
-                None => "redis://:keypassword@127.0.0.1:6300".to_string(),
-            },
-            None => "redis://:keypassword@127.0.0.1:6300".to_string(),
-        };
-        url
-    };
+pub trait Typesense {
+    fn build_get(&self, uri: &str) -> reqwest::RequestBuilder;
+    fn build_post(&self, uri: &str) -> reqwest::RequestBuilder;
+    fn build_delete(&self, uri: &str) -> reqwest::RequestBuilder;
+    fn build_patch(&self, uri: &str) -> reqwest::RequestBuilder;
+}
+
+impl Typesense for reqwest::Client {
+    fn build_get(&self, uri: &str) -> reqwest::RequestBuilder {
+        let typesense_api_key: &str = &TYPESENSE_API_KEY;
+        let typesense_addr: String = TYPESENSE_ADDR.to_owned();
+        self.get(typesense_addr + uri)
+            .header("X-TYPESENSE-API-KEY", typesense_api_key)
+    }
+
+    fn build_post(&self, uri: &str) -> reqwest::RequestBuilder {
+        let typesense_api_key: &str = &TYPESENSE_API_KEY;
+        let typesense_addr: String = TYPESENSE_ADDR.to_owned();
+        self.post(typesense_addr + uri)
+            .header("X-TYPESENSE-API-KEY", typesense_api_key)
+    }
+
+    fn build_delete(&self, uri: &str) -> reqwest::RequestBuilder {
+        let typesense_api_key: &str = &TYPESENSE_API_KEY;
+        let typesense_addr: String = TYPESENSE_ADDR.to_owned();
+        self.delete(typesense_addr + uri)
+            .header("X-TYPESENSE-API-KEY", typesense_api_key)
+    }
+
+    fn build_patch(&self, uri: &str) -> reqwest::RequestBuilder {
+        let typesense_api_key: &str = &TYPESENSE_API_KEY;
+        let typesense_addr: String = TYPESENSE_ADDR.to_owned();
+        self.patch(typesense_addr + uri)
+            .header("X-TYPESENSE-API-KEY", typesense_api_key)
+    }
 }
 
 async fn create_typesense_collections() -> Result<(), reqwest::Error> {
@@ -223,43 +138,6 @@ async fn create_typesense_collections() -> Result<(), reqwest::Error> {
         }
     }
     Ok(())
-}
-
-pub trait Typesense {
-    fn build_get(&self, uri: &str) -> reqwest::RequestBuilder;
-    fn build_post(&self, uri: &str) -> reqwest::RequestBuilder;
-    fn build_delete(&self, uri: &str) -> reqwest::RequestBuilder;
-    fn build_patch(&self, uri: &str) -> reqwest::RequestBuilder;
-}
-
-impl Typesense for reqwest::Client {
-    fn build_get(&self, uri: &str) -> reqwest::RequestBuilder {
-        let typesense_api_key: &str = &TYPESENSE_API_KEY;
-        let typesense_addr: String = TYPESENSE_ADDR.to_owned();
-        self.get(typesense_addr + uri)
-            .header("X-TYPESENSE-API-KEY", typesense_api_key)
-    }
-
-    fn build_post(&self, uri: &str) -> reqwest::RequestBuilder {
-        let typesense_api_key: &str = &TYPESENSE_API_KEY;
-        let typesense_addr: String = TYPESENSE_ADDR.to_owned();
-        self.post(typesense_addr + uri)
-            .header("X-TYPESENSE-API-KEY", typesense_api_key)
-    }
-
-    fn build_delete(&self, uri: &str) -> reqwest::RequestBuilder {
-        let typesense_api_key: &str = &TYPESENSE_API_KEY;
-        let typesense_addr: String = TYPESENSE_ADDR.to_owned();
-        self.delete(typesense_addr + uri)
-            .header("X-TYPESENSE-API-KEY", typesense_api_key)
-    }
-
-    fn build_patch(&self, uri: &str) -> reqwest::RequestBuilder {
-        let typesense_api_key: &str = &TYPESENSE_API_KEY;
-        let typesense_addr: String = TYPESENSE_ADDR.to_owned();
-        self.patch(typesense_addr + uri)
-            .header("X-TYPESENSE-API-KEY", typesense_api_key)
-    }
 }
 
 pub async fn pulsar_typesense() -> Result<(), pulsar::Error> {
@@ -842,7 +720,7 @@ pub async fn pulsar_email() -> Result<(), pulsar::Error> {
             }
         } else if check_email_exist(&email).await.0 {
             // generate verification code
-            let verification_code: String = iter::repeat(())
+            let verification_code: String = std::iter::repeat(())
                 .map(|()| thread_rng().sample(Alphanumeric))
                 .map(char::from)
                 .take(repeat_times)

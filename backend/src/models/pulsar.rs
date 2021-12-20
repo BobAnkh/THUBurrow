@@ -1,5 +1,6 @@
-use pulsar::{producer, Error as PulsarError};
-use pulsar::{DeserializeMessage, Payload, SerializeMessage};
+//! Models of message passed to pulsar
+
+use pulsar::{producer, DeserializeMessage, Error as PulsarError, Payload, SerializeMessage};
 use sea_orm::prelude::DateTimeWithTimeZone;
 use serde::{Deserialize, Serialize};
 

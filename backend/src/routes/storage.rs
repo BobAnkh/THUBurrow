@@ -1,4 +1,5 @@
 //! Routes for storage
+
 use chrono::{FixedOffset, Utc};
 use crypto::digest::Digest;
 use crypto::md5::Md5;
@@ -8,9 +9,9 @@ use rocket::{Build, Rocket};
 use rocket_db_pools::Connection;
 use sea_orm::{entity::*, ActiveModelTrait};
 
+use crate::db::image;
 use crate::models::error::*;
 use crate::models::storage::{ReferrerCheck, SaveImage};
-use crate::pgdb::image;
 use crate::pool::{MinioImageStorage, PgDb};
 use crate::utils::auth::Auth;
 

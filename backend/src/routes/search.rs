@@ -1,12 +1,14 @@
 //! Routes for search
+
 use rocket::http::Status;
 use rocket::serde::json::Json;
 use rocket::{Build, Rocket};
 use rocket_db_pools::Connection;
 use sea_orm::{entity::*, ColumnTrait, DbErr, PaginatorTrait, QueryFilter, QueryOrder};
 
+use crate::config::content::REPLY_PER_PAGE;
+use crate::db::{self, prelude::*};
 use crate::models::{burrow::*, content::*, error::*, search::*};
-use crate::pgdb::{self, prelude::*};
 use crate::pool::{PgDb, Search, TypesenseSearch};
 use crate::utils::auth::Auth;
 
@@ -50,15 +52,12 @@ async fn search(
     let client = conn.into_inner();
     match data.into_inner() {
         SearchRequest::RetrieveBurrow { burrow_id } => {
-            match pgdb::burrow::Entity::find_by_id(burrow_id)
-                .one(&pg_con)
-                .await
-            {
+            match db::burrow::Entity::find_by_id(burrow_id).one(&pg_con).await {
                 Ok(opt_burrow) => match opt_burrow {
                     Some(burrow) => {
-                        match pgdb::content_post::Entity::find()
-                            .filter(pgdb::content_post::Column::BurrowId.eq(burrow_id))
-                            .order_by_desc(pgdb::content_post::Column::PostId)
+                        match db::content_post::Entity::find()
+                            .filter(db::content_post::Column::BurrowId.eq(burrow_id))
+                            .order_by_desc(db::content_post::Column::PostId)
                             .paginate(&pg_con, REPLY_PER_PAGE)
                             .fetch_page(page)
                             .await
@@ -114,8 +113,8 @@ async fn search(
                     ),
                     Some(post_info) => {
                         let reply_pages = ContentReply::find()
-                            .filter(pgdb::content_reply::Column::PostId.eq(post_id))
-                            .order_by_asc(pgdb::content_reply::Column::ReplyId)
+                            .filter(db::content_reply::Column::PostId.eq(post_id))
+                            .order_by_asc(db::content_reply::Column::ReplyId)
                             .paginate(&pg_con, REPLY_PER_PAGE);
                         let reply_info = match reply_pages.fetch_page(page).await {
                             Ok(reply_info) => reply_info,
@@ -131,7 +130,7 @@ async fn search(
                         let post_desc: Post = post_info.into();
                         let reply_page: Vec<Reply> = reply_info.iter().map(|r| r.into()).collect();
                         // check if the user collect the post, if so, update the state is_update
-                        let record = pgdb::user_collection::ActiveModel {
+                        let record = db::user_collection::ActiveModel {
                             uid: Set(auth.id),
                             post_id: Set(post_id),
                             is_update: Set(false),

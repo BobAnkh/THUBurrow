@@ -1,4 +1,5 @@
 //! Error Response of all the public api interfaces
+
 use serde::{Deserialize, Serialize};
 
 /// ErrorCode for all the public interfaces

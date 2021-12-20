@@ -1,4 +1,5 @@
 //! Routes for user
+
 use chrono::{FixedOffset, Utc};
 use crypto::digest::Digest;
 use crypto::sha3::Sha3;
@@ -9,20 +10,14 @@ use rocket::http::{Cookie, CookieJar, Status};
 use rocket::serde::json::Json;
 use rocket::{Build, Rocket};
 use rocket_db_pools::Connection;
-use sea_orm::{entity::*, query::*};
-use sea_orm::{DbErr, QueryFilter};
+use sea_orm::{entity::*, query::*, DbErr, QueryFilter};
 use std::collections::HashMap;
-use std::iter;
 
-use crate::models::{
-    burrow::{BurrowMetadata, BURROW_PER_PAGE},
-    content::{Post, POST_PER_PAGE},
-    error::*,
-    pulsar::*,
-    user::*,
-};
-use crate::pgdb;
-use crate::pgdb::prelude::*;
+use crate::config::burrow::BURROW_PER_PAGE;
+use crate::config::content::POST_PER_PAGE;
+use crate::config::user::SEND_EMAIL_LIMIT;
+use crate::db::{self, prelude::*};
+use crate::models::{burrow::BurrowMetadata, content::Post, error::*, pulsar::*, user::*};
 use crate::pool::{PgDb, PulsarSearchProducerMq, RedisDb};
 use crate::utils::auth::{delete_token, set_token, Auth, CookieOptions};
 use crate::utils::burrow_valid::*;
@@ -49,7 +44,7 @@ pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
 }
 
 async fn gen_salt() -> String {
-    let salt: String = iter::repeat(())
+    let salt: String = std::iter::repeat(())
         .map(|()| thread_rng().sample(Alphanumeric))
         .map(char::from)
         .take(8)
@@ -144,7 +139,7 @@ pub async fn user_email_activate(
     }
     // check if email address is duplicated, add corresponding error if so
     match User::find()
-        .filter(pgdb::user::Column::Email.eq(email.clone()))
+        .filter(db::user::Column::Email.eq(email.clone()))
         .one(&pg_con)
         .await
     {
@@ -258,7 +253,7 @@ pub async fn user_reset_email(
     }
     // check if email address is exist, add corresponding error if so
     match User::find()
-        .filter(pgdb::user::Column::Email.eq(email.clone()))
+        .filter(db::user::Column::Email.eq(email.clone()))
         .one(&pg_con)
         .await
     {
@@ -382,7 +377,7 @@ pub async fn user_sign_up(
     } else {
         // check if email address is duplicated, add corresponding error if so
         match User::find()
-            .filter(pgdb::user::Column::Email.eq(user.email))
+            .filter(db::user::Column::Email.eq(user.email))
             .one(&pg_con)
             .await
         {
@@ -407,7 +402,7 @@ pub async fn user_sign_up(
         }
         // check if username is duplicated, add corresponding error if so
         match User::find()
-            .filter(pgdb::user::Column::Username.eq(user.username))
+            .filter(db::user::Column::Username.eq(user.username))
             .one(&pg_con)
             .await
         {
@@ -505,7 +500,7 @@ pub async fn user_sign_up(
         let uid: i64 = IdHelper::next_id();
         // fill the row of table 'user' and 'user_status'
         let now = Utc::now().with_timezone(&FixedOffset::east(8 * 3600));
-        let users = pgdb::user::ActiveModel {
+        let users = db::user::ActiveModel {
             uid: Set(uid),
             username: Set(user.username.to_string()),
             password: Set(password),
@@ -514,7 +509,7 @@ pub async fn user_sign_up(
             salt: Set(salt),
         };
 
-        let burrows = pgdb::burrow::ActiveModel {
+        let burrows = db::burrow::ActiveModel {
             uid: Set(uid),
             title: Set("Default".to_owned()),
             description: Set("".to_owned()),
@@ -531,7 +526,7 @@ pub async fn user_sign_up(
                     let res = burrows.insert(txn).await?;
                     let burrow_id = res.burrow_id.unwrap();
                     let valid_burrows_str = burrow_id.to_string();
-                    let users_status = pgdb::user_status::ActiveModel {
+                    let users_status = db::user_status::ActiveModel {
                         uid: Set(uid),
                         update_time: Set(now),
                         valid_burrow: Set(valid_burrows_str),
@@ -600,7 +595,7 @@ pub async fn user_reset(
     } else {
         // check if email address is in use
         let user_stored = match User::find()
-            .filter(pgdb::user::Column::Email.eq(user.email))
+            .filter(db::user::Column::Email.eq(user.email))
             .one(&pg_con)
             .await
         {
@@ -696,7 +691,7 @@ pub async fn user_reset(
         let mut hash_sha3 = Sha3::sha3_256();
         hash_sha3.input_str(&(salt + user.password));
         let password = hash_sha3.result_str();
-        let mut users: pgdb::user::ActiveModel = user_stored.into();
+        let mut users: db::user::ActiveModel = user_stored.into();
         users.password = Set(password);
         // insert rows in database
         match users.update(&pg_con).await {
@@ -801,7 +796,7 @@ pub async fn user_change_password(
     let mut hash_sha3 = Sha3::sha3_256();
     hash_sha3.input_str(&(salt + user.new_password));
     let new_password = hash_sha3.result_str();
-    let mut users: pgdb::user::ActiveModel = user_stored.into();
+    let mut users: db::user::ActiveModel = user_stored.into();
     users.password = Set(new_password);
     // insert rows in database
     match users.update(&pg_con).await {
@@ -860,7 +855,7 @@ pub async fn user_log_in(
     let user = user_info.into_inner();
     // check if username is existed, add corresponding error if so
     match User::find()
-        .filter(pgdb::user::Column::Username.eq(user.username))
+        .filter(db::user::Column::Username.eq(user.username))
         .one(&db.into_inner())
         .await
     {
@@ -1030,7 +1025,7 @@ pub async fn get_burrow(
     //     .await
     //     .unwrap();
     let pg_con = db.into_inner();
-    match pgdb::user_status::Entity::find_by_id(auth.id)
+    match db::user_status::Entity::find_by_id(auth.id)
         .one(&pg_con)
         .await
     {
@@ -1040,8 +1035,8 @@ pub async fn get_burrow(
                 let banned_burrows = get_burrow_list(&state.banned_burrow);
                 let burrow_ids = [valid_burrows, banned_burrows].concat();
                 match Burrow::find()
-                    .filter(Condition::any().add(pgdb::burrow::Column::BurrowId.is_in(burrow_ids)))
-                    .order_by_desc(pgdb::burrow::Column::BurrowId)
+                    .filter(Condition::any().add(db::burrow::Column::BurrowId.is_in(burrow_ids)))
+                    .order_by_desc(db::burrow::Column::BurrowId)
                     .all(&pg_con)
                     .await
                 {
@@ -1107,8 +1102,8 @@ pub async fn get_collection(
     let pg_con = db.into_inner();
     let page = page.unwrap_or(0);
     match UserCollection::find()
-        .filter(pgdb::user_collection::Column::Uid.eq(auth.id))
-        .order_by_desc(pgdb::user_collection::Column::PostId)
+        .filter(db::user_collection::Column::Uid.eq(auth.id))
+        .order_by_desc(db::user_collection::Column::PostId)
         .paginate(&pg_con, POST_PER_PAGE)
         .fetch_page(page)
         .await
@@ -1116,8 +1111,8 @@ pub async fn get_collection(
         Ok(results) => {
             let post_ids = results.iter().map(|r| r.post_id).collect::<Vec<i64>>();
             match ContentPost::find()
-                .filter(pgdb::content_post::Column::PostId.is_in(post_ids))
-                .order_by_desc(pgdb::content_post::Column::PostId)
+                .filter(db::content_post::Column::PostId.is_in(post_ids))
+                .order_by_desc(db::content_post::Column::PostId)
                 .all(&pg_con)
                 .await
             {
@@ -1242,8 +1237,8 @@ pub async fn get_follow(
     let pg_con = db.into_inner();
     let page = page.unwrap_or(0);
     match UserFollow::find()
-        .filter(pgdb::user_follow::Column::Uid.eq(auth.id))
-        .order_by_desc(pgdb::user_follow::Column::BurrowId)
+        .filter(db::user_follow::Column::Uid.eq(auth.id))
+        .order_by_desc(db::user_follow::Column::BurrowId)
         .paginate(&pg_con, BURROW_PER_PAGE)
         .fetch_page(page)
         .await
@@ -1251,8 +1246,8 @@ pub async fn get_follow(
         Ok(results) => {
             let burrow_ids = results.iter().map(|r| r.burrow_id).collect::<Vec<i64>>();
             match Burrow::find()
-                .filter(pgdb::burrow::Column::BurrowId.is_in(burrow_ids))
-                .order_by_desc(pgdb::burrow::Column::BurrowId)
+                .filter(db::burrow::Column::BurrowId.is_in(burrow_ids))
+                .order_by_desc(db::burrow::Column::BurrowId)
                 .all(&pg_con)
                 .await
             {

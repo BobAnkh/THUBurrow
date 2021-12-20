@@ -1,19 +1,16 @@
-//! Routes for burow
+//! Routes for burrow
+
 use chrono::{Duration, FixedOffset, Utc};
 use rocket::http::Status;
 use rocket::serde::json::Json;
 use rocket::{Build, Rocket};
 use rocket_db_pools::Connection;
-use sea_orm::{entity::*, DbErr};
-use sea_orm::{query::*, DbBackend};
+use sea_orm::{entity::*, query::*, DbBackend, DbErr};
 
-use crate::models::error::*;
-use crate::models::pulsar::*;
-use crate::models::{
-    burrow::*,
-    content::{Post, REPLY_PER_PAGE},
-};
-use crate::pgdb;
+use crate::config::burrow::{BURROW_LIMIT, BURROW_CREATE_DURATION};
+use crate::config::content::REPLY_PER_PAGE;
+use crate::db;
+use crate::models::{burrow::*, content::Post, error::*, pulsar::*};
 use crate::pool::{PgDb, PulsarSearchProducerMq};
 use crate::utils::auth::Auth;
 use crate::utils::burrow_valid::*;
@@ -115,7 +112,7 @@ pub async fn create_burrow(
 ) {
     let pg_con = db.into_inner();
     // check if user has too many burrows, return corresponding error if so
-    match pgdb::user_status::Entity::find_by_id(auth.id)
+    match db::user_status::Entity::find_by_id(auth.id)
         .one(&pg_con)
         .await
     {
@@ -131,10 +128,9 @@ pub async fn create_burrow(
                     );
                 }
                 let now = Utc::now().with_timezone(&FixedOffset::east(8 * 3600));
-                // TODO: change it when final release
                 if state
                     .update_time
-                    .checked_add_signed(Duration::seconds(5))
+                    .checked_add_signed(Duration::seconds(*BURROW_CREATE_DURATION))
                     .unwrap()
                     > now
                 {
@@ -162,7 +158,7 @@ pub async fn create_burrow(
                         );
                     }
                     // fill the row of table 'burrow'
-                    let burrows = pgdb::burrow::ActiveModel {
+                    let burrows = db::burrow::ActiveModel {
                         uid: Set(auth.id),
                         title: Set(burrow.title),
                         description: Set(burrow.description),
@@ -172,7 +168,7 @@ pub async fn create_burrow(
                     };
                     // insert the row in database
                     // <Fn, A, B> -> Result<A, B>
-                    let mut ust: pgdb::user_status::ActiveModel = state.into();
+                    let mut ust: db::user_status::ActiveModel = state.into();
                     match pg_con
                         .transaction::<_, BurrowCreateResponse, DbErr>(|txn| {
                             Box::pin(async move {
@@ -277,7 +273,7 @@ pub async fn discard_burrow(
     auth: Auth,
 ) -> (Status, Result<String, Json<ErrorResponse>>) {
     let pg_con = db.into_inner();
-    match pgdb::user_status::Entity::find_by_id(auth.id)
+    match db::user_status::Entity::find_by_id(auth.id)
         .one(&pg_con)
         .await
     {
@@ -285,7 +281,7 @@ pub async fn discard_burrow(
             Some(state) => {
                 let mut valid_burrows: Vec<i64> = get_burrow_list(&state.valid_burrow);
                 let mut banned_burrows: Vec<i64> = get_burrow_list(&state.banned_burrow);
-                let mut ac_state: pgdb::user_status::ActiveModel = state.into();
+                let mut ac_state: db::user_status::ActiveModel = state.into();
                 // update valid_burrow / banned_burrow in user_status table
                 // do some type-convert things, and fill in the row according to different situations
                 if valid_burrows.contains(&burrow_id) {
@@ -301,12 +297,11 @@ pub async fn discard_burrow(
                         .transaction::<_, (), DbErr>(|txn| {
                             Box::pin(async move {
                                 ac_state.update(txn).await?;
-                                let ac_burrow: pgdb::burrow::ActiveModel =
-                                    pgdb::burrow::ActiveModel {
-                                        burrow_id: Set(burrow_id),
-                                        burrow_state: Set(2),
-                                        ..Default::default()
-                                    };
+                                let ac_burrow: db::burrow::ActiveModel = db::burrow::ActiveModel {
+                                    burrow_id: Set(burrow_id),
+                                    burrow_state: Set(2),
+                                    ..Default::default()
+                                };
                                 ac_burrow.update(txn).await?;
                                 info!("[DISCARD-BURROW] Burrow {} discarded.", burrow_id);
                                 Ok(())
@@ -336,12 +331,11 @@ pub async fn discard_burrow(
                         .transaction::<_, (), DbErr>(|txn| {
                             Box::pin(async move {
                                 ac_state.update(txn).await?;
-                                let ac_burrow: pgdb::burrow::ActiveModel =
-                                    pgdb::burrow::ActiveModel {
-                                        burrow_id: Set(burrow_id),
-                                        burrow_state: Set(3),
-                                        ..Default::default()
-                                    };
+                                let ac_burrow: db::burrow::ActiveModel = db::burrow::ActiveModel {
+                                    burrow_id: Set(burrow_id),
+                                    burrow_state: Set(3),
+                                    ..Default::default()
+                                };
                                 ac_burrow.update(txn).await?;
                                 info!("[DISCARD-BURROW] Burrow {} discarded.", burrow_id);
                                 Ok(())
@@ -421,15 +415,12 @@ pub async fn show_burrow(
 ) {
     let pg_con = db.into_inner();
     let page = page.unwrap_or(0);
-    match pgdb::burrow::Entity::find_by_id(burrow_id)
-        .one(&pg_con)
-        .await
-    {
+    match db::burrow::Entity::find_by_id(burrow_id).one(&pg_con).await {
         Ok(opt_burrow) => match opt_burrow {
             Some(burrow) => {
-                match pgdb::content_post::Entity::find()
-                    .filter(pgdb::content_post::Column::BurrowId.eq(burrow_id))
-                    .order_by_desc(pgdb::content_post::Column::PostId)
+                match db::content_post::Entity::find()
+                    .filter(db::content_post::Column::BurrowId.eq(burrow_id))
+                    .order_by_desc(db::content_post::Column::PostId)
                     .paginate(&pg_con, REPLY_PER_PAGE)
                     .fetch_page(page)
                     .await
@@ -515,7 +506,7 @@ pub async fn update_burrow(
             ))),
         );
     }
-    match pgdb::user_status::Entity::find_by_id(auth.id)
+    match db::user_status::Entity::find_by_id(auth.id)
         .one(&pg_con)
         .await
     {
@@ -531,7 +522,7 @@ pub async fn update_burrow(
                     )
                 } else if is_valid_burrow(&state.valid_burrow, &burrow_id) {
                     let now = Utc::now().with_timezone(&FixedOffset::east(8 * 3600));
-                    let burrows = pgdb::burrow::ActiveModel {
+                    let burrows = db::burrow::ActiveModel {
                         burrow_id: Set(burrow_id),
                         title: Set(burrow.title.to_owned()),
                         description: Set(burrow.description.to_owned()),

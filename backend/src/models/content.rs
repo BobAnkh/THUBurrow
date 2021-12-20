@@ -1,12 +1,8 @@
-use crate::pgdb::{content_post, content_reply};
+//! Models for content
+
+use crate::db::{content_post, content_reply};
 use rocket::serde::{Deserialize, Serialize};
 use sea_orm::{prelude::DateTimeWithTimeZone, FromQueryResult};
-use std::convert::From;
-
-pub static POST_PER_PAGE: usize = 20;
-pub static REPLY_PER_PAGE: usize = 20;
-pub static MAX_SECTION: usize = 3;
-pub static MAX_TAG: usize = 10;
 
 /// Section of post
 ///

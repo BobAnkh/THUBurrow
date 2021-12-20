@@ -1,4 +1,5 @@
-//! Mod for routes
+//! Module for routes
+
 pub mod burrow;
 pub mod content;
 pub mod health;

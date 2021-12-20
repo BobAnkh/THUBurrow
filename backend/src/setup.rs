@@ -48,7 +48,7 @@ pub mod postgres {
     };
     use sea_orm::{error::*, DbConn, ExecResult};
 
-    use crate::pgdb;
+    use crate::db;
     use crate::pool::PgDb;
 
     pub async fn postgres_table_setup(rocket: Rocket<Build>) -> fairing::Result {
@@ -88,31 +88,23 @@ pub mod postgres {
 
     async fn create_user_table(db: &DbConn) -> Result<ExecResult, DbErr> {
         let stmt = sea_query::Table::create()
-            .table(pgdb::user::Entity)
+            .table(db::user::Entity)
             .if_not_exists()
             .col(
-                ColumnDef::new(pgdb::user::Column::Uid)
+                ColumnDef::new(db::user::Column::Uid)
                     .big_integer()
                     .not_null()
                     .primary_key(),
             )
+            .col(ColumnDef::new(db::user::Column::Username).text().not_null())
+            .col(ColumnDef::new(db::user::Column::Password).text().not_null())
+            .col(ColumnDef::new(db::user::Column::Email).text().not_null())
             .col(
-                ColumnDef::new(pgdb::user::Column::Username)
-                    .text()
-                    .not_null(),
-            )
-            .col(
-                ColumnDef::new(pgdb::user::Column::Password)
-                    .text()
-                    .not_null(),
-            )
-            .col(ColumnDef::new(pgdb::user::Column::Email).text().not_null())
-            .col(
-                ColumnDef::new(pgdb::user::Column::CreateTime)
+                ColumnDef::new(db::user::Column::CreateTime)
                     .timestamp_with_time_zone()
                     .not_null(),
             )
-            .col(ColumnDef::new(pgdb::user::Column::Salt).text().not_null())
+            .col(ColumnDef::new(db::user::Column::Salt).text().not_null())
             .to_owned();
         build_statement(db, &stmt).await
     }
@@ -120,8 +112,8 @@ pub mod postgres {
     async fn create_user_index_username(db: &DbConn) -> Result<ExecResult, DbErr> {
         let stmt = Index::create()
             .name("idx-username")
-            .table(pgdb::user::Entity)
-            .col(pgdb::user::Column::Username)
+            .table(db::user::Entity)
+            .col(db::user::Column::Username)
             .to_owned();
         build_statement(db, &stmt).await
     }
@@ -129,39 +121,35 @@ pub mod postgres {
     async fn create_user_index_email(db: &DbConn) -> Result<ExecResult, DbErr> {
         let stmt = Index::create()
             .name("idx-email")
-            .table(pgdb::user::Entity)
-            .col(pgdb::user::Column::Email)
+            .table(db::user::Entity)
+            .col(db::user::Column::Email)
             .to_owned();
         build_statement(db, &stmt).await
     }
 
     async fn create_image_table(db: &DbConn) -> Result<ExecResult, DbErr> {
         let stmt = sea_query::Table::create()
-            .table(pgdb::image::Entity)
+            .table(db::image::Entity)
             .if_not_exists()
             .col(
-                ColumnDef::new(pgdb::image::Column::Filename)
+                ColumnDef::new(db::image::Column::Filename)
                     .text()
                     .not_null()
                     .primary_key(),
             )
             .col(
-                ColumnDef::new(pgdb::image::Column::UserId)
+                ColumnDef::new(db::image::Column::UserId)
                     .big_integer()
                     .not_null(),
             )
+            .col(ColumnDef::new(db::image::Column::Size).integer().not_null())
             .col(
-                ColumnDef::new(pgdb::image::Column::Size)
-                    .integer()
-                    .not_null(),
-            )
-            .col(
-                ColumnDef::new(pgdb::image::Column::CreateTime)
+                ColumnDef::new(db::image::Column::CreateTime)
                     .timestamp_with_time_zone()
                     .not_null(),
             )
             .col(
-                ColumnDef::new(pgdb::image::Column::LastDownloadTime)
+                ColumnDef::new(db::image::Column::LastDownloadTime)
                     .timestamp_with_time_zone()
                     .not_null(),
             )
@@ -172,33 +160,33 @@ pub mod postgres {
 
     async fn create_user_status_table(db: &DbConn) -> Result<ExecResult, DbErr> {
         let stmt = sea_query::Table::create()
-            .table(pgdb::user_status::Entity)
+            .table(db::user_status::Entity)
             .if_not_exists()
             .col(
-                ColumnDef::new(pgdb::user_status::Column::Uid)
+                ColumnDef::new(db::user_status::Column::Uid)
                     .big_integer()
                     .not_null()
                     .primary_key(),
             )
             .col(
-                ColumnDef::new(pgdb::user_status::Column::UpdateTime)
+                ColumnDef::new(db::user_status::Column::UpdateTime)
                     .timestamp_with_time_zone()
                     .not_null(),
             )
             .col(
-                ColumnDef::new(pgdb::user_status::Column::UserState)
+                ColumnDef::new(db::user_status::Column::UserState)
                     .integer()
                     .not_null()
                     .default(0),
             )
             .col(
-                ColumnDef::new(pgdb::user_status::Column::ValidBurrow)
+                ColumnDef::new(db::user_status::Column::ValidBurrow)
                     .text()
                     .not_null()
                     .default("".to_string()),
             )
             .col(
-                ColumnDef::new(pgdb::user_status::Column::BannedBurrow)
+                ColumnDef::new(db::user_status::Column::BannedBurrow)
                     .text()
                     .not_null()
                     .default("".to_string()),
@@ -209,70 +197,70 @@ pub mod postgres {
 
     async fn create_content_post_table(db: &DbConn) -> Result<ExecResult, DbErr> {
         let stmt = sea_query::Table::create()
-            .table(pgdb::content_post::Entity)
+            .table(db::content_post::Entity)
             .if_not_exists()
             .col(
-                ColumnDef::new(pgdb::content_post::Column::PostId)
+                ColumnDef::new(db::content_post::Column::PostId)
                     .extra("bigserial".to_string())
                     .not_null()
                     .primary_key(),
             )
             .col(
-                ColumnDef::new(pgdb::content_post::Column::Title)
+                ColumnDef::new(db::content_post::Column::Title)
                     .text()
                     .not_null(),
             )
             .col(
-                ColumnDef::new(pgdb::content_post::Column::BurrowId)
+                ColumnDef::new(db::content_post::Column::BurrowId)
                     .big_integer()
                     .not_null(),
             )
             .col(
-                ColumnDef::new(pgdb::content_post::Column::CreateTime)
+                ColumnDef::new(db::content_post::Column::CreateTime)
                     .timestamp_with_time_zone()
                     .not_null(),
             )
             .col(
-                ColumnDef::new(pgdb::content_post::Column::UpdateTime)
+                ColumnDef::new(db::content_post::Column::UpdateTime)
                     .timestamp_with_time_zone()
                     .not_null(),
             )
             .col(
-                ColumnDef::new(pgdb::content_post::Column::Section)
+                ColumnDef::new(db::content_post::Column::Section)
                     .text()
                     .not_null(),
             )
             .col(
-                ColumnDef::new(pgdb::content_post::Column::Tag)
+                ColumnDef::new(db::content_post::Column::Tag)
                     .text()
                     .not_null(),
             )
             .col(
-                ColumnDef::new(pgdb::content_post::Column::PostLen)
+                ColumnDef::new(db::content_post::Column::PostLen)
                     .integer()
                     .not_null()
                     .default(1),
             )
             .col(
-                ColumnDef::new(pgdb::content_post::Column::PostType)
+                ColumnDef::new(db::content_post::Column::PostType)
                     .integer()
                     .not_null()
                     .default(0),
             )
             .col(
-                ColumnDef::new(pgdb::content_post::Column::PostState)
+                ColumnDef::new(db::content_post::Column::PostState)
                     .integer()
                     .not_null()
                     .default(0),
             )
             .col(
-                ColumnDef::new(pgdb::content_post::Column::LikeNum)
+                ColumnDef::new(db::content_post::Column::LikeNum)
                     .integer()
                     .not_null()
                     .default(0),
             )
             .col(
-                ColumnDef::new(pgdb::content_post::Column::CollectionNum)
+                ColumnDef::new(db::content_post::Column::CollectionNum)
                     .integer()
                     .not_null()
                     .default(0),
@@ -284,48 +272,48 @@ pub mod postgres {
 
     async fn create_content_reply_table(db: &DbConn) -> Result<ExecResult, DbErr> {
         let stmt = sea_query::Table::create()
-            .table(pgdb::content_reply::Entity)
+            .table(db::content_reply::Entity)
             .if_not_exists()
             .col(
-                ColumnDef::new(pgdb::content_reply::Column::PostId)
+                ColumnDef::new(db::content_reply::Column::PostId)
                     .big_integer()
                     .not_null(),
             )
             .col(
-                ColumnDef::new(pgdb::content_reply::Column::ReplyId)
+                ColumnDef::new(db::content_reply::Column::ReplyId)
                     .integer()
                     .not_null(),
             )
             .col(
-                ColumnDef::new(pgdb::content_reply::Column::BurrowId)
+                ColumnDef::new(db::content_reply::Column::BurrowId)
                     .big_integer()
                     .not_null(),
             )
             .col(
-                ColumnDef::new(pgdb::content_reply::Column::CreateTime)
+                ColumnDef::new(db::content_reply::Column::CreateTime)
                     .timestamp_with_time_zone()
                     .not_null(),
             )
             .col(
-                ColumnDef::new(pgdb::content_reply::Column::UpdateTime)
+                ColumnDef::new(db::content_reply::Column::UpdateTime)
                     .timestamp_with_time_zone()
                     .not_null(),
             )
             .col(
-                ColumnDef::new(pgdb::content_reply::Column::Content)
+                ColumnDef::new(db::content_reply::Column::Content)
                     .text()
                     .not_null(),
             )
             .col(
-                ColumnDef::new(pgdb::content_reply::Column::ReplyState)
+                ColumnDef::new(db::content_reply::Column::ReplyState)
                     .integer()
                     .not_null()
                     .default(0),
             )
             .primary_key(
                 Index::create()
-                    .col(pgdb::content_reply::Column::PostId)
-                    .col(pgdb::content_reply::Column::ReplyId),
+                    .col(db::content_reply::Column::PostId)
+                    .col(db::content_reply::Column::ReplyId),
             )
             .to_owned();
         // println!("user table: {}", stmt.to_string(PostgresQueryBuilder));
@@ -334,22 +322,22 @@ pub mod postgres {
 
     async fn create_user_like_table(db: &DbConn) -> Result<ExecResult, DbErr> {
         let stmt = sea_query::Table::create()
-            .table(pgdb::user_like::Entity)
+            .table(db::user_like::Entity)
             .if_not_exists()
             .col(
-                ColumnDef::new(pgdb::user_like::Column::Uid)
+                ColumnDef::new(db::user_like::Column::Uid)
                     .big_integer()
                     .not_null(),
             )
             .col(
-                ColumnDef::new(pgdb::user_like::Column::PostId)
+                ColumnDef::new(db::user_like::Column::PostId)
                     .big_integer()
                     .not_null(),
             )
             .primary_key(
                 Index::create()
-                    .col(pgdb::user_like::Column::Uid)
-                    .col(pgdb::user_like::Column::PostId),
+                    .col(db::user_like::Column::Uid)
+                    .col(db::user_like::Column::PostId),
             )
             .to_owned();
         build_statement(db, &stmt).await
@@ -357,28 +345,28 @@ pub mod postgres {
 
     async fn create_user_collection_table(db: &DbConn) -> Result<ExecResult, DbErr> {
         let stmt = sea_query::Table::create()
-            .table(pgdb::user_collection::Entity)
+            .table(db::user_collection::Entity)
             .if_not_exists()
             .col(
-                ColumnDef::new(pgdb::user_collection::Column::Uid)
+                ColumnDef::new(db::user_collection::Column::Uid)
                     .big_integer()
                     .not_null(),
             )
             .col(
-                ColumnDef::new(pgdb::user_collection::Column::PostId)
+                ColumnDef::new(db::user_collection::Column::PostId)
                     .big_integer()
                     .not_null(),
             )
             .col(
-                ColumnDef::new(pgdb::user_collection::Column::IsUpdate)
+                ColumnDef::new(db::user_collection::Column::IsUpdate)
                     .boolean()
                     .not_null()
                     .default(false),
             )
             .primary_key(
                 Index::create()
-                    .col(pgdb::user_collection::Column::Uid)
-                    .col(pgdb::user_collection::Column::PostId),
+                    .col(db::user_collection::Column::Uid)
+                    .col(db::user_collection::Column::PostId),
             )
             .to_owned();
         build_statement(db, &stmt).await
@@ -386,65 +374,61 @@ pub mod postgres {
 
     async fn create_burrow_table(db: &DbConn) -> Result<ExecResult, DbErr> {
         let stmt = sea_query::Table::create()
-            .table(pgdb::burrow::Entity)
+            .table(db::burrow::Entity)
             .if_not_exists()
             .col(
-                ColumnDef::new(pgdb::burrow::Column::BurrowId)
+                ColumnDef::new(db::burrow::Column::BurrowId)
                     .extra("bigserial".to_string())
                     .not_null()
                     .primary_key(),
             )
+            .col(ColumnDef::new(db::burrow::Column::Title).text().not_null())
             .col(
-                ColumnDef::new(pgdb::burrow::Column::Title)
+                ColumnDef::new(db::burrow::Column::Description)
                     .text()
                     .not_null(),
             )
             .col(
-                ColumnDef::new(pgdb::burrow::Column::Description)
-                    .text()
-                    .not_null(),
-            )
-            .col(
-                ColumnDef::new(pgdb::burrow::Column::Uid)
+                ColumnDef::new(db::burrow::Column::Uid)
                     .big_integer()
                     .not_null(),
             )
             .col(
-                ColumnDef::new(pgdb::burrow::Column::BurrowState)
+                ColumnDef::new(db::burrow::Column::BurrowState)
                     .integer()
                     .not_null()
                     .default(0),
             )
             .col(
-                ColumnDef::new(pgdb::burrow::Column::PostNum)
+                ColumnDef::new(db::burrow::Column::PostNum)
                     .integer()
                     .not_null()
                     .default(0),
             )
             .col(
-                ColumnDef::new(pgdb::burrow::Column::CreateTime)
+                ColumnDef::new(db::burrow::Column::CreateTime)
                     .timestamp_with_time_zone()
                     .not_null(),
             )
             .col(
-                ColumnDef::new(pgdb::burrow::Column::UpdateTime)
+                ColumnDef::new(db::burrow::Column::UpdateTime)
                     .timestamp_with_time_zone()
                     .not_null(),
             )
             .col(
-                ColumnDef::new(pgdb::burrow::Column::Credit)
+                ColumnDef::new(db::burrow::Column::Credit)
                     .integer()
                     .not_null()
                     .default(0),
             )
             .col(
-                ColumnDef::new(pgdb::burrow::Column::Badge)
+                ColumnDef::new(db::burrow::Column::Badge)
                     .text()
                     .not_null()
                     .default("".to_string()),
             )
             .col(
-                ColumnDef::new(pgdb::burrow::Column::Avatar)
+                ColumnDef::new(db::burrow::Column::Avatar)
                     .text()
                     .not_null()
                     .default("default.jpg".to_string()),
@@ -455,28 +439,28 @@ pub mod postgres {
 
     async fn create_user_follow_table(db: &DbConn) -> Result<ExecResult, DbErr> {
         let stmt = sea_query::Table::create()
-            .table(pgdb::user_follow::Entity)
+            .table(db::user_follow::Entity)
             .if_not_exists()
             .col(
-                ColumnDef::new(pgdb::user_follow::Column::Uid)
+                ColumnDef::new(db::user_follow::Column::Uid)
                     .big_integer()
                     .not_null(),
             )
             .col(
-                ColumnDef::new(pgdb::user_follow::Column::BurrowId)
+                ColumnDef::new(db::user_follow::Column::BurrowId)
                     .big_integer()
                     .not_null(),
             )
             .col(
-                ColumnDef::new(pgdb::user_follow::Column::IsUpdate)
+                ColumnDef::new(db::user_follow::Column::IsUpdate)
                     .boolean()
                     .not_null()
                     .default(false),
             )
             .primary_key(
                 Index::create()
-                    .col(pgdb::user_follow::Column::Uid)
-                    .col(pgdb::user_follow::Column::BurrowId),
+                    .col(db::user_follow::Column::Uid)
+                    .col(db::user_follow::Column::BurrowId),
             )
             .to_owned();
         build_statement(db, &stmt).await

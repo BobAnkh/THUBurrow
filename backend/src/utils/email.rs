@@ -1,11 +1,9 @@
+//! Module for email check and send
+
 use check_if_email_exists::syntax::check_syntax;
 use check_if_email_exists::{check_email, CheckEmailInput, Reachable};
 use chrono::Utc;
-use crypto::digest::Digest;
-use crypto::hmac::Hmac;
-use crypto::mac::Mac;
-use crypto::sha2::Sha256;
-use hex;
+use crypto::{digest::Digest, hmac::Hmac, mac::Mac, sha2::Sha256};
 use lazy_static::lazy_static;
 use reqwest::header::HeaderMap;
 use serde::Serialize;

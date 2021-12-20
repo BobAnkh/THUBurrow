@@ -1,4 +1,5 @@
 //! Routes for content
+
 use chrono::{prelude::*, Duration};
 use rocket::http::Status;
 use rocket::serde::json::Json;
@@ -11,12 +12,10 @@ use sea_orm::{
 };
 use std::collections::HashMap;
 
-use crate::models::content::*;
-use crate::models::error::*;
-use crate::models::pulsar::*;
+use crate::config::content::{MAX_SECTION, MAX_TAG, POST_PER_PAGE, REPLY_PER_PAGE, POST_DELETE_DURATION};
+use crate::db::{self, prelude::*};
 use crate::models::search::SearchPostData;
-use crate::pgdb;
-use crate::pgdb::prelude::*;
+use crate::models::{content::*, error::*, pulsar::*};
 use crate::pool::{PgDb, PulsarSearchProducerMq, Search, TypesenseSearch};
 use crate::utils::auth::Auth;
 use crate::utils::burrow_valid::is_valid_burrow;
@@ -142,7 +141,6 @@ pub async fn create_post(
             ))),
         );
     }
-    // TODO: check if section is valid
     if content.tag.len() > MAX_TAG {
         return (
             Status::BadRequest,
@@ -180,7 +178,7 @@ pub async fn create_post(
                                 // get tag and section string and remove duplicate
                                 let section = remove_duplicate(content.section);
                                 let tag = remove_duplicate(content.tag);
-                                let content_post = pgdb::content_post::ActiveModel {
+                                let content_post = db::content_post::ActiveModel {
                                     title: Set(content.title.to_owned()),
                                     burrow_id: Set(content.burrow_id),
                                     create_time: Set(now.to_owned()),
@@ -194,7 +192,7 @@ pub async fn create_post(
                                 let post_id = post_res.post_id.unwrap();
                                 log::info!("[CREATE-POST] create post: {}", post_id);
                                 // fill the row in content_reply
-                                let content_reply = pgdb::content_reply::ActiveModel {
+                                let content_reply = db::content_reply::ActiveModel {
                                     post_id: Set(post_id),
                                     reply_id: Set(0),
                                     burrow_id: Set(content.burrow_id),
@@ -210,10 +208,10 @@ pub async fn create_post(
                                 );
                                 let update_res = Burrow::update_many()
                                     .col_expr(
-                                        pgdb::burrow::Column::PostNum,
-                                        Expr::col(pgdb::burrow::Column::PostNum).add(1),
+                                        db::burrow::Column::PostNum,
+                                        Expr::col(db::burrow::Column::PostNum).add(1),
                                     )
-                                    .filter(pgdb::burrow::Column::BurrowId.eq(content.burrow_id))
+                                    .filter(db::burrow::Column::BurrowId.eq(content.burrow_id))
                                     .exec(txn)
                                     .await?;
                                 if update_res.rows_affected != 1 {
@@ -222,13 +220,8 @@ pub async fn create_post(
                                     ));
                                 }
                                 UserFollow::update_many()
-                                    .col_expr(
-                                        pgdb::user_follow::Column::IsUpdate,
-                                        Expr::value(true),
-                                    )
-                                    .filter(
-                                        pgdb::user_follow::Column::BurrowId.eq(content.burrow_id),
-                                    )
+                                    .col_expr(db::user_follow::Column::IsUpdate, Expr::value(true))
+                                    .filter(db::user_follow::Column::BurrowId.eq(content.burrow_id))
                                     .exec(txn)
                                     .await?;
                                 let pulsar_post = PulsarSearchPostData {
@@ -326,25 +319,30 @@ pub async fn read_post(
                 ))),
             ),
             Some(post_info) => {
-                let reply_pages = ContentReply::find()
-                    .filter(pgdb::content_reply::Column::PostId.eq(post_id))
-                    .order_by_asc(pgdb::content_reply::Column::ReplyId)
-                    .paginate(&pg_con, REPLY_PER_PAGE);
-                let reply_info = match reply_pages.fetch_page(page).await {
-                    Ok(reply_info) => reply_info,
-                    Err(e) => {
-                        log::error!("[READ-POST] Database error: {:?}", e);
-                        return (
-                            Status::InternalServerError,
-                            Err(Json(ErrorResponse::default())),
-                        );
-                    }
-                };
                 // get post metadata
+                let reply_page: Vec<Reply> = match post_info.post_state {
+                    0 => {
+                        let reply_pages = ContentReply::find()
+                            .filter(db::content_reply::Column::PostId.eq(post_id))
+                            .order_by_asc(db::content_reply::Column::ReplyId)
+                            .paginate(&pg_con, REPLY_PER_PAGE);
+                        let reply_info = match reply_pages.fetch_page(page).await {
+                            Ok(reply_info) => reply_info,
+                            Err(e) => {
+                                log::error!("[READ-POST] Database error: {:?}", e);
+                                return (
+                                    Status::InternalServerError,
+                                    Err(Json(ErrorResponse::default())),
+                                );
+                            }
+                        };
+                        reply_info.iter().map(|r| r.into()).collect()
+                    }
+                    _ => Vec::new(),
+                };
                 let post_desc: Post = post_info.into();
-                let reply_page: Vec<Reply> = reply_info.iter().map(|r| r.into()).collect();
                 // check if the user collect the post, if so, update the state is_update
-                let record = pgdb::user_collection::ActiveModel {
+                let record = db::user_collection::ActiveModel {
                     uid: Set(auth.id),
                     post_id: Set(post_id),
                     is_update: Set(false),
@@ -484,7 +482,7 @@ pub async fn update_post(
                                 // get tag and section string and remove duplicate
                                 let section = remove_duplicate(content.section);
                                 let tag = remove_duplicate(content.tag);
-                                let content_post = pgdb::content_post::ActiveModel {
+                                let content_post = db::content_post::ActiveModel {
                                     post_id: Set(post_id),
                                     title: Set(content.title.to_owned()),
                                     update_time: Set(now.to_owned()),
@@ -599,10 +597,9 @@ pub async fn delete_post(
             ),
             Some(post_info) => {
                 //  check if time is within limit, if so, allow user to delete
-                // TODO: change it when final release
                 if post_info
                     .create_time
-                    .checked_add_signed(Duration::seconds(5))
+                    .checked_add_signed(Duration::seconds(*POST_DELETE_DURATION))
                     .unwrap()
                     < now
                 {
@@ -628,14 +625,14 @@ pub async fn delete_post(
                                 )
                             } else if is_valid_burrow(&state.valid_burrow, &post_info.burrow_id) {
                                 // delete data in content_subject
-                                let delete_post: pgdb::content_post::ActiveModel = post_info.into();
+                                let delete_post: db::content_post::ActiveModel = post_info.into();
                                 match pg_con
                                     .transaction::<_, (), DbErr>(|txn| {
                                         Box::pin(async move {
                                             delete_post.delete(txn).await?;
                                             ContentReply::delete_many()
                                                 .filter(
-                                                    pgdb::content_reply::Column::PostId.eq(post_id),
+                                                    db::content_reply::Column::PostId.eq(post_id),
                                                 )
                                                 .exec(txn)
                                                 .await?;
@@ -731,7 +728,7 @@ pub async fn read_post_list(
     let client = conn.into_inner();
     let post_info = if section.is_empty() {
         let post_pages = ContentPost::find()
-            .order_by_desc(pgdb::content_post::Column::PostId)
+            .order_by_desc(db::content_post::Column::PostId)
             .paginate(&pg_con, POST_PER_PAGE);
         let post_info = match post_pages.fetch_page(page).await {
             Ok(post_info) => post_info,
@@ -786,8 +783,8 @@ pub async fn read_post_list(
             );
         }
         match ContentPost::find()
-            .filter(Condition::all().add(pgdb::content_post::Column::PostId.is_in(post_ids)))
-            .order_by_desc(pgdb::content_post::Column::PostId)
+            .filter(Condition::all().add(db::content_post::Column::PostId.is_in(post_ids)))
+            .order_by_desc(db::content_post::Column::PostId)
             .all(&pg_con)
             .await
         {
@@ -814,13 +811,13 @@ pub async fn read_post_list(
             })),
         );
     }
-    let like_res = match pgdb::user_like::Entity::find()
+    let like_res = match db::user_like::Entity::find()
         .filter(
             Condition::all()
-                .add(pgdb::user_like::Column::Uid.eq(auth.id))
-                .add(pgdb::user_like::Column::PostId.is_in(post_ids.clone())),
+                .add(db::user_like::Column::Uid.eq(auth.id))
+                .add(db::user_like::Column::PostId.is_in(post_ids.clone())),
         )
-        .order_by_desc(pgdb::user_like::Column::PostId)
+        .order_by_desc(db::user_like::Column::PostId)
         .all(&pg_con)
         .await
         .map(|user_likes| {
@@ -836,13 +833,13 @@ pub async fn read_post_list(
             );
         }
     };
-    let collection_res = match pgdb::user_collection::Entity::find()
+    let collection_res = match db::user_collection::Entity::find()
         .filter(
             Condition::all()
-                .add(pgdb::user_collection::Column::Uid.eq(auth.id))
-                .add(pgdb::user_collection::Column::PostId.is_in(post_ids)),
+                .add(db::user_collection::Column::Uid.eq(auth.id))
+                .add(db::user_collection::Column::PostId.is_in(post_ids)),
         )
-        .order_by_desc(pgdb::user_collection::Column::PostId)
+        .order_by_desc(db::user_collection::Column::PostId)
         .all(&pg_con)
         .await
         .map(|user_collections| {
@@ -949,7 +946,7 @@ pub async fn create_reply(
                                             let now = Utc::now()
                                                 .with_timezone(&FixedOffset::east(8 * 3600));
                                             // fill the row in content_reply
-                                            let content_reply = pgdb::content_reply::ActiveModel {
+                                            let content_reply = db::content_reply::ActiveModel {
                                                 post_id: Set(post_info.post_id),
                                                 reply_id: Set(post_info.post_len),
                                                 burrow_id: Set(content.burrow_id),
@@ -962,7 +959,7 @@ pub async fn create_reply(
                                             let reply_res = content_reply.insert(txn).await?;
                                             let reply_id = reply_res.reply_id.unwrap();
                                             log::info!("[CREATE-REPLY] create reply {}", reply_id);
-                                            let post_update = pgdb::content_post::ActiveModel {
+                                            let post_update = db::content_post::ActiveModel {
                                                 post_id: Set(post_info.post_id),
                                                 update_time: Set(now.to_owned()),
                                                 post_len: Set(post_info.post_len + 1),
@@ -976,11 +973,11 @@ pub async fn create_reply(
                                             );
                                             UserCollection::update_many()
                                                 .col_expr(
-                                                    pgdb::user_collection::Column::IsUpdate,
+                                                    db::user_collection::Column::IsUpdate,
                                                     Expr::value(true),
                                                 )
                                                 .filter(
-                                                    pgdb::user_collection::Column::PostId
+                                                    db::user_collection::Column::PostId
                                                         .eq(post_info.post_id),
                                                 )
                                                 .exec(txn)
@@ -1118,12 +1115,12 @@ pub async fn update_reply(
                                             Box::pin(async move {
                                                 let now = Utc::now().with_timezone(&FixedOffset::east(8 * 3600));
                                                 // fill the row in content_reply
-                                                let mut content_reply: pgdb::content_reply::ActiveModel =
+                                                let mut content_reply: db::content_reply::ActiveModel =
                                                     reply_info.into();
                                                 content_reply.content = Set(content.content.to_owned());
                                                 content_reply.update_time = Set(now);
                                                 let content_reply = content_reply.update(txn).await?;
-                                                let post_update = pgdb::content_post::ActiveModel {
+                                                let post_update = db::content_post::ActiveModel {
                                                     post_id: Set(content.post_id),
                                                     update_time: Set(now.to_owned()),
                                                     ..Default::default()

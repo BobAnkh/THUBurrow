@@ -1,19 +1,17 @@
-//! # Database Pool
+//! Module for Database Pool
 //!
 //! `pool` is a collection of `Database Connection Pool`s that can be used to perform
 //! operations on multiple databases, e.g. PostgreSQL, Redis, Pulsar, Typesense, Minio, etc.
 
 use deadpool::managed::{self, Manager, Object, PoolConfig, PoolError};
 use deadpool::Runtime;
-use pulsar::MultiTopicProducer;
-use pulsar::{message::proto, producer, Error as PulsarError, Pulsar, TokioExecutor};
+use pulsar::{
+    message::proto, producer, Error as PulsarError, MultiTopicProducer, Pulsar, TokioExecutor,
+};
 use reqwest;
 use rocket::State;
 use rocket_db_pools::{rocket::figment::Figment, Config, Database, Error, Pool};
-use s3::bucket::Bucket;
-use s3::creds::Credentials;
-use s3::region::Region;
-use s3::BucketConfiguration;
+use s3::{bucket::Bucket, creds::Credentials, region::Region, BucketConfiguration};
 use sea_orm::{DatabaseConnection, DbErr};
 use std::time::Duration;
 
