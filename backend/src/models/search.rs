@@ -25,6 +25,7 @@ pub struct TypesenseBurrowData {
 
 /// Post struct in typesense database
 ///
+/// ## Fields
 ///
 /// - `id`: Post id in String for searchengine index
 /// - `post_id`: Post id in i64
@@ -68,7 +69,7 @@ pub struct TypesenseReplyData {
 
 /// Different kinds of search request
 ///
-/// ## enum
+/// ## Fields
 ///
 /// - `SearchRequest::RetrieveBurrow`: Retrieve burrow with param `burrow_id` in i64
 /// - `SearchRequest::RetrievePost`: Retrieve post with param `post_id` in i64
