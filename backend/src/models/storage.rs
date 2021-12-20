@@ -1,3 +1,4 @@
+//! Models of storage
 use rocket::data::{self, Data, FromData, ToByteUnit};
 use rocket::http::{ContentType, Status};
 use rocket::outcome::Outcome::*;
@@ -7,12 +8,25 @@ use rocket::serde::Deserialize;
 use lazy_static::lazy_static;
 use regex::Regex;
 
+/// Request guard for save image
+///
+/// ## Fields
+///
+/// - `content_type`: String, the converted content type of the image
+/// - `content`: Vec<u8>, the content of the image
 #[derive(Deserialize)]
 pub struct SaveImage {
     pub content_type: String,
     pub content: Vec<u8>,
 }
 
+/// Error type of saving image
+///
+/// ## Fields
+///
+/// - `ImageError::TooLarge`: The image is too large, more than the limit
+/// - `ImageError::InvalidType`: The content type is invalid
+/// - `ImageError::Io`: Io error
 #[derive(Debug)]
 pub enum ImageError {
     TooLarge,
@@ -20,12 +34,19 @@ pub enum ImageError {
     Io(std::io::Error),
 }
 
+/// Error type for referer check
+///
+/// ## Fields
+///
+/// - `RefererError::Empty`: The referer is empty
+/// - `RefererError::Invalid`: The referer is invalid
 #[derive(Debug)]
 pub enum ReferrerError {
     Empty,
     Invalid,
 }
 
+/// Request guard for referer check
 pub struct ReferrerCheck {}
 
 #[rocket::async_trait]

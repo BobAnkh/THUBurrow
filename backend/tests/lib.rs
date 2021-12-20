@@ -826,8 +826,8 @@ fn test_burrow() {
     let res = response
         .into_json::<Vec<backend::models::user::UserGetFollowResponse>>()
         .unwrap();
-    assert_eq!(burrow_id + 1, res[0].burrow.burrow_id);
-    assert_eq!(burrow_id, res[1].burrow.burrow_id);
+    assert_eq!(res[0].burrow.burrow_id, burrow_id + 1);
+    assert_eq!(res[1].burrow.burrow_id, burrow_id);
     // unfollow burrow 2nd
     let response = client
         .post("/users/relation")
@@ -846,7 +846,7 @@ fn test_burrow() {
     let res = response
         .into_json::<Vec<backend::models::user::UserGetFollowResponse>>()
         .unwrap();
-    assert_eq!(1, res.len());
+    assert_eq!(res.len(), 1);
 
     // 5. test get_total_burrow_count
     // get total burrow count
@@ -865,8 +865,8 @@ fn test_burrow() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     assert_eq!(
-        format!("{{\"title\":\"Default\",\"description\":\"\",\"posts\":[]}}"),
-        response.into_string().unwrap()
+        response.into_string().unwrap(),
+        format!("{{\"title\":\"Default\",\"description\":\"\",\"posts\":[]}}")
     );
     // show burrow: perform a wrong action (burrow not exist)
     let response = client
@@ -910,8 +910,8 @@ fn test_burrow() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     assert_eq!(
-        format!("{{\"title\":\"New Default burrow\",\"description\":\"New Default burrow of {}\",\"posts\":[]}}", name),
-        response.into_string().unwrap()
+        response.into_string().unwrap(),
+        format!("{{\"title\":\"New Default burrow\",\"description\":\"New Default burrow of {}\",\"posts\":[]}}", name)
     );
 
     // 8. test get_burrow
@@ -924,8 +924,8 @@ fn test_burrow() {
     let res = response
         .into_json::<Vec<backend::models::burrow::BurrowMetadata>>()
         .unwrap();
-    assert_eq!(burrow_id + 4, res[0].burrow_id);
-    assert_eq!(burrow_id, res[4].burrow_id);
+    assert_eq!(res[0].burrow_id, burrow_id + 4);
+    assert_eq!(res[4].burrow_id, burrow_id);
 
     // 9. test get_user_valid_burrow
     // get valid burrow of a user
@@ -935,6 +935,7 @@ fn test_burrow() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     assert_eq!(
+        response.into_string().unwrap(),
         format!(
             "[{},{},{},{},{}]",
             burrow_id,
@@ -942,8 +943,7 @@ fn test_burrow() {
             burrow_id + 2,
             burrow_id + 3,
             burrow_id + 4
-        ),
-        response.into_string().unwrap()
+        )
     );
 
     // 10. test discard_burrow
@@ -1059,8 +1059,8 @@ fn test_content() {
     let res = response
         .into_json::<Vec<backend::models::burrow::BurrowMetadata>>()
         .unwrap();
-    assert_eq!(burrow_id, res[0].burrow_id);
-    assert_eq!(0, res[0].post_num);
+    assert_eq!(res[0].burrow_id, burrow_id);
+    assert_eq!(res[0].post_num, 0);
 
     // 11. test create_post
     // create post 1
@@ -1178,8 +1178,8 @@ fn test_content() {
     let res = response
         .into_json::<Vec<backend::models::burrow::BurrowMetadata>>()
         .unwrap();
-    assert_eq!(burrow_id, res[0].burrow_id);
-    assert_eq!(3, res[0].post_num);
+    assert_eq!(res[0].burrow_id, burrow_id);
+    assert_eq!(res[0].post_num, 3);
 
     // 12. test delete_post
     // delete post 2
@@ -1325,10 +1325,10 @@ fn test_content() {
     let res = response
         .into_json::<Vec<backend::models::user::UserGetFollowResponse>>()
         .unwrap();
-    assert_eq!(new_burrow_id, res[0].burrow.burrow_id);
-    assert_eq!(true, res[0].is_update);
-    assert_eq!(burrow_id, res[1].burrow.burrow_id);
-    assert_eq!(true, res[1].is_update);
+    assert_eq!(res[0].burrow.burrow_id, new_burrow_id);
+    assert_eq!(res[0].is_update, true);
+    assert_eq!(res[1].burrow.burrow_id, burrow_id);
+    assert_eq!(res[1].is_update, true);
 
     // get trending: trending already exist
     let response = client
@@ -1429,10 +1429,10 @@ fn test_content() {
     let res = response
         .into_json::<Vec<backend::models::user::UserGetCollectionResponse>>()
         .unwrap();
-    assert_eq!(post_id + 2, res[0].post.post_id);
-    assert_eq!(true, res[0].is_update);
-    assert_eq!(post_id, res[1].post.post_id);
-    assert_eq!(true, res[0].is_update);
+    assert_eq!(res[0].post.post_id, post_id + 2);
+    assert_eq!(res[0].is_update, true);
+    assert_eq!(res[1].post.post_id, post_id);
+    assert_eq!(res[0].is_update, true);
     // deactivate collect post no.3
     let response = client
         .post("/users/relation")
@@ -1451,7 +1451,7 @@ fn test_content() {
     let res = response
         .into_json::<Vec<backend::models::user::UserGetCollectionResponse>>()
         .unwrap();
-    assert_eq!(1, res.len());
+    assert_eq!(res.len(), 1);
 
     // discard new burrow
     let response = client
@@ -1481,13 +1481,13 @@ fn test_content() {
     let res = response
         .into_json::<backend::models::content::PostPage>()
         .unwrap();
-    assert_eq!(post_id, res.post_desc.post_id);
-    assert_eq!(format!("First post of {}", name), res.post_desc.title);
-    assert_eq!(3, res.post_desc.post_len);
-    assert_eq!(reply_id, res.reply_page[1].reply_id);
+    assert_eq!(res.post_desc.post_id, post_id);
+    assert_eq!(res.post_desc.title, format!("First post of {}", name));
+    assert_eq!(res.post_desc.post_len, 3);
+    assert_eq!(res.reply_page[1].reply_id, reply_id);
     assert_eq!(
-        "This is a test reply no.1 for post no.1".to_string(),
-        res.reply_page[1].content
+        res.reply_page[1].content,
+        "This is a test reply no.1 for post no.1".to_string()
     );
     // get post no.2: perform a wrong action (post not exist)
     let response = client
@@ -1511,11 +1511,11 @@ fn test_content() {
     let res = response
         .into_json::<backend::models::content::PostPage>()
         .unwrap();
-    assert_eq!(post_id + 2, res.post_desc.post_id);
-    assert_eq!(2, res.post_desc.post_len);
+    assert_eq!(res.post_desc.post_id, post_id + 2);
+    assert_eq!(res.post_desc.post_len, 2);
     assert_eq!(
-        vec![PostSection::Learning, PostSection::Life, PostSection::NSFW],
-        res.post_desc.section
+        res.post_desc.section,
+        vec![PostSection::Learning, PostSection::Life, PostSection::NSFW]
     );
     // get post no.4
     let response = client
@@ -1526,9 +1526,9 @@ fn test_content() {
     let res = response
         .into_json::<backend::models::content::PostPage>()
         .unwrap();
-    assert_eq!(post_id + 3, res.post_desc.post_id);
-    assert_eq!(new_burrow_id, res.post_desc.burrow_id);
-    assert_eq!(true, res.like);
+    assert_eq!(res.post_desc.post_id, post_id + 3);
+    assert_eq!(res.post_desc.burrow_id, new_burrow_id);
+    assert_eq!(res.like, true);
     // get post no.5 to test if tag and section is duplicated
     let response = client
         .get(format!("/content/posts/{}", post_id + 4))
@@ -1538,10 +1538,10 @@ fn test_content() {
     let res = response
         .into_json::<backend::models::content::PostPage>()
         .unwrap();
-    assert_eq!(post_id + 4, res.post_desc.post_id);
-    assert_eq!(1, res.post_desc.post_len);
-    assert_eq!(vec![PostSection::Learning], res.post_desc.section);
-    assert_eq!(vec!["NoTag"], res.post_desc.tag);
+    assert_eq!(res.post_desc.post_id, post_id + 4);
+    assert_eq!(res.post_desc.post_len, 1);
+    assert_eq!(res.post_desc.section, vec![PostSection::Learning]);
+    assert_eq!(res.post_desc.tag, vec!["NoTag"]);
 
     // deactivate like post no.4
     let response = client
@@ -1561,8 +1561,8 @@ fn test_content() {
     let res = response
         .into_json::<backend::models::content::PostPage>()
         .unwrap();
-    assert_eq!(post_id + 3, res.post_desc.post_id);
-    assert_eq!(false, res.like);
+    assert_eq!(res.post_desc.post_id, post_id + 3);
+    assert_eq!(res.like, false);
 
     // 18. test read_post_list
     // get post list
@@ -1582,10 +1582,10 @@ fn test_content() {
     let res = response
         .into_json::<backend::models::content::ListPage>()
         .unwrap();
-    assert_eq!(post_id + 2, res.post_page[0].post.post_id);
+    assert_eq!(res.post_page[0].post.post_id, post_id + 2);
     assert_eq!(
-        vec![PostSection::Learning, PostSection::Life, PostSection::NSFW],
-        res.post_page[0].post.section
+        res.post_page[0].post.section,
+        vec![PostSection::Learning, PostSection::Life, PostSection::NSFW]
     );
     // get post list with section
     let response = client
@@ -1596,9 +1596,9 @@ fn test_content() {
     let res = response
         .into_json::<backend::models::content::ListPage>()
         .unwrap();
-    assert_eq!(post_id + 4, res.post_page[0].post.post_id);
-    assert_eq!(post_id, res.post_page[3].post.post_id);
-    assert_eq!(vec![PostSection::Learning], res.post_page[0].post.section);
+    assert_eq!(res.post_page[0].post.post_id, post_id + 4);
+    assert_eq!(res.post_page[3].post.post_id, post_id);
+    assert_eq!(res.post_page[0].post.section, vec![PostSection::Learning]);
 
     // 19. test update_post
     // update post no.1
@@ -1739,13 +1739,13 @@ fn test_content() {
     let res = response
         .into_json::<backend::models::content::PostPage>()
         .unwrap();
-    assert_eq!(post_id, res.post_desc.post_id);
-    assert_eq!(vec!["TestTag"], res.post_desc.tag);
-    assert_eq!(format!("New First post of {}", name), res.post_desc.title);
-    assert_eq!(reply_id, res.reply_page[1].reply_id);
+    assert_eq!(res.post_desc.post_id, post_id);
+    assert_eq!(res.post_desc.tag, vec!["TestTag"]);
+    assert_eq!(res.post_desc.title, format!("New First post of {}", name));
+    assert_eq!(res.reply_page[1].reply_id, reply_id);
     assert_eq!(
-        "This is a updated reply no.1 for post no.1".to_string(),
-        res.reply_page[1].content
+        res.reply_page[1].content,
+        "This is a updated reply no.1 for post no.1".to_string()
     );
     h1.abort();
     h2.abort();

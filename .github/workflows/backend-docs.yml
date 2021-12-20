@@ -1,4 +1,4 @@
-name: build and push to Docker Hub
+name: Build API documentation
 
 on:
   push:

@@ -25,7 +25,6 @@ pub struct TypesenseBurrowData {
 
 /// Post struct in typesense database
 ///
-/// ## Fields
 ///
 /// - `id`: Post id in String for searchengine index
 /// - `post_id`: Post id in i64
@@ -37,7 +36,6 @@ pub struct TypesenseBurrowData {
 ///
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct TypesensePostData {
-    pub id: String,
     pub post_id: i64,
     pub burrow_id: i64,
     pub title: String,

@@ -147,7 +147,11 @@ async fn create_typesense_collections() -> Result<(), reqwest::Error> {
     let collection_burrows = json!({
         "name": "burrows",
         "fields": [
+<<<<<<< HEAD
             {"name": "burrow_id", "type": "int64", "index": false, "optional": true },
+=======
+            {"name": "burrow_id", "type": "int64"},
+>>>>>>> 1ae628cf90c18de678050beb86167011e2e1ffc9
             {"name": "title", "type": "string", "locale": "zh"},
             {"name": "description", "type": "string", "locale": "zh"},
         ]
@@ -155,8 +159,13 @@ async fn create_typesense_collections() -> Result<(), reqwest::Error> {
     let collection_posts = json!({
         "name": "posts",
         "fields": [
+<<<<<<< HEAD
             {"name": "post_id", "type": "int64", "index": false , "optional": true},
             {"name": "burrow_id", "type": "int64" , "index": false , "optional": true},
+=======
+            {"name": "post_id", "type": "int64"},
+            {"name": "burrow_id", "type": "int64"},
+>>>>>>> 1ae628cf90c18de678050beb86167011e2e1ffc9
             {"name": "title", "type": "string", "locale": "zh"},
             {"name": "section", "type": "string[]", "facet":true},
             {"name": "tag", "type": "string[]", "facet":true},
@@ -165,9 +174,15 @@ async fn create_typesense_collections() -> Result<(), reqwest::Error> {
     let collection_replies = json!({
         "name": "replies",
         "fields": [
+<<<<<<< HEAD
             {"name": "post_id", "type": "int64", "index": false , "optional": true, "facet":true},
             {"name": "reply_id", "type": "int32", "index": false , "optional": true},
             {"name": "burrow_id", "type": "int64", "index": false , "optional": true},
+=======
+            {"name": "post_id", "type": "int64", "facet":true},
+            {"name": "reply_id", "type": "int32", "index": false , "optional": true},
+            {"name": "burrow_id", "type": "int64"},
+>>>>>>> 1ae628cf90c18de678050beb86167011e2e1ffc9
             {"name": "content", "type": "string", "locale": "zh"},
         ]
     });
@@ -175,6 +190,7 @@ async fn create_typesense_collections() -> Result<(), reqwest::Error> {
     for each in [collection_burrows, collection_posts, collection_replies].iter() {
         match client.build_post("/collections").json(&each).send().await {
             Ok(a) => match a.status().as_u16() {
+<<<<<<< HEAD
                 201 => (),
                 400 => panic!(
                     "Bad Request - The request could not be understood due to malformed syntax."
@@ -187,6 +203,44 @@ async fn create_typesense_collections() -> Result<(), reqwest::Error> {
                 422 => panic!(
                     "Unprocessable Entity - Request is well-formed, but cannot be processed."
                 ),
+=======
+                201 => {
+                    log::warn!(
+                        "Collection {} created successfully.",
+                        each["name"].as_str().unwrap()
+                    );
+                }
+                400 => {
+                    let text = a.text().await.unwrap();
+                    log::warn!(
+                        "Create collection {} failed with bad request. {}",
+                        each["name"].as_str().unwrap(),
+                        text
+                    );
+                    panic!(
+                        "Bad Request - The request could not be understood due to malformed syntax."
+                    )
+                }
+                401 => panic!("Unauthorized - Your API key is wrong."),
+                404 => panic!("Not Found - The requested resource is not found."),
+                409 => {
+                    log::warn!(
+                        "Collection {} already exists. Skip creation.",
+                        each["name"].as_str().unwrap()
+                    );
+                }
+                422 => {
+                    let text = a.text().await.unwrap();
+                    log::warn!(
+                        "Create collection {} failed with bad request. {}",
+                        each["name"].as_str().unwrap(),
+                        text
+                    );
+                    panic!(
+                        "Unprocessable Entity - Request is well-formed, but cannot be processed."
+                    )
+                }
+>>>>>>> 1ae628cf90c18de678050beb86167011e2e1ffc9
                 503 => panic!(
                     "Service Unavailable - We’re temporarily offline. Please try again later."
                 ),
