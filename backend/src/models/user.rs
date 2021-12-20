@@ -5,12 +5,26 @@ use super::{burrow::BurrowMetadata, content::Post};
 
 pub static SEND_EMAIL_LIMIT: usize = 3;
 
+/// User data
+///
+/// ## Fields
+///
+/// - `id`: Uuid, user's uuid
+/// - `name`: String, username
 #[derive(Serialize, Deserialize)]
 pub struct UserData {
     pub id: Uuid,
     pub name: String,
 }
 
+/// User Info
+///
+/// ## Fields
+///
+/// - `username`: &str, username
+/// - `password`: &str, user's password
+/// - `email`: &str, user's email
+/// - `verification_code`: &str, verification code
 #[derive(Deserialize)]
 pub struct UserInfo<'r> {
     pub username: &'r str,
@@ -19,6 +33,13 @@ pub struct UserInfo<'r> {
     pub verification_code: &'r str,
 }
 
+/// User Reset Info
+///
+/// ## Fields
+///
+/// - `password`: &str, user's password
+/// - `email`: &str, user's email
+/// - `verification_code`: &str, verification code
 #[derive(Deserialize)]
 pub struct UserResetInfo<'r> {
     pub password: &'r str,
@@ -26,34 +47,68 @@ pub struct UserResetInfo<'r> {
     pub verification_code: &'r str,
 }
 
+/// Input struct of `user_change_password`
+///
+/// ## Fields
+///
+/// - `password`: &str, user's old password
+/// - `new_password`: &str, new password
 #[derive(Deserialize)]
 pub struct UserChangePassword<'r> {
     pub password: &'r str,
     pub new_password: &'r str,
 }
 
+/// User Email
+///
+/// ## Fields
+///
+/// - `email`: String, user's email
 #[derive(Serialize, Deserialize)]
 pub struct UserEmail {
     pub email: String,
 }
 
+/// User Login Info
+///
+/// ## Fields
+///
+/// - `username`: &str, username
+/// - `password`: &str, user's password
 #[derive(Deserialize)]
 pub struct UserLoginInfo<'r> {
     pub username: &'r str,
     pub password: &'r str,
 }
 
+/// Response struct of `user_sign_up`
+///
+/// ## Fields
+///
+/// - `default_burrow`: i64, burrow_id of assigned default burrow
 #[derive(Serialize, Deserialize)]
 pub struct UserResponse {
     pub default_burrow: i64,
 }
 
+/// Response struct of `get_collection`
+///
+/// ## Fields
+///
+/// - `post`: struct Post, information of post
+/// - `is_update`: bool, if post is updated since last view
 #[derive(Serialize, Deserialize)]
 pub struct UserGetCollectionResponse {
     pub post: Post,
     pub is_update: bool,
 }
 
+/// Response struct of `get_follow`
+///
+/// ## Fields
+///
+/// - `burrow`: struct BurrowMetadata, information of burrow
+/// - `is_update`: bool, if burrow is updated since last view
 #[derive(Serialize, Deserialize)]
 pub struct UserGetFollowResponse {
     pub burrow: BurrowMetadata,
