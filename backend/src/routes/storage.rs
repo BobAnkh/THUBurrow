@@ -23,9 +23,9 @@ pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
 
 /// Upload image
 ///
-/// ## Parameter
+/// ## Parameters
 ///
-/// - `Auth`: Aythenticated User
+/// - `Auth`: Authenticated User
 /// - `Connection<PgDb>`: Postgres connection
 /// - `Connection<MinioImageStorage>`: Image storage connection
 ///
@@ -107,9 +107,9 @@ async fn upload_image(
 
 /// Download image
 ///
-/// ## Parameter
+/// ## Parameters
 ///
-/// - `Auth`: Aythenticated User
+/// - `Auth`: Authenticated User
 /// - `ReferrerCheck`: Check request header
 /// - `Connection<PgDb>`: Postgres connection
 /// - `Connection<MinioImageStorage>`: Image storage connection
@@ -162,11 +162,11 @@ async fn download_image(
     }
 }
 
-/// Download image
+/// Show all the images stored
 ///
-/// ## Parameter
+/// ## Parameters
 ///
-/// - `Auth`: Aythenticated User
+/// - `Auth`: Authenticated User
 /// - `Connection<MinioImageStorage>`: Image storage connection
 ///
 /// ## Returns
