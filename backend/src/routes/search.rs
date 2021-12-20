@@ -16,11 +16,11 @@ pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
 
 /// Search
 ///
-/// ## Parameter
+/// ## Parameters
 ///
-/// - `Auth`: Aythenticated User
+/// - `Auth`: Authenticated User
 /// - `Connection<PgDb>`: Postgres connection
-/// - `Connection<TypesenseSearch>`: Searchengine connection
+/// - `Connection<TypesenseSearch>`: Search engine connection
 /// - `Json<SearchRequest>`: Search request struct in Json
 /// - `Option<usize>`: Result page
 ///
