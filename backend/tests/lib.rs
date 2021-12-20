@@ -98,6 +98,12 @@ fn test_change_password() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     assert_eq!(response.into_string().unwrap(), "Success");
+    // user log out
+    let response = client
+        .get("/users/logout")
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
     h4.abort();
 }
 
@@ -326,6 +332,12 @@ fn test_reset() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     assert_eq!(response.into_string().unwrap(), "Success");
+    // user log out
+    let response = client
+        .get("/users/logout")
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
     h4.abort();
     std::thread::sleep(std::time::Duration::from_secs(1));
 }
@@ -469,7 +481,7 @@ fn test_user() {
 
     // 1. test user_sign_up
     // create burrow: perform a wrong action (need authentication)
-        let response = client
+    let response = client
         .post("/burrows")
         .json(&json!({
             "description": format!("Second burrow of {}", name),
@@ -602,7 +614,7 @@ fn test_user() {
 
     // 2. test user_log_in
     // create burrow: perform a wrong action (need authentication)
-        let response = client
+    let response = client
         .post("/burrows")
         .json(&json!({
             "description": format!("Second burrow of {}", name),
@@ -1018,6 +1030,12 @@ fn test_burrow() {
         response.into_json::<ErrorResponse>().unwrap(),
         ErrorResponse::build(ErrorCode::EmptyField, "Burrow title cannot be empty",)
     );
+    // user log out
+    let response = client
+        .get("/users/logout")
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
     h1.abort();
     h2.abort();
     h3.abort();
@@ -1784,6 +1802,12 @@ fn test_content() {
         res.reply_page[1].content,
         "This is a updated reply no.1 for post no.1".to_string()
     );
+    // user log out
+    let response = client
+        .get("/users/logout")
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
     h1.abort();
     h2.abort();
     h3.abort();
@@ -2046,6 +2070,12 @@ fn test_search() {
     // println!("Retrieve result: {}", response.into_string().unwrap());
     assert_eq!(res.error.code, ErrorCode::PostNotExist);
     assert_eq!(res.error.message, "Cannot find post -1".to_string());
+    // user log out
+    let response = client
+        .get("/users/logout")
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
     h2.abort();
     h3.abort();
     h4.abort();
@@ -2194,6 +2224,12 @@ fn test_storage() {
     assert_eq!(response.status(), Status::Ok);
     let res = response.into_bytes().unwrap();
     assert_eq!(res, png_buf);
+    // user log out
+    let response = client
+        .get("/users/logout")
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
     h4.abort();
     std::thread::sleep(std::time::Duration::from_secs(1));
 }
