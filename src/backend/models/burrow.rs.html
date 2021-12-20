@@ -148,6 +148,42 @@
 <span id="148">148</span>
 <span id="149">149</span>
 <span id="150">150</span>
+<span id="151">151</span>
+<span id="152">152</span>
+<span id="153">153</span>
+<span id="154">154</span>
+<span id="155">155</span>
+<span id="156">156</span>
+<span id="157">157</span>
+<span id="158">158</span>
+<span id="159">159</span>
+<span id="160">160</span>
+<span id="161">161</span>
+<span id="162">162</span>
+<span id="163">163</span>
+<span id="164">164</span>
+<span id="165">165</span>
+<span id="166">166</span>
+<span id="167">167</span>
+<span id="168">168</span>
+<span id="169">169</span>
+<span id="170">170</span>
+<span id="171">171</span>
+<span id="172">172</span>
+<span id="173">173</span>
+<span id="174">174</span>
+<span id="175">175</span>
+<span id="176">176</span>
+<span id="177">177</span>
+<span id="178">178</span>
+<span id="179">179</span>
+<span id="180">180</span>
+<span id="181">181</span>
+<span id="182">182</span>
+<span id="183">183</span>
+<span id="184">184</span>
+<span id="185">185</span>
+<span id="186">186</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">models::content::Post</span>, <span class="ident">pgdb::burrow</span>};
 <span class="kw">use</span> <span class="ident">rocket::serde</span>::{<span class="ident">Deserialize</span>, <span class="ident">Serialize</span>};
 <span class="kw">use</span> <span class="ident">sea_orm::FromQueryResult</span>;
@@ -155,27 +191,55 @@
 <span class="kw">pub</span> <span class="kw">static</span> <span class="ident">BURROW_PER_PAGE</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="number">10</span>;
 <span class="kw">pub</span> <span class="kw">static</span> <span class="ident">BURROW_LIMIT</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="number">5</span>;
 
+<span class="doccomment">/// Largest burrow_id from query</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// ## Fields</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// - `last_value`: i64, the largest burrow_id from query</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">FromQueryResult</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">LastBurrowSeq</span> {
     <span class="ident">last_value</span>: <span class="ident">i64</span>,
 }
 
+<span class="doccomment">/// Total count of burrows</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// ## Fields</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// - `total`: i64, total burrow count</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Serialize</span>, <span class="ident">Deserialize</span>, <span class="ident">PartialEq</span>, <span class="ident">Debug</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">BurrowTotalCount</span> {
     <span class="kw">pub</span> <span class="ident">total</span>: <span class="ident">i64</span>,
 }
 
+<span class="doccomment">/// Burrow Info</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// ## Fields</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// - `description`: String, description of burrow</span>
+<span class="doccomment">/// - `title`: String, title of burrow</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Serialize</span>, <span class="ident">Deserialize</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">BurrowInfo</span> {
     <span class="kw">pub</span> <span class="ident">description</span>: <span class="ident">String</span>,
     <span class="kw">pub</span> <span class="ident">title</span>: <span class="ident">String</span>,
 }
 
+<span class="doccomment">/// Response struct of `create_burrow`</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// ## Fields</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// - `burrow_id`: i64, burrow_id of created burrow</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Serialize</span>, <span class="ident">Deserialize</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">BurrowCreateResponse</span> {
     <span class="kw">pub</span> <span class="ident">burrow_id</span>: <span class="ident">i64</span>,
 }
 
+<span class="doccomment">/// Response struct of `show_burrow`</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// ## Fields</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// - `title`: String, title of burrow</span>
+<span class="doccomment">/// - `description`: String, description of burrow</span>
+<span class="doccomment">/// - `posts`: Vec&lt;Post&gt;, information of posts in burrow</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Serialize</span>, <span class="ident">Deserialize</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">BurrowShowResponse</span> {
     <span class="kw">pub</span> <span class="ident">title</span>: <span class="ident">String</span>,
@@ -183,6 +247,14 @@
     <span class="kw">pub</span> <span class="ident">posts</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Post</span><span class="op">&gt;</span>,
 }
 
+<span class="doccomment">/// Burrow Metadata</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// ## Fields</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// - `burrow_id`: i64, burrow_id of burrow</span>
+<span class="doccomment">/// - `title`: String, title of burrow</span>
+<span class="doccomment">/// - `description`: String, description of burrow</span>
+<span class="doccomment">/// - `post_num`: i32, post count in burrow</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Serialize</span>, <span class="ident">Deserialize</span>, <span class="ident">Clone</span>, <span class="ident">PartialEq</span>, <span class="ident">Debug</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">BurrowMetadata</span> {
     <span class="kw">pub</span> <span class="ident">burrow_id</span>: <span class="ident">i64</span>,

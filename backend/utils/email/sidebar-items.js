@@ -1,1 +1,1 @@
-initSidebarItems({"enum":[["EmailExistMessage",""]],"fn":[["check_email_exist",""],["check_email_syntax",""],["send",""]]});
+initSidebarItems({"enum":[["EmailExistMessage",""]],"fn":[["assemble_headers",""],["check_email_exist",""],["check_email_syntax",""],["get_payload",""],["send",""],["sign",""],["signature",""]],"struct":[["Body",""],["Template",""]]});

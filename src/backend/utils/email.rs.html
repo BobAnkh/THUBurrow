@@ -499,23 +499,23 @@
 }
 
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Serialize</span>)]</span>
-<span class="kw">struct</span> <span class="ident">Template</span> {
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Template</span> {
     <span class="attribute">#[<span class="ident">serde</span>(<span class="ident">rename</span> <span class="op">=</span> <span class="string">&quot;TemplateID&quot;</span>)]</span>
-    <span class="ident">template_id</span>: <span class="ident">i32</span>,
+    <span class="kw">pub</span> <span class="ident">template_id</span>: <span class="ident">i32</span>,
     <span class="attribute">#[<span class="ident">serde</span>(<span class="ident">rename</span> <span class="op">=</span> <span class="string">&quot;TemplateData&quot;</span>)]</span>
-    <span class="ident">template_data</span>: <span class="ident">String</span>,
+    <span class="kw">pub</span> <span class="ident">template_data</span>: <span class="ident">String</span>,
 }
 
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Serialize</span>)]</span>
-<span class="kw">struct</span> <span class="ident">Body</span> {
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Body</span> {
     <span class="attribute">#[<span class="ident">serde</span>(<span class="ident">rename</span> <span class="op">=</span> <span class="string">&quot;FromEmailAddress&quot;</span>)]</span>
-    <span class="ident">from_email_address</span>: <span class="ident">String</span>,
+    <span class="kw">pub</span> <span class="ident">from_email_address</span>: <span class="ident">String</span>,
     <span class="attribute">#[<span class="ident">serde</span>(<span class="ident">rename</span> <span class="op">=</span> <span class="string">&quot;Destination&quot;</span>)]</span>
-    <span class="ident">destination</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span>,
+    <span class="kw">pub</span> <span class="ident">destination</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span>,
     <span class="attribute">#[<span class="ident">serde</span>(<span class="ident">rename</span> <span class="op">=</span> <span class="string">&quot;Template&quot;</span>)]</span>
-    <span class="ident">template</span>: <span class="ident">Template</span>,
+    <span class="kw">pub</span> <span class="ident">template</span>: <span class="ident">Template</span>,
     <span class="attribute">#[<span class="ident">serde</span>(<span class="ident">rename</span> <span class="op">=</span> <span class="string">&quot;Subject&quot;</span>)]</span>
-    <span class="ident">subject</span>: <span class="ident">String</span>,
+    <span class="kw">pub</span> <span class="ident">subject</span>: <span class="ident">String</span>,
 }
 
 <span class="kw">fn</span> <span class="ident">hash</span>(<span class="ident">s</span>: <span class="ident">String</span>) -&gt; <span class="ident">String</span> {
@@ -524,7 +524,7 @@
     <span class="ident">hasher</span>.<span class="ident">result_str</span>()
 }
 
-<span class="kw">fn</span> <span class="ident">get_payload</span>(<span class="ident">param</span>: <span class="kw-2">&amp;</span><span class="ident">Body</span>) -&gt; <span class="ident">String</span> {
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_payload</span>(<span class="ident">param</span>: <span class="kw-2">&amp;</span><span class="ident">Body</span>) -&gt; <span class="ident">String</span> {
     <span class="kw">let</span> <span class="ident">payload_str</span> <span class="op">=</span> <span class="ident">serde_json::to_string</span>(<span class="ident">param</span>).<span class="ident">unwrap</span>();
     <span class="kw">let</span> <span class="ident">payload_vec</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">str</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">payload_str</span>.<span class="ident">split</span>(<span class="string">&#39;:&#39;</span>).<span class="ident">collect</span>();
     <span class="kw">let</span> <span class="ident">payload</span> <span class="op">=</span> <span class="ident">payload_vec</span>.<span class="ident">join</span>(<span class="string">&quot;: &quot;</span>);
@@ -532,7 +532,7 @@
     <span class="ident">payload_vec</span>.<span class="ident">join</span>(<span class="string">&quot;, &quot;</span>)
 }
 
-<span class="kw">fn</span> <span class="ident">sign</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(<span class="ident">key</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>], <span class="ident">msg</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>]) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span> {
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">sign</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(<span class="ident">key</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>], <span class="ident">msg</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>]) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span> {
     <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">hmac</span> <span class="op">=</span> <span class="ident">Hmac::new</span>(<span class="ident">Sha256::new</span>(), <span class="ident">key</span>);
     <span class="ident">hmac</span>.<span class="ident">input</span>(<span class="ident">msg</span>);
     <span class="kw">let</span> <span class="ident">result</span> <span class="op">=</span> <span class="ident">hmac</span>.<span class="ident">result</span>();
@@ -540,7 +540,7 @@
     <span class="ident">code</span>.<span class="ident">to_vec</span>()
 }
 
-<span class="kw">fn</span> <span class="ident">assemble_headers</span>(<span class="ident">timestamp</span>: <span class="ident">String</span>) -&gt; <span class="ident">HeaderMap</span> {
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">assemble_headers</span>(<span class="ident">timestamp</span>: <span class="ident">String</span>) -&gt; <span class="ident">HeaderMap</span> {
     <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">headers</span> <span class="op">=</span> <span class="ident">HeaderMap::new</span>();
     <span class="ident">headers</span>.<span class="ident">insert</span>(<span class="string">&quot;Host&quot;</span>, <span class="string">&quot;ses.tencentcloudapi.com&quot;</span>.<span class="ident">parse</span>().<span class="ident">unwrap</span>());
     <span class="ident">headers</span>.<span class="ident">insert</span>(
@@ -554,7 +554,7 @@
     <span class="ident">headers</span>
 }
 
-<span class="kw">fn</span> <span class="ident">signature</span>(<span class="ident">param</span>: <span class="kw-2">&amp;</span><span class="ident">Body</span>, <span class="ident">timestamp</span>: <span class="ident">String</span>, <span class="ident">date</span>: <span class="ident">String</span>) -&gt; <span class="ident">String</span> {
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">signature</span>(<span class="ident">param</span>: <span class="kw-2">&amp;</span><span class="ident">Body</span>, <span class="ident">timestamp</span>: <span class="ident">String</span>, <span class="ident">date</span>: <span class="ident">String</span>) -&gt; <span class="ident">String</span> {
     <span class="comment">// define signature parameters</span>
     <span class="kw">let</span> <span class="ident">secret_id</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">SECRET_ID</span>;
     <span class="kw">let</span> <span class="ident">secret_key</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">SECRET_KEY</span>;
