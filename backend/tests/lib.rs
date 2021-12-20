@@ -644,10 +644,7 @@ fn test_user() {
     // 3. test user_logout
     // user log out
     let response = client
-        .post("/users/logout")
-        .json(&json!({
-            "username": name,
-            "password": "testpassword"}))
+        .get("/users/logout")
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
