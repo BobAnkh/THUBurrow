@@ -573,6 +573,23 @@
 <span id="573">573</span>
 <span id="574">574</span>
 <span id="575">575</span>
+<span id="576">576</span>
+<span id="577">577</span>
+<span id="578">578</span>
+<span id="579">579</span>
+<span id="580">580</span>
+<span id="581">581</span>
+<span id="582">582</span>
+<span id="583">583</span>
+<span id="584">584</span>
+<span id="585">585</span>
+<span id="586">586</span>
+<span id="587">587</span>
+<span id="588">588</span>
+<span id="589">589</span>
+<span id="590">590</span>
+<span id="591">591</span>
+<span id="592">592</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Routes for burow</span>
 <span class="kw">use</span> <span class="ident">chrono</span>::{<span class="ident">Duration</span>, <span class="ident">FixedOffset</span>, <span class="ident">Utc</span>};
 <span class="kw">use</span> <span class="ident">rocket::http::Status</span>;
@@ -606,6 +623,23 @@
     )
 }
 
+<span class="doccomment">/// Get total burrow count</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// ## Parameters</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// - `Auth`: Authenticated User</span>
+<span class="doccomment">/// - `Connection&lt;PgDb&gt;`: Postgres connection</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// ## Returns</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// - `Status`: HTTP status</span>
+<span class="doccomment">/// - `Json&lt;BurrowTotalCount&gt;`: Number of total burrow</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// ## Errors</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// - `ErrorResponse`: Error message</span>
+<span class="doccomment">///     - `ErrorCode::DatabaseErr`</span>
+<span class="doccomment">///</span>
 <span class="attribute">#[<span class="ident">get</span>(<span class="string">&quot;/total&quot;</span>)]</span>
 <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">get_total_burrow_count</span>(
     <span class="ident">_auth</span>: <span class="ident">Auth</span>,

@@ -510,6 +510,68 @@
 <span id="510">510</span>
 <span id="511">511</span>
 <span id="512">512</span>
+<span id="513">513</span>
+<span id="514">514</span>
+<span id="515">515</span>
+<span id="516">516</span>
+<span id="517">517</span>
+<span id="518">518</span>
+<span id="519">519</span>
+<span id="520">520</span>
+<span id="521">521</span>
+<span id="522">522</span>
+<span id="523">523</span>
+<span id="524">524</span>
+<span id="525">525</span>
+<span id="526">526</span>
+<span id="527">527</span>
+<span id="528">528</span>
+<span id="529">529</span>
+<span id="530">530</span>
+<span id="531">531</span>
+<span id="532">532</span>
+<span id="533">533</span>
+<span id="534">534</span>
+<span id="535">535</span>
+<span id="536">536</span>
+<span id="537">537</span>
+<span id="538">538</span>
+<span id="539">539</span>
+<span id="540">540</span>
+<span id="541">541</span>
+<span id="542">542</span>
+<span id="543">543</span>
+<span id="544">544</span>
+<span id="545">545</span>
+<span id="546">546</span>
+<span id="547">547</span>
+<span id="548">548</span>
+<span id="549">549</span>
+<span id="550">550</span>
+<span id="551">551</span>
+<span id="552">552</span>
+<span id="553">553</span>
+<span id="554">554</span>
+<span id="555">555</span>
+<span id="556">556</span>
+<span id="557">557</span>
+<span id="558">558</span>
+<span id="559">559</span>
+<span id="560">560</span>
+<span id="561">561</span>
+<span id="562">562</span>
+<span id="563">563</span>
+<span id="564">564</span>
+<span id="565">565</span>
+<span id="566">566</span>
+<span id="567">567</span>
+<span id="568">568</span>
+<span id="569">569</span>
+<span id="570">570</span>
+<span id="571">571</span>
+<span id="572">572</span>
+<span id="573">573</span>
+<span id="574">574</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">pulsar</span>::{<span class="ident">producer</span>, <span class="ident">Error</span> <span class="kw">as</span> <span class="ident">PulsarError</span>};
 <span class="kw">use</span> <span class="ident">pulsar</span>::{<span class="ident">DeserializeMessage</span>, <span class="ident">Payload</span>, <span class="ident">SerializeMessage</span>};
 <span class="kw">use</span> <span class="ident">sea_orm::prelude::DateTimeWithTimeZone</span>;
@@ -518,6 +580,20 @@
 <span class="kw">use</span> <span class="ident"><span class="kw">super</span>::content::PostSection</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">super</span>::search</span>::<span class="kw-2">*</span>;
 
+<span class="doccomment">/// Content operation sent to search engine</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// ## Fields</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// - `PulsarSearchData::CreateBurrow`: Create a new burrow with struct PulsarSearchBurrowData</span>
+<span class="doccomment">/// - `PulsarSearchData::UpdateBurrow`: Update a burrow with struct PulsarSearchBurrowData</span>
+<span class="doccomment">/// - `PulsarSearchData::DeleteBurrow`: Delete a burrow with burrow id in i64</span>
+<span class="doccomment">/// - `PulsarSearchData::CreatePost`: Create a new post with struct PulsarSearchPostData</span>
+<span class="doccomment">/// - `PulsarSearchData::UpdatePost`: Update a post with struct PulsarSearchPostData</span>
+<span class="doccomment">/// - `PulsarSearchData::DeletePost`: Delete a burrow with post id in i64</span>
+<span class="doccomment">/// - `PulsarSearchData::CreateReply`: Create a new reply with struct PulsarSearchReplyData</span>
+<span class="doccomment">/// - `PulsarSearchData::UpdateReply`: Update a reply with struct PulsarSearchReplyData</span>
+<span class="doccomment">/// - `PulsarSearchData::DeleteReply`: Delete a reply with (post_id, reply_id) in (i64, i32)</span>
+<span class="doccomment">///</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Serialize</span>, <span class="ident">Deserialize</span>, <span class="ident">Debug</span>, <span class="ident">PartialEq</span>)]</span>
 <span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">PulsarSearchData</span> {
     <span class="ident">CreateBurrow</span>(<span class="ident">PulsarSearchBurrowData</span>),
@@ -531,6 +607,15 @@
     <span class="ident">DeleteReply</span>(<span class="ident">i64</span>, <span class="ident">i32</span>),
 }
 
+<span class="doccomment">/// Burrow data sent to search engine</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// ## Fields</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// - `burrow_id`: Burrow id in i64</span>
+<span class="doccomment">/// - `title`: Burrow title in String</span>
+<span class="doccomment">/// - `description`: Burrow description in String</span>
+<span class="doccomment">/// - `update_time`: Update time in DataTimeWithTimeZone struct</span>
+<span class="doccomment">///</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Serialize</span>, <span class="ident">Deserialize</span>, <span class="ident">Clone</span>, <span class="ident">Debug</span>, <span class="ident">PartialEq</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">PulsarSearchBurrowData</span> {
     <span class="kw">pub</span> <span class="ident">burrow_id</span>: <span class="ident">i64</span>,
@@ -539,6 +624,17 @@
     <span class="kw">pub</span> <span class="ident">update_time</span>: <span class="ident">DateTimeWithTimeZone</span>,
 }
 
+<span class="doccomment">/// Post data sent to search engine</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// ## Fields</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// - `post_id`: Post id in i64</span>
+<span class="doccomment">/// - `burrow_id`: i64 id of burrow to which the post belongs</span>
+<span class="doccomment">/// - `title`: Post title in String</span>
+<span class="doccomment">/// - `section`: vector of Postsection</span>
+<span class="doccomment">/// - `tag`: vector of tag in String</span>
+<span class="doccomment">/// - `update_time`: Update time in DataTimeWithTimeZone struct</span>
+<span class="doccomment">///</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Serialize</span>, <span class="ident">Deserialize</span>, <span class="ident">Clone</span>, <span class="ident">Debug</span>, <span class="ident">PartialEq</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">PulsarSearchPostData</span> {
     <span class="kw">pub</span> <span class="ident">post_id</span>: <span class="ident">i64</span>,
@@ -549,6 +645,16 @@
     <span class="kw">pub</span> <span class="ident">update_time</span>: <span class="ident">DateTimeWithTimeZone</span>,
 }
 
+<span class="doccomment">/// Reply data sent to search engine</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// ## Fields</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// - `reply_id`: Reply id in i64</span>
+<span class="doccomment">/// - `post_id`: i64 id of post to which the reply belongs</span>
+<span class="doccomment">/// - `burrow_id`: i64 id of burrow to which the post belongs</span>
+<span class="doccomment">/// - `content`: Reply content in String</span>
+<span class="doccomment">/// - `update_time`: Update time in DataTimeWithTimeZone struct</span>
+<span class="doccomment">///</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Serialize</span>, <span class="ident">Deserialize</span>, <span class="ident">Clone</span>, <span class="ident">Debug</span>, <span class="ident">PartialEq</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">PulsarSearchReplyData</span> {
     <span class="kw">pub</span> <span class="ident">reply_id</span>: <span class="ident">i32</span>,
@@ -558,7 +664,18 @@
     <span class="kw">pub</span> <span class="ident">update_time</span>: <span class="ident">DateTimeWithTimeZone</span>,
 }
 
-<span class="doccomment">/// `{&quot;ActivateLike&quot;:10}` or `{&quot;DeactivateFollow&quot;: 10}`, where 10 is the post_id or burrow_id</span>
+<span class="doccomment">/// User relation operation sent to task executor</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// Example of request of frontend: `{&quot;ActivateLike&quot;:10}` or `{&quot;DeactivateFollow&quot;: 10}`, where 10 is the post_id or burrow_id</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// ## Fields</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// - `RelationData::ActivateLike`: activate like</span>
+<span class="doccomment">/// - `RelationData::DeactivateLike`: deactivate like</span>
+<span class="doccomment">/// - `RelationData::ActivateCollection`: activate collection</span>
+<span class="doccomment">/// - `RelationData::DeactivateCollection`: deactivate collection</span>
+<span class="doccomment">/// - `RelationData::ActivateFollow`: activate follow</span>
+<span class="doccomment">/// - `RelationData::DeactivateFollow`: deactivate follow</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Serialize</span>, <span class="ident">Deserialize</span>, <span class="ident">Debug</span>, <span class="ident">PartialEq</span>)]</span>
 <span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">RelationData</span> {
     <span class="ident">ActivateLike</span>(<span class="ident">i64</span>),
@@ -569,6 +686,7 @@
     <span class="ident">DeactivateFollow</span>(<span class="ident">i64</span>),
 }
 
+<span class="doccomment">/// Wrap RelationData with uid</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Serialize</span>, <span class="ident">Deserialize</span>, <span class="ident">Debug</span>, <span class="ident">PartialEq</span>)]</span>
 <span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">PulsarRelationData</span> {
     <span class="ident">ActivateLike</span>(<span class="ident">i64</span>, <span class="ident">i64</span>),
@@ -579,6 +697,12 @@
     <span class="ident">DeactivateFollow</span>(<span class="ident">i64</span>, <span class="ident">i64</span>),
 }
 
+<span class="doccomment">/// Email operation sent to task executor</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// ## Fields</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// - `PulsarSendEmail::Sign`: send sign-up email</span>
+<span class="doccomment">/// - `PulsarSendEmail::Reset`: send reset password email</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Serialize</span>, <span class="ident">Deserialize</span>, <span class="ident">Clone</span>, <span class="ident">Debug</span>, <span class="ident">PartialEq</span>)]</span>
 <span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">PulsarSendEmail</span> {
     <span class="ident">Sign</span> { <span class="ident">email</span>: <span class="ident">String</span> },

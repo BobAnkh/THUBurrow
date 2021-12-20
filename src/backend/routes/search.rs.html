@@ -298,6 +298,29 @@
 <span id="298">298</span>
 <span id="299">299</span>
 <span id="300">300</span>
+<span id="301">301</span>
+<span id="302">302</span>
+<span id="303">303</span>
+<span id="304">304</span>
+<span id="305">305</span>
+<span id="306">306</span>
+<span id="307">307</span>
+<span id="308">308</span>
+<span id="309">309</span>
+<span id="310">310</span>
+<span id="311">311</span>
+<span id="312">312</span>
+<span id="313">313</span>
+<span id="314">314</span>
+<span id="315">315</span>
+<span id="316">316</span>
+<span id="317">317</span>
+<span id="318">318</span>
+<span id="319">319</span>
+<span id="320">320</span>
+<span id="321">321</span>
+<span id="322">322</span>
+<span id="323">323</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Routes for search</span>
 <span class="kw">use</span> <span class="ident">rocket::http::Status</span>;
 <span class="kw">use</span> <span class="ident">rocket::serde::json::Json</span>;
@@ -314,6 +337,29 @@
     <span class="ident">rocket</span>.<span class="ident">mount</span>(<span class="string">&quot;/&quot;</span>, <span class="macro">routes!</span>[<span class="ident">search</span>,])
 }
 
+<span class="doccomment">/// Search</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// ## Parameters</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// - `Auth`: Authenticated User</span>
+<span class="doccomment">/// - `Connection&lt;PgDb&gt;`: Postgres connection</span>
+<span class="doccomment">/// - `Connection&lt;TypesenseSearch&gt;`: Search engine connection</span>
+<span class="doccomment">/// - `Json&lt;SearchRequest&gt;`: Search request struct in Json</span>
+<span class="doccomment">/// - `Option&lt;usize&gt;`: Result page</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// ## Returns</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// - `Status`: HTTP status</span>
+<span class="doccomment">/// - `String`: Json string of search result</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// ## Errors</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// - `ErrorResponse`: Error message</span>
+<span class="doccomment">///     - `ErrorCode::DatabaseErr`</span>
+<span class="doccomment">///     - `ErrorCode::BurrowNotExist`</span>
+<span class="doccomment">///     - `ErrorCode::PostNotExist`</span>
+<span class="doccomment">///     - `ErrorCode::EmptyField`</span>
+<span class="doccomment">///</span>
 <span class="attribute">#[<span class="ident">post</span>(<span class="string">&quot;/search?&lt;page&gt;&quot;</span>, <span class="ident">data</span> <span class="op">=</span> <span class="string">&quot;&lt;data&gt;&quot;</span>, <span class="ident">format</span> <span class="op">=</span> <span class="string">&quot;json&quot;</span>)]</span>
 <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">search</span>(
     <span class="ident">auth</span>: <span class="ident">Auth</span>,
