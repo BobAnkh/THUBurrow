@@ -19,10 +19,40 @@
 <span id="19">19</span>
 <span id="20">20</span>
 <span id="21">21</span>
-</pre><pre class="rust"><code><span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">remove_duplicate</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">Ord</span> <span class="op">+</span> <span class="ident">PartialEq</span><span class="op">&gt;</span>(<span class="kw-2">mut</span> <span class="ident">tag</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-    <span class="ident">tag</span>.<span class="ident">sort_unstable</span>();
-    <span class="ident">tag</span>.<span class="ident">dedup</span>();
-    <span class="ident">tag</span>
+<span id="22">22</span>
+<span id="23">23</span>
+<span id="24">24</span>
+<span id="25">25</span>
+<span id="26">26</span>
+<span id="27">27</span>
+<span id="28">28</span>
+<span id="29">29</span>
+<span id="30">30</span>
+<span id="31">31</span>
+<span id="32">32</span>
+<span id="33">33</span>
+<span id="34">34</span>
+<span id="35">35</span>
+<span id="36">36</span>
+</pre><pre class="rust"><code><span class="doccomment">/// Remove duplicate elements from a vector.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// Use sort_unstable and dedup to remove duplicates from a vector.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// ## Parameters</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// - `v`: The vector to dedup.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// ## Generic Parameters</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// - `T`: The type of the elements in the vector. Should be `Ord` and `PartialEq`.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// ## Returns</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// A vector with no duplicate elements.</span>
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">remove_duplicate</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">Ord</span> <span class="op">+</span> <span class="ident">PartialEq</span><span class="op">&gt;</span>(<span class="kw-2">mut</span> <span class="ident">v</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
+    <span class="ident">v</span>.<span class="ident">sort_unstable</span>();
+    <span class="ident">v</span>.<span class="ident">dedup</span>();
+    <span class="ident">v</span>
 }
 
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>

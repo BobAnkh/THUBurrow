@@ -1,1 +1,1 @@
-initSidebarItems({"static":[["EMAIL_TOKEN_EX",""]]});
+initSidebarItems({"static":[["EMAIL_TOKEN_EX",""]],"struct":[["POSTGRES_ADDR",""],["PULSAR_ADDR",""],["REDIS_ADDR",""],["TYPESENSE_ADDR",""],["TYPESENSE_API_KEY",""]]});

@@ -149,12 +149,12 @@
 <span id="149">149</span>
 <span id="150">150</span>
 <span id="151">151</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">rocket::serde</span>::{<span class="ident">Deserialize</span>, <span class="ident">Serialize</span>};
+</pre><pre class="rust"><code><span class="doccomment">//! Models for user</span>
+
+<span class="kw">use</span> <span class="ident">rocket::serde</span>::{<span class="ident">Deserialize</span>, <span class="ident">Serialize</span>};
 <span class="kw">use</span> <span class="ident">uuid::Uuid</span>;
 <span class="comment">// use crate::pgdb::{self, prelude::*};</span>
 <span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">burrow::BurrowMetadata</span>, <span class="ident">content::Post</span>};
-
-<span class="kw">pub</span> <span class="kw">static</span> <span class="ident">SEND_EMAIL_LIMIT</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="number">3</span>;
 
 <span class="doccomment">/// User data</span>
 <span class="doccomment">///</span>

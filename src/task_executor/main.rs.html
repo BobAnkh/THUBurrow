@@ -77,9 +77,13 @@
 <span id="77">77</span>
 <span id="78">78</span>
 <span id="79">79</span>
+<span id="80">80</span>
+<span id="81">81</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">backend::utils::mq</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident">tokio::signal</span>;
-<span class="kw">use</span> <span class="ident">tokio::signal::unix</span>::{<span class="ident">signal</span>, <span class="ident">SignalKind</span>};
+<span class="kw">use</span> <span class="ident">tokio::signal</span>::{
+    <span class="self">self</span>,
+    <span class="ident">unix</span>::{<span class="ident">signal</span>, <span class="ident">SignalKind</span>},
+};
 <span class="kw">use</span> <span class="ident">tokio::sync::broadcast</span>;
 <span class="kw">use</span> <span class="ident">tokio::time::Duration</span>;
 

@@ -1,1 +1,1 @@
-initSidebarItems({"mod":[["auth",""],["burrow_valid",""],["dedup",""],["email",""],["mq",""]]});
+initSidebarItems({"mod":[["auth","Module for authentication"],["burrow_valid","Module to valid burrow"],["dedup",""],["email","Module for email check and send"],["mq","Tasks for task_executor"]]});

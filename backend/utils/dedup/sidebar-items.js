@@ -1,1 +1,1 @@
-initSidebarItems({"fn":[["remove_duplicate",""]]});
+initSidebarItems({"fn":[["remove_duplicate","Remove duplicate elements from a vector."]]});

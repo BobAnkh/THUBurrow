@@ -572,8 +572,10 @@
 <span id="572">572</span>
 <span id="573">573</span>
 <span id="574">574</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">pulsar</span>::{<span class="ident">producer</span>, <span class="ident">Error</span> <span class="kw">as</span> <span class="ident">PulsarError</span>};
-<span class="kw">use</span> <span class="ident">pulsar</span>::{<span class="ident">DeserializeMessage</span>, <span class="ident">Payload</span>, <span class="ident">SerializeMessage</span>};
+<span id="575">575</span>
+</pre><pre class="rust"><code><span class="doccomment">//! Models of message passed to pulsar</span>
+
+<span class="kw">use</span> <span class="ident">pulsar</span>::{<span class="ident">producer</span>, <span class="ident">DeserializeMessage</span>, <span class="ident">Error</span> <span class="kw">as</span> <span class="ident">PulsarError</span>, <span class="ident">Payload</span>, <span class="ident">SerializeMessage</span>};
 <span class="kw">use</span> <span class="ident">sea_orm::prelude::DateTimeWithTimeZone</span>;
 <span class="kw">use</span> <span class="ident">serde</span>::{<span class="ident">Deserialize</span>, <span class="ident">Serialize</span>};
 

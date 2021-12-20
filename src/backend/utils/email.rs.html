@@ -382,16 +382,12 @@
 <span id="382">382</span>
 <span id="383">383</span>
 <span id="384">384</span>
-<span id="385">385</span>
-<span id="386">386</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">check_if_email_exists::syntax::check_syntax</span>;
+</pre><pre class="rust"><code><span class="doccomment">//! Module for email check and send</span>
+
+<span class="kw">use</span> <span class="ident">check_if_email_exists::syntax::check_syntax</span>;
 <span class="kw">use</span> <span class="ident">check_if_email_exists</span>::{<span class="ident">check_email</span>, <span class="ident">CheckEmailInput</span>, <span class="ident">Reachable</span>};
 <span class="kw">use</span> <span class="ident">chrono::Utc</span>;
-<span class="kw">use</span> <span class="ident">crypto::digest::Digest</span>;
-<span class="kw">use</span> <span class="ident">crypto::hmac::Hmac</span>;
-<span class="kw">use</span> <span class="ident">crypto::mac::Mac</span>;
-<span class="kw">use</span> <span class="ident">crypto::sha2::Sha256</span>;
-<span class="kw">use</span> <span class="ident">hex</span>;
+<span class="kw">use</span> <span class="ident">crypto</span>::{<span class="ident">digest::Digest</span>, <span class="ident">hmac::Hmac</span>, <span class="ident">mac::Mac</span>, <span class="ident">sha2::Sha256</span>};
 <span class="kw">use</span> <span class="ident">lazy_static::lazy_static</span>;
 <span class="kw">use</span> <span class="ident">reqwest::header::HeaderMap</span>;
 <span class="kw">use</span> <span class="ident">serde::Serialize</span>;

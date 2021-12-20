@@ -1,0 +1,1 @@
+initSidebarItems({"static":[["MAX_SECTION",""],["MAX_TAG",""],["POST_PER_PAGE",""],["REPLY_PER_PAGE",""]],"struct":[["POST_DELETE_DURATION",""]]});

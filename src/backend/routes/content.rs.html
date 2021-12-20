@@ -1192,10 +1192,8 @@
 <span id="1192">1192</span>
 <span id="1193">1193</span>
 <span id="1194">1194</span>
-<span id="1195">1195</span>
-<span id="1196">1196</span>
-<span id="1197">1197</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Routes for content</span>
+
 <span class="kw">use</span> <span class="ident">chrono</span>::{<span class="ident">prelude</span>::<span class="kw-2">*</span>, <span class="ident">Duration</span>};
 <span class="kw">use</span> <span class="ident">rocket::http::Status</span>;
 <span class="kw">use</span> <span class="ident">rocket::serde::json::Json</span>;
@@ -1208,12 +1206,10 @@
 };
 <span class="kw">use</span> <span class="ident">std::collections::HashMap</span>;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::models::content</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::models::error</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::models::pulsar</span>::<span class="kw-2">*</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::config::content</span>::{<span class="ident">MAX_SECTION</span>, <span class="ident">MAX_TAG</span>, <span class="ident">POST_PER_PAGE</span>, <span class="ident">REPLY_PER_PAGE</span>, <span class="ident">POST_DELETE_DURATION</span>};
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::db</span>::{<span class="self">self</span>, <span class="ident">prelude</span>::<span class="kw-2">*</span>};
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::models::search::SearchPostData</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::pgdb</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::pgdb::prelude</span>::<span class="kw-2">*</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::models</span>::{<span class="ident">content</span>::<span class="kw-2">*</span>, <span class="ident">error</span>::<span class="kw-2">*</span>, <span class="ident">pulsar</span>::<span class="kw-2">*</span>};
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::pool</span>::{<span class="ident">PgDb</span>, <span class="ident">PulsarSearchProducerMq</span>, <span class="ident">Search</span>, <span class="ident">TypesenseSearch</span>};
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::utils::auth::Auth</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::utils::burrow_valid::is_valid_burrow</span>;
@@ -1339,7 +1335,6 @@
             ))),
         );
     }
-    <span class="comment">// TODO: check if section is valid</span>
     <span class="kw">if</span> <span class="ident">content</span>.<span class="ident">tag</span>.<span class="ident">len</span>() <span class="op">&gt;</span> <span class="ident">MAX_TAG</span> {
         <span class="kw">return</span> (
             <span class="ident">Status::BadRequest</span>,
@@ -1377,7 +1372,7 @@
                                 <span class="comment">// get tag and section string and remove duplicate</span>
                                 <span class="kw">let</span> <span class="ident">section</span> <span class="op">=</span> <span class="ident">remove_duplicate</span>(<span class="ident">content</span>.<span class="ident">section</span>);
                                 <span class="kw">let</span> <span class="ident">tag</span> <span class="op">=</span> <span class="ident">remove_duplicate</span>(<span class="ident">content</span>.<span class="ident">tag</span>);
-                                <span class="kw">let</span> <span class="ident">content_post</span> <span class="op">=</span> <span class="ident">pgdb::content_post::ActiveModel</span> {
+                                <span class="kw">let</span> <span class="ident">content_post</span> <span class="op">=</span> <span class="ident">db::content_post::ActiveModel</span> {
                                     <span class="ident">title</span>: <span class="ident">Set</span>(<span class="ident">content</span>.<span class="ident">title</span>.<span class="ident">to_owned</span>()),
                                     <span class="ident">burrow_id</span>: <span class="ident">Set</span>(<span class="ident">content</span>.<span class="ident">burrow_id</span>),
                                     <span class="ident">create_time</span>: <span class="ident">Set</span>(<span class="ident">now</span>.<span class="ident">to_owned</span>()),
@@ -1391,7 +1386,7 @@
                                 <span class="kw">let</span> <span class="ident">post_id</span> <span class="op">=</span> <span class="ident">post_res</span>.<span class="ident">post_id</span>.<span class="ident">unwrap</span>();
                                 <span class="macro">log::info!</span>(<span class="string">&quot;[CREATE-POST] create post: {}&quot;</span>, <span class="ident">post_id</span>);
                                 <span class="comment">// fill the row in content_reply</span>
-                                <span class="kw">let</span> <span class="ident">content_reply</span> <span class="op">=</span> <span class="ident">pgdb::content_reply::ActiveModel</span> {
+                                <span class="kw">let</span> <span class="ident">content_reply</span> <span class="op">=</span> <span class="ident">db::content_reply::ActiveModel</span> {
                                     <span class="ident">post_id</span>: <span class="ident">Set</span>(<span class="ident">post_id</span>),
                                     <span class="ident">reply_id</span>: <span class="ident">Set</span>(<span class="number">0</span>),
                                     <span class="ident">burrow_id</span>: <span class="ident">Set</span>(<span class="ident">content</span>.<span class="ident">burrow_id</span>),
@@ -1407,10 +1402,10 @@
                                 );
                                 <span class="kw">let</span> <span class="ident">update_res</span> <span class="op">=</span> <span class="ident">Burrow::update_many</span>()
                                     .<span class="ident">col_expr</span>(
-                                        <span class="ident">pgdb::burrow::Column::PostNum</span>,
-                                        <span class="ident">Expr::col</span>(<span class="ident">pgdb::burrow::Column::PostNum</span>).<span class="ident">add</span>(<span class="number">1</span>),
+                                        <span class="ident">db::burrow::Column::PostNum</span>,
+                                        <span class="ident">Expr::col</span>(<span class="ident">db::burrow::Column::PostNum</span>).<span class="ident">add</span>(<span class="number">1</span>),
                                     )
-                                    .<span class="ident">filter</span>(<span class="ident">pgdb::burrow::Column::BurrowId</span>.<span class="ident">eq</span>(<span class="ident">content</span>.<span class="ident">burrow_id</span>))
+                                    .<span class="ident">filter</span>(<span class="ident">db::burrow::Column::BurrowId</span>.<span class="ident">eq</span>(<span class="ident">content</span>.<span class="ident">burrow_id</span>))
                                     .<span class="ident">exec</span>(<span class="ident">txn</span>)
                                     .<span class="kw">await</span><span class="question-mark">?</span>;
                                 <span class="kw">if</span> <span class="ident">update_res</span>.<span class="ident">rows_affected</span> <span class="op">!</span><span class="op">=</span> <span class="number">1</span> {
@@ -1419,13 +1414,8 @@
                                     ));
                                 }
                                 <span class="ident">UserFollow::update_many</span>()
-                                    .<span class="ident">col_expr</span>(
-                                        <span class="ident">pgdb::user_follow::Column::IsUpdate</span>,
-                                        <span class="ident">Expr::value</span>(<span class="bool-val">true</span>),
-                                    )
-                                    .<span class="ident">filter</span>(
-                                        <span class="ident">pgdb::user_follow::Column::BurrowId</span>.<span class="ident">eq</span>(<span class="ident">content</span>.<span class="ident">burrow_id</span>),
-                                    )
+                                    .<span class="ident">col_expr</span>(<span class="ident">db::user_follow::Column::IsUpdate</span>, <span class="ident">Expr::value</span>(<span class="bool-val">true</span>))
+                                    .<span class="ident">filter</span>(<span class="ident">db::user_follow::Column::BurrowId</span>.<span class="ident">eq</span>(<span class="ident">content</span>.<span class="ident">burrow_id</span>))
                                     .<span class="ident">exec</span>(<span class="ident">txn</span>)
                                     .<span class="kw">await</span><span class="question-mark">?</span>;
                                 <span class="kw">let</span> <span class="ident">pulsar_post</span> <span class="op">=</span> <span class="ident">PulsarSearchPostData</span> {
@@ -1523,25 +1513,30 @@
                 ))),
             ),
             <span class="prelude-val">Some</span>(<span class="ident">post_info</span>) =&gt; {
-                <span class="kw">let</span> <span class="ident">reply_pages</span> <span class="op">=</span> <span class="ident">ContentReply::find</span>()
-                    .<span class="ident">filter</span>(<span class="ident">pgdb::content_reply::Column::PostId</span>.<span class="ident">eq</span>(<span class="ident">post_id</span>))
-                    .<span class="ident">order_by_asc</span>(<span class="ident">pgdb::content_reply::Column::ReplyId</span>)
-                    .<span class="ident">paginate</span>(<span class="kw-2">&amp;</span><span class="ident">pg_con</span>, <span class="ident">REPLY_PER_PAGE</span>);
-                <span class="kw">let</span> <span class="ident">reply_info</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">reply_pages</span>.<span class="ident">fetch_page</span>(<span class="ident">page</span>).<span class="kw">await</span> {
-                    <span class="prelude-val">Ok</span>(<span class="ident">reply_info</span>) =&gt; <span class="ident">reply_info</span>,
-                    <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; {
-                        <span class="macro">log::error!</span>(<span class="string">&quot;[READ-POST] Database error: {:?}&quot;</span>, <span class="ident">e</span>);
-                        <span class="kw">return</span> (
-                            <span class="ident">Status::InternalServerError</span>,
-                            <span class="prelude-val">Err</span>(<span class="ident">Json</span>(<span class="ident">ErrorResponse::default</span>())),
-                        );
-                    }
-                };
                 <span class="comment">// get post metadata</span>
+                <span class="kw">let</span> <span class="ident">reply_page</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Reply</span><span class="op">&gt;</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">post_info</span>.<span class="ident">post_state</span> {
+                    <span class="number">0</span> =&gt; {
+                        <span class="kw">let</span> <span class="ident">reply_pages</span> <span class="op">=</span> <span class="ident">ContentReply::find</span>()
+                            .<span class="ident">filter</span>(<span class="ident">db::content_reply::Column::PostId</span>.<span class="ident">eq</span>(<span class="ident">post_id</span>))
+                            .<span class="ident">order_by_asc</span>(<span class="ident">db::content_reply::Column::ReplyId</span>)
+                            .<span class="ident">paginate</span>(<span class="kw-2">&amp;</span><span class="ident">pg_con</span>, <span class="ident">REPLY_PER_PAGE</span>);
+                        <span class="kw">let</span> <span class="ident">reply_info</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">reply_pages</span>.<span class="ident">fetch_page</span>(<span class="ident">page</span>).<span class="kw">await</span> {
+                            <span class="prelude-val">Ok</span>(<span class="ident">reply_info</span>) =&gt; <span class="ident">reply_info</span>,
+                            <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; {
+                                <span class="macro">log::error!</span>(<span class="string">&quot;[READ-POST] Database error: {:?}&quot;</span>, <span class="ident">e</span>);
+                                <span class="kw">return</span> (
+                                    <span class="ident">Status::InternalServerError</span>,
+                                    <span class="prelude-val">Err</span>(<span class="ident">Json</span>(<span class="ident">ErrorResponse::default</span>())),
+                                );
+                            }
+                        };
+                        <span class="ident">reply_info</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">r</span><span class="op">|</span> <span class="ident">r</span>.<span class="ident">into</span>()).<span class="ident">collect</span>()
+                    }
+                    <span class="kw">_</span> =&gt; <span class="ident">Vec::new</span>(),
+                };
                 <span class="kw">let</span> <span class="ident">post_desc</span>: <span class="ident">Post</span> <span class="op">=</span> <span class="ident">post_info</span>.<span class="ident">into</span>();
-                <span class="kw">let</span> <span class="ident">reply_page</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Reply</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">reply_info</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">r</span><span class="op">|</span> <span class="ident">r</span>.<span class="ident">into</span>()).<span class="ident">collect</span>();
                 <span class="comment">// check if the user collect the post, if so, update the state is_update</span>
-                <span class="kw">let</span> <span class="ident">record</span> <span class="op">=</span> <span class="ident">pgdb::user_collection::ActiveModel</span> {
+                <span class="kw">let</span> <span class="ident">record</span> <span class="op">=</span> <span class="ident">db::user_collection::ActiveModel</span> {
                     <span class="ident">uid</span>: <span class="ident">Set</span>(<span class="ident">auth</span>.<span class="ident">id</span>),
                     <span class="ident">post_id</span>: <span class="ident">Set</span>(<span class="ident">post_id</span>),
                     <span class="ident">is_update</span>: <span class="ident">Set</span>(<span class="bool-val">false</span>),
@@ -1681,7 +1676,7 @@
                                 <span class="comment">// get tag and section string and remove duplicate</span>
                                 <span class="kw">let</span> <span class="ident">section</span> <span class="op">=</span> <span class="ident">remove_duplicate</span>(<span class="ident">content</span>.<span class="ident">section</span>);
                                 <span class="kw">let</span> <span class="ident">tag</span> <span class="op">=</span> <span class="ident">remove_duplicate</span>(<span class="ident">content</span>.<span class="ident">tag</span>);
-                                <span class="kw">let</span> <span class="ident">content_post</span> <span class="op">=</span> <span class="ident">pgdb::content_post::ActiveModel</span> {
+                                <span class="kw">let</span> <span class="ident">content_post</span> <span class="op">=</span> <span class="ident">db::content_post::ActiveModel</span> {
                                     <span class="ident">post_id</span>: <span class="ident">Set</span>(<span class="ident">post_id</span>),
                                     <span class="ident">title</span>: <span class="ident">Set</span>(<span class="ident">content</span>.<span class="ident">title</span>.<span class="ident">to_owned</span>()),
                                     <span class="ident">update_time</span>: <span class="ident">Set</span>(<span class="ident">now</span>.<span class="ident">to_owned</span>()),
@@ -1796,10 +1791,9 @@
             ),
             <span class="prelude-val">Some</span>(<span class="ident">post_info</span>) =&gt; {
                 <span class="comment">//  check if time is within limit, if so, allow user to delete</span>
-                <span class="comment">// TODO: change it when final release</span>
                 <span class="kw">if</span> <span class="ident">post_info</span>
                     .<span class="ident">create_time</span>
-                    .<span class="ident">checked_add_signed</span>(<span class="ident">Duration::seconds</span>(<span class="number">5</span>))
+                    .<span class="ident">checked_add_signed</span>(<span class="ident">Duration::seconds</span>(<span class="kw-2">*</span><span class="ident">POST_DELETE_DURATION</span>))
                     .<span class="ident">unwrap</span>()
                     <span class="op">&lt;</span> <span class="ident">now</span>
                 {
@@ -1825,14 +1819,14 @@
                                 )
                             } <span class="kw">else</span> <span class="kw">if</span> <span class="ident">is_valid_burrow</span>(<span class="kw-2">&amp;</span><span class="ident">state</span>.<span class="ident">valid_burrow</span>, <span class="kw-2">&amp;</span><span class="ident">post_info</span>.<span class="ident">burrow_id</span>) {
                                 <span class="comment">// delete data in content_subject</span>
-                                <span class="kw">let</span> <span class="ident">delete_post</span>: <span class="ident">pgdb::content_post::ActiveModel</span> <span class="op">=</span> <span class="ident">post_info</span>.<span class="ident">into</span>();
+                                <span class="kw">let</span> <span class="ident">delete_post</span>: <span class="ident">db::content_post::ActiveModel</span> <span class="op">=</span> <span class="ident">post_info</span>.<span class="ident">into</span>();
                                 <span class="kw">match</span> <span class="ident">pg_con</span>
                                     .<span class="ident">transaction</span>::<span class="op">&lt;</span><span class="kw">_</span>, (), <span class="ident">DbErr</span><span class="op">&gt;</span>(<span class="op">|</span><span class="ident">txn</span><span class="op">|</span> {
                                         <span class="ident">Box::pin</span>(<span class="kw">async</span> <span class="kw">move</span> {
                                             <span class="ident">delete_post</span>.<span class="ident">delete</span>(<span class="ident">txn</span>).<span class="kw">await</span><span class="question-mark">?</span>;
                                             <span class="ident">ContentReply::delete_many</span>()
                                                 .<span class="ident">filter</span>(
-                                                    <span class="ident">pgdb::content_reply::Column::PostId</span>.<span class="ident">eq</span>(<span class="ident">post_id</span>),
+                                                    <span class="ident">db::content_reply::Column::PostId</span>.<span class="ident">eq</span>(<span class="ident">post_id</span>),
                                                 )
                                                 .<span class="ident">exec</span>(<span class="ident">txn</span>)
                                                 .<span class="kw">await</span><span class="question-mark">?</span>;
@@ -1928,7 +1922,7 @@
     <span class="kw">let</span> <span class="ident">client</span> <span class="op">=</span> <span class="ident">conn</span>.<span class="ident">into_inner</span>();
     <span class="kw">let</span> <span class="ident">post_info</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">section</span>.<span class="ident">is_empty</span>() {
         <span class="kw">let</span> <span class="ident">post_pages</span> <span class="op">=</span> <span class="ident">ContentPost::find</span>()
-            .<span class="ident">order_by_desc</span>(<span class="ident">pgdb::content_post::Column::PostId</span>)
+            .<span class="ident">order_by_desc</span>(<span class="ident">db::content_post::Column::PostId</span>)
             .<span class="ident">paginate</span>(<span class="kw-2">&amp;</span><span class="ident">pg_con</span>, <span class="ident">POST_PER_PAGE</span>);
         <span class="kw">let</span> <span class="ident">post_info</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">post_pages</span>.<span class="ident">fetch_page</span>(<span class="ident">page</span>).<span class="kw">await</span> {
             <span class="prelude-val">Ok</span>(<span class="ident">post_info</span>) =&gt; <span class="ident">post_info</span>,
@@ -1983,8 +1977,8 @@
             );
         }
         <span class="kw">match</span> <span class="ident">ContentPost::find</span>()
-            .<span class="ident">filter</span>(<span class="ident">Condition::all</span>().<span class="ident">add</span>(<span class="ident">pgdb::content_post::Column::PostId</span>.<span class="ident">is_in</span>(<span class="ident">post_ids</span>)))
-            .<span class="ident">order_by_desc</span>(<span class="ident">pgdb::content_post::Column::PostId</span>)
+            .<span class="ident">filter</span>(<span class="ident">Condition::all</span>().<span class="ident">add</span>(<span class="ident">db::content_post::Column::PostId</span>.<span class="ident">is_in</span>(<span class="ident">post_ids</span>)))
+            .<span class="ident">order_by_desc</span>(<span class="ident">db::content_post::Column::PostId</span>)
             .<span class="ident">all</span>(<span class="kw-2">&amp;</span><span class="ident">pg_con</span>)
             .<span class="kw">await</span>
         {
@@ -2011,13 +2005,13 @@
             })),
         );
     }
-    <span class="kw">let</span> <span class="ident">like_res</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">pgdb::user_like::Entity::find</span>()
+    <span class="kw">let</span> <span class="ident">like_res</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">db::user_like::Entity::find</span>()
         .<span class="ident">filter</span>(
             <span class="ident">Condition::all</span>()
-                .<span class="ident">add</span>(<span class="ident">pgdb::user_like::Column::Uid</span>.<span class="ident">eq</span>(<span class="ident">auth</span>.<span class="ident">id</span>))
-                .<span class="ident">add</span>(<span class="ident">pgdb::user_like::Column::PostId</span>.<span class="ident">is_in</span>(<span class="ident">post_ids</span>.<span class="ident">clone</span>())),
+                .<span class="ident">add</span>(<span class="ident">db::user_like::Column::Uid</span>.<span class="ident">eq</span>(<span class="ident">auth</span>.<span class="ident">id</span>))
+                .<span class="ident">add</span>(<span class="ident">db::user_like::Column::PostId</span>.<span class="ident">is_in</span>(<span class="ident">post_ids</span>.<span class="ident">clone</span>())),
         )
-        .<span class="ident">order_by_desc</span>(<span class="ident">pgdb::user_like::Column::PostId</span>)
+        .<span class="ident">order_by_desc</span>(<span class="ident">db::user_like::Column::PostId</span>)
         .<span class="ident">all</span>(<span class="kw-2">&amp;</span><span class="ident">pg_con</span>)
         .<span class="kw">await</span>
         .<span class="ident">map</span>(<span class="op">|</span><span class="ident">user_likes</span><span class="op">|</span> {
@@ -2033,13 +2027,13 @@
             );
         }
     };
-    <span class="kw">let</span> <span class="ident">collection_res</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">pgdb::user_collection::Entity::find</span>()
+    <span class="kw">let</span> <span class="ident">collection_res</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">db::user_collection::Entity::find</span>()
         .<span class="ident">filter</span>(
             <span class="ident">Condition::all</span>()
-                .<span class="ident">add</span>(<span class="ident">pgdb::user_collection::Column::Uid</span>.<span class="ident">eq</span>(<span class="ident">auth</span>.<span class="ident">id</span>))
-                .<span class="ident">add</span>(<span class="ident">pgdb::user_collection::Column::PostId</span>.<span class="ident">is_in</span>(<span class="ident">post_ids</span>)),
+                .<span class="ident">add</span>(<span class="ident">db::user_collection::Column::Uid</span>.<span class="ident">eq</span>(<span class="ident">auth</span>.<span class="ident">id</span>))
+                .<span class="ident">add</span>(<span class="ident">db::user_collection::Column::PostId</span>.<span class="ident">is_in</span>(<span class="ident">post_ids</span>)),
         )
-        .<span class="ident">order_by_desc</span>(<span class="ident">pgdb::user_collection::Column::PostId</span>)
+        .<span class="ident">order_by_desc</span>(<span class="ident">db::user_collection::Column::PostId</span>)
         .<span class="ident">all</span>(<span class="kw-2">&amp;</span><span class="ident">pg_con</span>)
         .<span class="kw">await</span>
         .<span class="ident">map</span>(<span class="op">|</span><span class="ident">user_collections</span><span class="op">|</span> {
@@ -2146,7 +2140,7 @@
                                             <span class="kw">let</span> <span class="ident">now</span> <span class="op">=</span> <span class="ident">Utc::now</span>()
                                                 .<span class="ident">with_timezone</span>(<span class="kw-2">&amp;</span><span class="ident">FixedOffset::east</span>(<span class="number">8</span> <span class="op">*</span> <span class="number">3600</span>));
                                             <span class="comment">// fill the row in content_reply</span>
-                                            <span class="kw">let</span> <span class="ident">content_reply</span> <span class="op">=</span> <span class="ident">pgdb::content_reply::ActiveModel</span> {
+                                            <span class="kw">let</span> <span class="ident">content_reply</span> <span class="op">=</span> <span class="ident">db::content_reply::ActiveModel</span> {
                                                 <span class="ident">post_id</span>: <span class="ident">Set</span>(<span class="ident">post_info</span>.<span class="ident">post_id</span>),
                                                 <span class="ident">reply_id</span>: <span class="ident">Set</span>(<span class="ident">post_info</span>.<span class="ident">post_len</span>),
                                                 <span class="ident">burrow_id</span>: <span class="ident">Set</span>(<span class="ident">content</span>.<span class="ident">burrow_id</span>),
@@ -2159,7 +2153,7 @@
                                             <span class="kw">let</span> <span class="ident">reply_res</span> <span class="op">=</span> <span class="ident">content_reply</span>.<span class="ident">insert</span>(<span class="ident">txn</span>).<span class="kw">await</span><span class="question-mark">?</span>;
                                             <span class="kw">let</span> <span class="ident">reply_id</span> <span class="op">=</span> <span class="ident">reply_res</span>.<span class="ident">reply_id</span>.<span class="ident">unwrap</span>();
                                             <span class="macro">log::info!</span>(<span class="string">&quot;[CREATE-REPLY] create reply {}&quot;</span>, <span class="ident">reply_id</span>);
-                                            <span class="kw">let</span> <span class="ident">post_update</span> <span class="op">=</span> <span class="ident">pgdb::content_post::ActiveModel</span> {
+                                            <span class="kw">let</span> <span class="ident">post_update</span> <span class="op">=</span> <span class="ident">db::content_post::ActiveModel</span> {
                                                 <span class="ident">post_id</span>: <span class="ident">Set</span>(<span class="ident">post_info</span>.<span class="ident">post_id</span>),
                                                 <span class="ident">update_time</span>: <span class="ident">Set</span>(<span class="ident">now</span>.<span class="ident">to_owned</span>()),
                                                 <span class="ident">post_len</span>: <span class="ident">Set</span>(<span class="ident">post_info</span>.<span class="ident">post_len</span> <span class="op">+</span> <span class="number">1</span>),
@@ -2173,11 +2167,11 @@
                                             );
                                             <span class="ident">UserCollection::update_many</span>()
                                                 .<span class="ident">col_expr</span>(
-                                                    <span class="ident">pgdb::user_collection::Column::IsUpdate</span>,
+                                                    <span class="ident">db::user_collection::Column::IsUpdate</span>,
                                                     <span class="ident">Expr::value</span>(<span class="bool-val">true</span>),
                                                 )
                                                 .<span class="ident">filter</span>(
-                                                    <span class="ident">pgdb::user_collection::Column::PostId</span>
+                                                    <span class="ident">db::user_collection::Column::PostId</span>
                                                         .<span class="ident">eq</span>(<span class="ident">post_info</span>.<span class="ident">post_id</span>),
                                                 )
                                                 .<span class="ident">exec</span>(<span class="ident">txn</span>)
@@ -2315,12 +2309,12 @@
                                             <span class="ident">Box::pin</span>(<span class="kw">async</span> <span class="kw">move</span> {
                                                 <span class="kw">let</span> <span class="ident">now</span> <span class="op">=</span> <span class="ident">Utc::now</span>().<span class="ident">with_timezone</span>(<span class="kw-2">&amp;</span><span class="ident">FixedOffset::east</span>(<span class="number">8</span> <span class="op">*</span> <span class="number">3600</span>));
                                                 <span class="comment">// fill the row in content_reply</span>
-                                                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">content_reply</span>: <span class="ident">pgdb::content_reply::ActiveModel</span> <span class="op">=</span>
+                                                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">content_reply</span>: <span class="ident">db::content_reply::ActiveModel</span> <span class="op">=</span>
                                                     <span class="ident">reply_info</span>.<span class="ident">into</span>();
                                                 <span class="ident">content_reply</span>.<span class="ident">content</span> <span class="op">=</span> <span class="ident">Set</span>(<span class="ident">content</span>.<span class="ident">content</span>.<span class="ident">to_owned</span>());
                                                 <span class="ident">content_reply</span>.<span class="ident">update_time</span> <span class="op">=</span> <span class="ident">Set</span>(<span class="ident">now</span>);
                                                 <span class="kw">let</span> <span class="ident">content_reply</span> <span class="op">=</span> <span class="ident">content_reply</span>.<span class="ident">update</span>(<span class="ident">txn</span>).<span class="kw">await</span><span class="question-mark">?</span>;
-                                                <span class="kw">let</span> <span class="ident">post_update</span> <span class="op">=</span> <span class="ident">pgdb::content_post::ActiveModel</span> {
+                                                <span class="kw">let</span> <span class="ident">post_update</span> <span class="op">=</span> <span class="ident">db::content_post::ActiveModel</span> {
                                                     <span class="ident">post_id</span>: <span class="ident">Set</span>(<span class="ident">content</span>.<span class="ident">post_id</span>),
                                                     <span class="ident">update_time</span>: <span class="ident">Set</span>(<span class="ident">now</span>.<span class="ident">to_owned</span>()),
                                                     ..<span class="ident">Default::default</span>()

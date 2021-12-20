@@ -1,1 +1,1 @@
-initSidebarItems({"mod":[["burrow",""],["content",""],["error","Error Response of all the public api interfaces"],["pulsar",""],["search",""],["storage","Models of storage"],["user",""]]});
+initSidebarItems({"mod":[["burrow","Models of burrow"],["content","Models for content"],["error","Error Response of all the public api interfaces"],["pulsar","Models of message passed to pulsar"],["search","Models for search"],["storage","Models of storage"],["user","Models for user"]]});

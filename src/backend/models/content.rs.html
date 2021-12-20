@@ -529,19 +529,11 @@
 <span id="529">529</span>
 <span id="530">530</span>
 <span id="531">531</span>
-<span id="532">532</span>
-<span id="533">533</span>
-<span id="534">534</span>
-<span id="535">535</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::pgdb</span>::{<span class="ident">content_post</span>, <span class="ident">content_reply</span>};
+</pre><pre class="rust"><code><span class="doccomment">//! Models for content</span>
+
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::db</span>::{<span class="ident">content_post</span>, <span class="ident">content_reply</span>};
 <span class="kw">use</span> <span class="ident">rocket::serde</span>::{<span class="ident">Deserialize</span>, <span class="ident">Serialize</span>};
 <span class="kw">use</span> <span class="ident">sea_orm</span>::{<span class="ident">prelude::DateTimeWithTimeZone</span>, <span class="ident">FromQueryResult</span>};
-<span class="kw">use</span> <span class="ident">std::convert::From</span>;
-
-<span class="kw">pub</span> <span class="kw">static</span> <span class="ident">POST_PER_PAGE</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="number">20</span>;
-<span class="kw">pub</span> <span class="kw">static</span> <span class="ident">REPLY_PER_PAGE</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="number">20</span>;
-<span class="kw">pub</span> <span class="kw">static</span> <span class="ident">MAX_SECTION</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="number">3</span>;
-<span class="kw">pub</span> <span class="kw">static</span> <span class="ident">MAX_TAG</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="number">10</span>;
 
 <span class="doccomment">/// Section of post</span>
 <span class="doccomment">///</span>

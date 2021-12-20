@@ -439,15 +439,15 @@
 <span id="439">439</span>
 <span id="440">440</span>
 <span id="441">441</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">crypto::digest::Digest</span>;
+</pre><pre class="rust"><code><span class="doccomment">//! Module for authentication</span>
+
+<span class="kw">use</span> <span class="ident">crypto::digest::Digest</span>;
 <span class="kw">use</span> <span class="ident">crypto::sha3::Sha3</span>;
 <span class="kw">use</span> <span class="ident">rand::distributions::Alphanumeric</span>;
 <span class="kw">use</span> <span class="ident">rand</span>::{<span class="ident">thread_rng</span>, <span class="ident">Rng</span>};
-<span class="kw">use</span> <span class="ident">rocket::http::private::cookie::CookieBuilder</span>;
-<span class="kw">use</span> <span class="ident">rocket::http</span>::{<span class="ident">Cookie</span>, <span class="ident">SameSite</span>, <span class="ident">Status</span>};
+<span class="kw">use</span> <span class="ident">rocket::http</span>::{<span class="ident">private::cookie::CookieBuilder</span>, <span class="ident">Cookie</span>, <span class="ident">SameSite</span>, <span class="ident">Status</span>};
 <span class="kw">use</span> <span class="ident">rocket::request</span>::{<span class="self">self</span>, <span class="ident">FromRequest</span>, <span class="ident">Outcome</span>, <span class="ident">Request</span>};
 <span class="kw">use</span> <span class="ident">rocket::State</span>;
-<span class="kw">use</span> <span class="ident">std::iter</span>;
 
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::config::user</span>::<span class="kw-2">*</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::models::error</span>::<span class="kw-2">*</span>;
@@ -550,7 +550,7 @@
     <span class="ident">kv_conn</span>: <span class="kw-2">&amp;mut</span> <span class="ident">redis::aio::Connection</span>,
 ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">ErrorResponse</span><span class="op">&gt;</span> {
     <span class="comment">// generate token and refresh token</span>
-    <span class="kw">let</span> <span class="ident">token</span>: <span class="ident">String</span> <span class="op">=</span> <span class="ident">iter::repeat</span>(())
+    <span class="kw">let</span> <span class="ident">token</span>: <span class="ident">String</span> <span class="op">=</span> <span class="ident">std::iter::repeat</span>(())
         .<span class="ident">map</span>(<span class="op">|</span>()<span class="op">|</span> <span class="ident">thread_rng</span>().<span class="ident">sample</span>(<span class="ident">Alphanumeric</span>))
         .<span class="ident">map</span>(<span class="ident">char::from</span>)
         .<span class="ident">take</span>(<span class="number">32</span>)

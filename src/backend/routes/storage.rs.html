@@ -214,7 +214,9 @@
 <span id="214">214</span>
 <span id="215">215</span>
 <span id="216">216</span>
+<span id="217">217</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Routes for storage</span>
+
 <span class="kw">use</span> <span class="ident">chrono</span>::{<span class="ident">FixedOffset</span>, <span class="ident">Utc</span>};
 <span class="kw">use</span> <span class="ident">crypto::digest::Digest</span>;
 <span class="kw">use</span> <span class="ident">crypto::md5::Md5</span>;
@@ -224,9 +226,9 @@
 <span class="kw">use</span> <span class="ident">rocket_db_pools::Connection</span>;
 <span class="kw">use</span> <span class="ident">sea_orm</span>::{<span class="ident">entity</span>::<span class="kw-2">*</span>, <span class="ident">ActiveModelTrait</span>};
 
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::db::image</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::models::error</span>::<span class="kw-2">*</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::models::storage</span>::{<span class="ident">ReferrerCheck</span>, <span class="ident">SaveImage</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::pgdb::image</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::pool</span>::{<span class="ident">MinioImageStorage</span>, <span class="ident">PgDb</span>};
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::utils::auth::Auth</span>;
 

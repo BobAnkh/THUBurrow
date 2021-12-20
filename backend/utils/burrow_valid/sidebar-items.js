@@ -1,1 +1,1 @@
-initSidebarItems({"fn":[["get_burrow_list",""],["is_valid_burrow",""]]});
+initSidebarItems({"fn":[["get_burrow_list","Split burrow list stored in database as string to burrow_id list"],["is_valid_burrow","Check if a given burrow_id is valid"]]});

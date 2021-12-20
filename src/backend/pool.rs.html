@@ -303,24 +303,20 @@
 <span id="303">303</span>
 <span id="304">304</span>
 <span id="305">305</span>
-<span id="306">306</span>
-<span id="307">307</span>
-</pre><pre class="rust"><code><span class="doccomment">//! # Database Pool</span>
+</pre><pre class="rust"><code><span class="doccomment">//! Module for Database Pool</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! `pool` is a collection of `Database Connection Pool`s that can be used to perform</span>
 <span class="doccomment">//! operations on multiple databases, e.g. PostgreSQL, Redis, Pulsar, Typesense, Minio, etc.</span>
 
 <span class="kw">use</span> <span class="ident">deadpool::managed</span>::{<span class="self">self</span>, <span class="ident">Manager</span>, <span class="ident">Object</span>, <span class="ident">PoolConfig</span>, <span class="ident">PoolError</span>};
 <span class="kw">use</span> <span class="ident">deadpool::Runtime</span>;
-<span class="kw">use</span> <span class="ident">pulsar::MultiTopicProducer</span>;
-<span class="kw">use</span> <span class="ident">pulsar</span>::{<span class="ident">message::proto</span>, <span class="ident">producer</span>, <span class="ident">Error</span> <span class="kw">as</span> <span class="ident">PulsarError</span>, <span class="ident">Pulsar</span>, <span class="ident">TokioExecutor</span>};
+<span class="kw">use</span> <span class="ident">pulsar</span>::{
+    <span class="ident">message::proto</span>, <span class="ident">producer</span>, <span class="ident">Error</span> <span class="kw">as</span> <span class="ident">PulsarError</span>, <span class="ident">MultiTopicProducer</span>, <span class="ident">Pulsar</span>, <span class="ident">TokioExecutor</span>,
+};
 <span class="kw">use</span> <span class="ident">reqwest</span>;
 <span class="kw">use</span> <span class="ident">rocket::State</span>;
 <span class="kw">use</span> <span class="ident">rocket_db_pools</span>::{<span class="ident">rocket::figment::Figment</span>, <span class="ident">Config</span>, <span class="ident">Database</span>, <span class="ident">Error</span>, <span class="ident">Pool</span>};
-<span class="kw">use</span> <span class="ident">s3::bucket::Bucket</span>;
-<span class="kw">use</span> <span class="ident">s3::creds::Credentials</span>;
-<span class="kw">use</span> <span class="ident">s3::region::Region</span>;
-<span class="kw">use</span> <span class="ident">s3::BucketConfiguration</span>;
+<span class="kw">use</span> <span class="ident">s3</span>::{<span class="ident">bucket::Bucket</span>, <span class="ident">creds::Credentials</span>, <span class="ident">region::Region</span>, <span class="ident">BucketConfiguration</span>};
 <span class="kw">use</span> <span class="ident">sea_orm</span>::{<span class="ident">DatabaseConnection</span>, <span class="ident">DbErr</span>};
 <span class="kw">use</span> <span class="ident">std::time::Duration</span>;
 

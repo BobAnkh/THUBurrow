@@ -124,7 +124,8 @@
 <span id="124">124</span>
 <span id="125">125</span>
 <span id="126">126</span>
-</pre><pre class="rust"><code><span class="doccomment">//! Routes for trending.</span>
+</pre><pre class="rust"><code><span class="doccomment">//! Routes for trending</span>
+
 <span class="kw">use</span> <span class="ident">rocket::http::Status</span>;
 <span class="kw">use</span> <span class="ident">rocket::serde::json::Json</span>;
 <span class="kw">use</span> <span class="ident">rocket</span>::{<span class="ident">Build</span>, <span class="ident">Rocket</span>};
@@ -132,9 +133,8 @@
 <span class="kw">use</span> <span class="ident">sea_orm::sea_query::Expr</span>;
 <span class="kw">use</span> <span class="ident">sea_orm</span>::{<span class="ident">entity</span>::<span class="kw-2">*</span>, <span class="ident">DatabaseConnection</span>, <span class="ident">PaginatorTrait</span>, <span class="ident">QueryFilter</span>, <span class="ident">QueryOrder</span>};
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::models::content</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::models::error</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::pgdb</span>::{<span class="ident">content_post</span>, <span class="ident">prelude</span>::<span class="kw-2">*</span>};
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::db</span>::{<span class="ident">content_post</span>, <span class="ident">prelude</span>::<span class="kw-2">*</span>};
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::models</span>::{<span class="ident">content</span>::<span class="kw-2">*</span>, <span class="ident">error</span>::<span class="kw-2">*</span>};
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::pool</span>::{<span class="ident">PgDb</span>, <span class="ident">RedisDb</span>};
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::utils::auth::Auth</span>;
 
