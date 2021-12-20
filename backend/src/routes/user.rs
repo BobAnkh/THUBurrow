@@ -1,4 +1,3 @@
-//! Routes for user
 use chrono::{FixedOffset, Utc};
 use crypto::digest::Digest;
 use crypto::sha3::Sha3;
@@ -34,6 +33,7 @@ pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
         routes![
             user_log_in,
             user_sign_up,
+            user_logout,
             get_follow,
             get_collection,
             get_burrow,
@@ -56,6 +56,25 @@ async fn gen_salt() -> String {
     salt
 }
 
+/// User Relation
+///
+/// User likes/dislikes a post, adds a post to user collection, removes a post from user collection, follows/unfollows a burrow.
+///
+/// ## Parameters
+///
+/// - `Auth`: Authenticated user
+/// - `Connection<PulsarSearchProduceMq>`: Pulsar connection
+/// - `Json<RelationData>`: Json of relation between user and certain post/burrow
+///
+/// ## Returns
+///
+/// - `Status`: HTTP status
+/// - `String`: String "Success"
+///
+/// ## Errors
+///
+/// - `ErrorResponse`: Error message
+///   - `ErrorCode::DatabaseErr`
 #[post("/relation", data = "<relation_info>", format = "json")]
 pub async fn user_relation(
     auth: Auth,
@@ -80,6 +99,29 @@ pub async fn user_relation(
     (Status::Ok, Ok("Success".to_string()))
 }
 
+/// User Email Activate
+///
+/// Send verification email for user sign-up, allow 3 requests each 4 hours.
+///
+/// ## Parameters
+///
+/// - `Connection<PgDb>`: Postgres connection
+/// - `Connection<RedisDb>`: Redis connection
+/// - `Json<UserEmail>`: Json of user email
+/// - `Connection<PulsarSearchProducerMq>`: Pulsar connection
+///
+/// ## Returns
+///
+/// - `Status`: HTTP status
+/// - `String`: String "Success"
+///
+/// ## Errors
+///
+/// - `ErrorResponse`: Error message
+///   - `ErrorCode::EmailInvalid`
+///   - `ErrorCode::EmailDuplicate`
+///   - `ErrorCode::RateLimit`
+///   - `ErrorCode::DatabaseErr`
 #[post("/email", data = "<email_info>", format = "json")]
 pub async fn user_email_activate(
     db: Connection<PgDb>,
@@ -171,6 +213,29 @@ pub async fn user_email_activate(
     }
 }
 
+/// User Reset Email
+///
+/// Send verification email for password-reset, allow 3 requests each 4 hours.
+///
+/// ## Parameters
+///
+/// - `Connection<PgDb>`: Postgres connection
+/// - `Connection<RedisDb>`: Redis connection
+/// - `Json<UserEmail>`: Json of user email
+/// - `Connection<PulsarSearchProducerMq>`: Pulsar connection
+///
+/// ## Returns
+///
+/// - `Status`: HTTP status
+/// - `String`: String "Success"
+///
+/// ## Errors
+///
+/// - `ErrorResponse`: Error message
+///   - `ErrorCode::EmailInvalid`
+///   - `ErrorCode::EmailDuplicate`
+///   - `ErrorCode::RateLimit`
+///   - `ErrorCode::DatabaseErr`
 #[post("/reset/email", data = "<email_info>", format = "json")]
 pub async fn user_reset_email(
     db: Connection<PgDb>,
@@ -262,6 +327,30 @@ pub async fn user_reset_email(
     }
 }
 
+/// User Sign-up
+///
+/// Sign up a user.
+///
+/// ## Parameters
+///
+/// - `Connection<PgDb>`: Postgres connection
+/// - `Connection<RedisDb>`: Redis connection
+/// - `Json<UserInfo>`: Json of UserInfo, including username, password, email, verification code
+///
+/// ## Returns
+///
+/// - `Status`: HTTP status
+/// - `Json<UserResponse>`: Json of UserResponse, including burrow_id of user's assigned default burrow
+///
+/// ## Errors
+///
+/// - `ErrorResponse`: Error message
+///   - `ErrorCode::EmailInvalid`
+///   - `ErrorCode::EmailDuplicate`
+///   - `ErrorCode::EmptyField`
+///   - `ErrorCode::UsernameDuplicate`
+///   - `ErrorCode::CredentialInvalid`
+///   - `ErrorCode::DatabaseErr`
 #[post("/sign-up", data = "<user_info>", format = "json")]
 pub async fn user_sign_up(
     db: Connection<PgDb>,
@@ -465,6 +554,28 @@ pub async fn user_sign_up(
     }
 }
 
+/// User Reset
+///
+/// User Resets password in logout status, requires verification code from verification email sent by `user_email_service`.
+///
+/// ## Parameters
+///
+/// - `Connection<PgDb>`: Postgres connection
+/// - `Connection<RedisDb>`: Redis connection
+/// - `CookieJar`: Collection of Cookie
+/// - `Json<UserResetInfo>`: Json of UserResetInfo, including password, email, verification code
+///
+/// ## Returns
+///
+/// - `Status`: HTTP status
+/// - `String`: String "Success"
+///
+/// ## Errors
+///
+/// - `ErrorResponse`: Error message
+///   - `ErrorCode::EmailInvalid`
+///   - `ErrorCode::CredentialInvalid`
+///   - `ErrorCode::DatabaseErr`
 #[post("/reset", data = "<user_info>", format = "json")]
 pub async fn user_reset(
     db: Connection<PgDb>,
@@ -611,6 +722,29 @@ pub async fn user_reset(
     }
 }
 
+/// User Change Password
+///
+/// User changes password in login status, no requirement for verification code.
+///
+/// ## Parameters
+///
+/// - `Auth`: Authenticated user
+/// - `Connection<PgDb>`: Postgres connection
+/// - `Connection<RedisDb>`: Redis connection
+/// - `CookieJar`: Collection of Cookie
+/// - `Json<UserChangePassword>`: Json of UserChangePassword, including old password, new password
+///
+/// ## Returns
+///
+/// - `Status`: HTTP status
+/// - `String`: String "Success"
+///
+/// ## Errors
+///
+/// - `ErrorResponse`: Error message
+///   - `ErrorCode::UserNotExist`
+///   - `ErrorCode::CredentialInvalid`
+///   - `ErrorCode::DatabaseErr`
 #[post("/change", data = "<user_info>", format = "json")]
 pub async fn user_change_password(
     auth: Auth,
@@ -692,6 +826,27 @@ pub async fn user_change_password(
     }
 }
 
+/// User Log in
+///
+/// Log in a user.
+///
+/// ## Parameters
+///
+/// - `Connection<PgDb>`: Postgres connection
+/// - `Connection<RedisDb>`: Redis connection
+/// - `CookieJar`: Collection of Cookie
+/// - `Json<UserLoginInfo>`: Json of UserLoginInfo, including username, password
+///
+/// ## Returns
+///
+/// - `Status`: HTTP status
+/// - `String`: String "Success"
+///
+/// ## Errors
+///
+/// - `ErrorResponse`: Error message
+///   - `ErrorCode::CredentialInvalid`
+///   - `ErrorCode::DatabaseErr`
 #[post("/login", data = "<user_info>", format = "json")]
 pub async fn user_log_in(
     db: Connection<PgDb>,
@@ -768,7 +923,26 @@ pub async fn user_log_in(
     }
 }
 
-#[get("/logout")]
+/// User logout
+///
+/// Logout a user.
+///
+/// ## Parameters
+///
+/// - `Auth`: Authenticated user
+/// - `Connection<RedisDb>`: Redis connection
+/// - `CookieJar`: Collection of Cookie
+///
+/// ## Returns
+///
+/// - `Status`: HTTP status
+/// - `String`: String "Success"
+///
+/// ## Errors
+///
+/// - `ErrorResponse`: Error message
+///   - `ErrorCode::DatabaseErr`
+#[post("/logout")]
 pub async fn user_logout(
     auth: Auth,
     kvdb: Connection<RedisDb>,
@@ -819,6 +993,25 @@ pub async fn user_logout(
     }
 }
 
+/// Get Burrow
+///
+/// Show burrows that belongs to current user, discarded burrows won't be shown here.
+///
+/// ## Parameters
+///
+/// - `Auth`: Authenticated user
+/// - `Connection<PgDb>`: Postgres connection
+///
+/// ## Returns
+///
+/// - `Status`: HTTP status
+/// - `Json<Vec<BurrowMetadata>>`: Json of Vec<BurrowMetadata>, including id, title, description, amount-of-post of selected burrows
+///
+/// ## Errors
+///
+/// - `ErrorResponse`: Error message
+///   - `ErrorCode::UserNotExist`
+///   - `ErrorCode::DatabaseErr`
 #[get("/burrows")]
 pub async fn get_burrow(
     db: Connection<PgDb>,
@@ -882,6 +1075,25 @@ pub async fn get_burrow(
     }
 }
 
+/// Get Collection
+///
+/// Show posts in user's collection.
+///
+/// ## Parameters
+///
+/// - `Auth`: Authenticated user
+/// - `Connection<PgDb>`: Postgres connection
+/// - `Option<usize>`: page number, default value 0
+///
+/// ## Returns
+///
+/// - `Status`: HTTP status
+/// - `Json<Vec<UserGetCollectionResponse>>`: Json of Vec<UserGetCollectionResponse>, including struct `Post`, a bool showing if the posts in collection are updated.
+///
+/// ## Errors
+///
+/// - `ErrorResponse`: Error message
+///   - `ErrorCode::DatabaseErr`
 #[get("/collection?<page>")]
 pub async fn get_collection(
     db: Connection<PgDb>,
@@ -998,6 +1210,25 @@ pub async fn get_collection(
     // }
 }
 
+/// Get Follow
+///
+/// Show burrows that current user follows.
+///
+/// ## Parameters
+///
+/// - `Auth`: Authenticated user
+/// - `Connection<PgDb>`: Postgres connection
+/// - `Option<usize>`: page number, default value 0
+///
+/// ## Returns
+///
+/// - `Status`: HTTP status
+/// - `Json<Vec<UserGetFollowResponse>>`: Json of Vec<UserGetFollowResponse>, including struct `BurrowMetadata`, a bool showing if user's followed burrows are updated.
+///
+/// ## Errors
+///
+/// - `ErrorResponse`: Error message
+///   - `ErrorCode::DatabaseErr`
 #[get("/follow?<page>")]
 pub async fn get_follow(
     db: Connection<PgDb>,
@@ -1081,6 +1312,25 @@ pub async fn get_follow(
     }
 }
 
+/// Get User Valid Burrow
+///
+/// Get burrows that hasn't been banned or discarded.
+///
+/// ## Parameters
+///
+/// - `Auth`: Authenticated user
+/// - `Connection<PgDb>`: Postgres connection
+///
+/// ## Returns
+///
+/// - `Status`: HTTP status
+/// - `Json<Vec<i64>>`: Json of Vec<i64>, including struct `Post`, a bool showing if the posts in collection is updated.
+///
+/// ## Errors
+///
+/// - `ErrorResponse`: Error message
+///   - `ErrorCode::UserNotExist`
+///   - `ErrorCode::DatabaseErr`
 #[get("/valid-burrows")]
 pub async fn get_user_valid_burrow(
     auth: Auth,

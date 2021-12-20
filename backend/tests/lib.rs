@@ -640,6 +640,27 @@ fn test_user() {
     );
     h4.abort();
     std::thread::sleep(std::time::Duration::from_secs(1));
+
+    // 3. test user_logout
+    // user log out
+    let response = client
+        .post("/users/logout")
+        .json(&json!({
+            "username": name,
+            "password": "testpassword"}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    assert_eq!(response.into_string().unwrap(), "Success");
+    // create burrow: perform a wrong action (user already logout, need authentication)
+    let response = client
+        .post("/burrows")
+        .json(&json!({
+            "description": format!("Second burrow of {}", name),
+            "title": "Burrow 2"}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Unauthorized);
 }
 
 #[test]

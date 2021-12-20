@@ -5,27 +5,55 @@ use sea_orm::FromQueryResult;
 pub static BURROW_PER_PAGE: usize = 10;
 pub static BURROW_LIMIT: usize = 5;
 
+/// Largest burrow_id from query
+///
+/// ## Fields
+///
+/// - `last_value`: i64, the largest burrow_id from query
 #[derive(Debug, FromQueryResult)]
 pub struct LastBurrowSeq {
     last_value: i64,
 }
 
+/// Total count of burrows
+///
+/// ## Fields
+///
+/// - `total`: i64, total burrow count
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct BurrowTotalCount {
     pub total: i64,
 }
 
+/// Burrow Info
+///
+/// ## Fields
+///
+/// - `description`: String, description of burrow
+/// - `title`: String, title of burrow
 #[derive(Serialize, Deserialize)]
 pub struct BurrowInfo {
     pub description: String,
     pub title: String,
 }
 
+/// Response struct of `create_burrow`
+///
+/// ## Fields
+///
+/// - `burrow_id`: i64, burrow_id of created burrow
 #[derive(Serialize, Deserialize)]
 pub struct BurrowCreateResponse {
     pub burrow_id: i64,
 }
 
+/// Response struct of `show_burrow`
+///
+/// ## Fields
+///
+/// - `title`: String, title of burrow
+/// - `description`: String, description of burrow
+/// - `posts`: Vec<Post>, information of posts in burrow
 #[derive(Serialize, Deserialize)]
 pub struct BurrowShowResponse {
     pub title: String,
@@ -33,6 +61,14 @@ pub struct BurrowShowResponse {
     pub posts: Vec<Post>,
 }
 
+/// Burrow Metadata
+///
+/// ## Fields
+///
+/// - `burrow_id`: i64, burrow_id of burrow
+/// - `title`: String, title of burrow
+/// - `description`: String, description of burrow
+/// - `post_num`: i32, post count in burrow
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct BurrowMetadata {
     pub burrow_id: i64,
