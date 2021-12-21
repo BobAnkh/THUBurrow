@@ -410,17 +410,13 @@ impl<'r> FromRequest<'r> for Auth {
                         "Authentication token is invalid.",
                     ),
                 )),
-                ValidToken::DatabaseErr => Outcome::Failure((
-                    Status::InternalServerError,
-                    ErrorResponse::build(ErrorCode::DatabaseErr, ""),
-                )),
+                ValidToken::DatabaseErr => {
+                    Outcome::Failure((Status::InternalServerError, ErrorResponse::default()))
+                }
                 ValidToken::Refresh(id) => Outcome::Success(Auth { id: *id }),
                 ValidToken::Valid(id) => Outcome::Success(Auth { id: *id }),
             },
-            None => Outcome::Failure((
-                Status::InternalServerError,
-                ErrorResponse::build(ErrorCode::DatabaseErr, ""),
-            )),
+            None => Outcome::Failure((Status::InternalServerError, ErrorResponse::default())),
         }
     }
 }

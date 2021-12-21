@@ -8,7 +8,7 @@ address = "0.0.0.0"
 # postgres://username:password@host:port/dbname
 url = "postgres://postgres:postgres@127.0.0.1:5432/pgdb"
 
-[debug.databases.keydb]
+[debug.databases.redis]
 url = "redis://:keypassword@127.0.0.1:6300"
 
 [debug.databases.pulsar-mq]

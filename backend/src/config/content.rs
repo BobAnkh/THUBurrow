@@ -16,3 +16,13 @@ lazy_static! {
         }
     };
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_post_delete_duration_config() {
+        assert_eq!(2, *POST_DELETE_DURATION);
+    }
+}

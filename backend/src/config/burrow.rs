@@ -10,8 +10,17 @@ lazy_static! {
         if *BACKEND_TEST_MODE {
             2
         } else {
-            60 * 60* 24
+            60 * 60 * 24
         }
     };
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_burrow_create_duration_config() {
+        assert_eq!(2, *BURROW_CREATE_DURATION);
+    }
+}

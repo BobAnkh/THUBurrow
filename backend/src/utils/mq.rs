@@ -73,14 +73,14 @@ async fn create_typesense_collections() -> Result<(), reqwest::Error> {
             {"name": "post_id", "type": "int64"},
             {"name": "burrow_id", "type": "int64"},
             {"name": "title", "type": "string", "locale": "zh"},
-            {"name": "section", "type": "string[]", "facet":true},
-            {"name": "tag", "type": "string[]", "facet":true},
+            {"name": "section", "type": "string[]", "facet": true},
+            {"name": "tag", "type": "string[]", "facet": true},
         ]
     });
     let collection_replies = json!({
         "name": "replies",
         "fields": [
-            {"name": "post_id", "type": "int64", "facet":true},
+            {"name": "post_id", "type": "int64", "facet": true},
             {"name": "reply_id", "type": "int32", "index": false , "optional": true},
             {"name": "burrow_id", "type": "int64"},
             {"name": "content", "type": "string", "locale": "zh"},
@@ -89,7 +89,7 @@ async fn create_typesense_collections() -> Result<(), reqwest::Error> {
     let client = reqwest::Client::new();
     for each in [collection_burrows, collection_posts, collection_replies].iter() {
         match client.build_post("/collections").json(&each).send().await {
-            Ok(a) => match a.status().as_u16() {
+            Ok(r) => match r.status().as_u16() {
                 201 => {
                     log::warn!(
                         "Collection {} created successfully.",
@@ -97,42 +97,30 @@ async fn create_typesense_collections() -> Result<(), reqwest::Error> {
                     );
                 }
                 400 => {
-                    let text = a.text().await.unwrap();
                     log::warn!(
                         "Create collection {} failed with bad request. {}",
                         each["name"].as_str().unwrap(),
-                        text
+                        r.text().await.unwrap()
                     );
                     panic!(
                         "Bad Request - The request could not be understood due to malformed syntax."
                     )
                 }
-                401 => panic!("Unauthorized - Your API key is wrong."),
-                404 => panic!("Not Found - The requested resource is not found."),
                 409 => {
                     log::warn!(
                         "Collection {} already exists. Skip creation.",
                         each["name"].as_str().unwrap()
                     );
                 }
-                422 => {
-                    let text = a.text().await.unwrap();
+                _ => {
                     log::warn!(
-                        "Create collection {} failed with bad request. {}",
+                        "{} Create collection {} failed with response. {}",
+                        r.status().as_u16(),
                         each["name"].as_str().unwrap(),
-                        text
+                        r.text().await.unwrap()
                     );
-                    panic!(
-                        "Unprocessable Entity - Request is well-formed, but cannot be processed."
-                    )
+                    panic!("Unknown error when creating collections.")
                 }
-                503 => panic!(
-                    "Service Unavailable - We’re temporarily offline. Please try again later."
-                ),
-                _ => panic!(
-                    "Unknown error when creating collections. Status code:{}",
-                    a.status().as_u16()
-                ),
             },
             Err(e) => panic!("Err when create typesense collections,{:?}", e),
         }

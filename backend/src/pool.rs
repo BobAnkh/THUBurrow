@@ -28,7 +28,7 @@ impl DeadManager for deadpool_redis::Manager {
 
 /// Redis Connection Pool
 #[derive(Database)]
-#[database("keydb")]
+#[database("redis")]
 pub struct RedisDb(RedisPoolWrapper);
 
 impl RedisDb {

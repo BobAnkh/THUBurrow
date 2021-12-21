@@ -12,7 +12,9 @@ use sea_orm::{
 };
 use std::collections::HashMap;
 
-use crate::config::content::{MAX_SECTION, MAX_TAG, POST_PER_PAGE, REPLY_PER_PAGE, POST_DELETE_DURATION};
+use crate::config::content::{
+    MAX_SECTION, MAX_TAG, POST_DELETE_DURATION, POST_PER_PAGE, REPLY_PER_PAGE,
+};
 use crate::db::{self, prelude::*};
 use crate::models::search::SearchPostData;
 use crate::models::{content::*, error::*, pulsar::*};

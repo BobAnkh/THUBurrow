@@ -157,36 +157,37 @@ mod tests {
             badge: "badge".to_string(),
             avatar: "default.jpg".to_string(),
         };
-        // let burrow_banned = burrow::Model {
-        //     burrow_id,
-        //     title: title.clone(),
-        //     description: description.clone(),
-        //     uid: 123i64,
-        //     burrow_state: 0i32,
-        //     post_num,
-        //     create_time: now,
-        //     update_time: now,
-        //     credit: 1i32,
-        //     badge: "badge".to_string(),
-        // };
+        let burrow_banned = burrow::Model {
+            burrow_id,
+            title: title.clone(),
+            description: description.clone(),
+            uid: 123i64,
+            burrow_state: 1i32,
+            post_num,
+            create_time: now,
+            update_time: now,
+            credit: 1i32,
+            badge: "badge".to_string(),
+            avatar: "default.jpg".to_string(),
+        };
         let burrow_ref = &burrow;
-        // let burrow_banned_ref = &burrow_banned;
+        let burrow_banned_ref = &burrow_banned;
         let burrow_data = BurrowMetadata {
             burrow_id,
             title,
             description: description.clone(),
             post_num,
         };
-        // let burrow_banned_data = BurrowMetadata {
-        //     burrow_id,
-        //     title: "Admin has banned this burrow".to_string(),
-        //     description,
-        //     post_num,
-        // };
+        let burrow_banned_data = BurrowMetadata {
+            burrow_id,
+            title: "Admin has banned this burrow".to_string(),
+            description: "Admin has banned this burrow".to_string(),
+            post_num,
+        };
         assert_eq!(burrow_data, burrow_ref.into());
-        // assert_eq!(burrow_banned_data, burrow_banned_ref.into());
+        assert_eq!(burrow_banned_data, burrow_banned_ref.into());
         assert_eq!(burrow_data, burrow.into());
-        // assert_eq!(burrow_banned_data, burrow_banned.into());
+        assert_eq!(burrow_banned_data, burrow_banned.into());
     }
 
     #[test]

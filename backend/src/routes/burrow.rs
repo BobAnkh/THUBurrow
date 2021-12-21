@@ -7,7 +7,7 @@ use rocket::{Build, Rocket};
 use rocket_db_pools::Connection;
 use sea_orm::{entity::*, query::*, DbBackend, DbErr};
 
-use crate::config::burrow::{BURROW_LIMIT, BURROW_CREATE_DURATION};
+use crate::config::burrow::{BURROW_CREATE_DURATION, BURROW_LIMIT};
 use crate::config::content::REPLY_PER_PAGE;
 use crate::db;
 use crate::models::{burrow::*, content::Post, error::*, pulsar::*};
