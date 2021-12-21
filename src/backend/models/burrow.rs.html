@@ -199,6 +199,7 @@
 <span id="199">199</span>
 <span id="200">200</span>
 <span id="201">201</span>
+<span id="202">202</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Models of burrow</span>
 
 <span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">db::burrow</span>, <span class="ident">models::content::Post</span>};
@@ -358,36 +359,37 @@
             <span class="ident">badge</span>: <span class="string">&quot;badge&quot;</span>.<span class="ident">to_string</span>(),
             <span class="ident">avatar</span>: <span class="string">&quot;default.jpg&quot;</span>.<span class="ident">to_string</span>(),
         };
-        <span class="comment">// let burrow_banned = burrow::Model {</span>
-        <span class="comment">//     burrow_id,</span>
-        <span class="comment">//     title: title.clone(),</span>
-        <span class="comment">//     description: description.clone(),</span>
-        <span class="comment">//     uid: 123i64,</span>
-        <span class="comment">//     burrow_state: 0i32,</span>
-        <span class="comment">//     post_num,</span>
-        <span class="comment">//     create_time: now,</span>
-        <span class="comment">//     update_time: now,</span>
-        <span class="comment">//     credit: 1i32,</span>
-        <span class="comment">//     badge: &quot;badge&quot;.to_string(),</span>
-        <span class="comment">// };</span>
+        <span class="kw">let</span> <span class="ident">burrow_banned</span> <span class="op">=</span> <span class="ident">burrow::Model</span> {
+            <span class="ident">burrow_id</span>,
+            <span class="ident">title</span>: <span class="ident">title</span>.<span class="ident">clone</span>(),
+            <span class="ident">description</span>: <span class="ident">description</span>.<span class="ident">clone</span>(),
+            <span class="ident">uid</span>: <span class="number">123i64</span>,
+            <span class="ident">burrow_state</span>: <span class="number">1i32</span>,
+            <span class="ident">post_num</span>,
+            <span class="ident">create_time</span>: <span class="ident">now</span>,
+            <span class="ident">update_time</span>: <span class="ident">now</span>,
+            <span class="ident">credit</span>: <span class="number">1i32</span>,
+            <span class="ident">badge</span>: <span class="string">&quot;badge&quot;</span>.<span class="ident">to_string</span>(),
+            <span class="ident">avatar</span>: <span class="string">&quot;default.jpg&quot;</span>.<span class="ident">to_string</span>(),
+        };
         <span class="kw">let</span> <span class="ident">burrow_ref</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">burrow</span>;
-        <span class="comment">// let burrow_banned_ref = &amp;burrow_banned;</span>
+        <span class="kw">let</span> <span class="ident">burrow_banned_ref</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">burrow_banned</span>;
         <span class="kw">let</span> <span class="ident">burrow_data</span> <span class="op">=</span> <span class="ident">BurrowMetadata</span> {
             <span class="ident">burrow_id</span>,
             <span class="ident">title</span>,
             <span class="ident">description</span>: <span class="ident">description</span>.<span class="ident">clone</span>(),
             <span class="ident">post_num</span>,
         };
-        <span class="comment">// let burrow_banned_data = BurrowMetadata {</span>
-        <span class="comment">//     burrow_id,</span>
-        <span class="comment">//     title: &quot;Admin has banned this burrow&quot;.to_string(),</span>
-        <span class="comment">//     description,</span>
-        <span class="comment">//     post_num,</span>
-        <span class="comment">// };</span>
+        <span class="kw">let</span> <span class="ident">burrow_banned_data</span> <span class="op">=</span> <span class="ident">BurrowMetadata</span> {
+            <span class="ident">burrow_id</span>,
+            <span class="ident">title</span>: <span class="string">&quot;Admin has banned this burrow&quot;</span>.<span class="ident">to_string</span>(),
+            <span class="ident">description</span>: <span class="string">&quot;Admin has banned this burrow&quot;</span>.<span class="ident">to_string</span>(),
+            <span class="ident">post_num</span>,
+        };
         <span class="macro">assert_eq!</span>(<span class="ident">burrow_data</span>, <span class="ident">burrow_ref</span>.<span class="ident">into</span>());
-        <span class="comment">// assert_eq!(burrow_banned_data, burrow_banned_ref.into());</span>
+        <span class="macro">assert_eq!</span>(<span class="ident">burrow_banned_data</span>, <span class="ident">burrow_banned_ref</span>.<span class="ident">into</span>());
         <span class="macro">assert_eq!</span>(<span class="ident">burrow_data</span>, <span class="ident">burrow</span>.<span class="ident">into</span>());
-        <span class="comment">// assert_eq!(burrow_banned_data, burrow_banned.into());</span>
+        <span class="macro">assert_eq!</span>(<span class="ident">burrow_banned_data</span>, <span class="ident">burrow_banned</span>.<span class="ident">into</span>());
     }
 
     <span class="attribute">#[<span class="ident">test</span>]</span>

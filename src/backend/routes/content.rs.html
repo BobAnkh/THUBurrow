@@ -1192,6 +1192,8 @@
 <span id="1192">1192</span>
 <span id="1193">1193</span>
 <span id="1194">1194</span>
+<span id="1195">1195</span>
+<span id="1196">1196</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Routes for content</span>
 
 <span class="kw">use</span> <span class="ident">chrono</span>::{<span class="ident">prelude</span>::<span class="kw-2">*</span>, <span class="ident">Duration</span>};
@@ -1206,7 +1208,9 @@
 };
 <span class="kw">use</span> <span class="ident">std::collections::HashMap</span>;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::config::content</span>::{<span class="ident">MAX_SECTION</span>, <span class="ident">MAX_TAG</span>, <span class="ident">POST_PER_PAGE</span>, <span class="ident">REPLY_PER_PAGE</span>, <span class="ident">POST_DELETE_DURATION</span>};
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::config::content</span>::{
+    <span class="ident">MAX_SECTION</span>, <span class="ident">MAX_TAG</span>, <span class="ident">POST_DELETE_DURATION</span>, <span class="ident">POST_PER_PAGE</span>, <span class="ident">REPLY_PER_PAGE</span>,
+};
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::db</span>::{<span class="self">self</span>, <span class="ident">prelude</span>::<span class="kw-2">*</span>};
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::models::search::SearchPostData</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::models</span>::{<span class="ident">content</span>::<span class="kw-2">*</span>, <span class="ident">error</span>::<span class="kw-2">*</span>, <span class="ident">pulsar</span>::<span class="kw-2">*</span>};

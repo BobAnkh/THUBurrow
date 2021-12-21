@@ -435,10 +435,6 @@
 <span id="435">435</span>
 <span id="436">436</span>
 <span id="437">437</span>
-<span id="438">438</span>
-<span id="439">439</span>
-<span id="440">440</span>
-<span id="441">441</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Module for authentication</span>
 
 <span class="kw">use</span> <span class="ident">crypto::digest::Digest</span>;
@@ -851,17 +847,13 @@
                         <span class="string">&quot;Authentication token is invalid.&quot;</span>,
                     ),
                 )),
-                <span class="ident">ValidToken::DatabaseErr</span> =&gt; <span class="ident">Outcome::Failure</span>((
-                    <span class="ident">Status::InternalServerError</span>,
-                    <span class="ident">ErrorResponse::build</span>(<span class="ident">ErrorCode::DatabaseErr</span>, <span class="string">&quot;&quot;</span>),
-                )),
+                <span class="ident">ValidToken::DatabaseErr</span> =&gt; {
+                    <span class="ident">Outcome::Failure</span>((<span class="ident">Status::InternalServerError</span>, <span class="ident">ErrorResponse::default</span>()))
+                }
                 <span class="ident">ValidToken::Refresh</span>(<span class="ident">id</span>) =&gt; <span class="ident">Outcome::Success</span>(<span class="ident">Auth</span> { <span class="ident">id</span>: <span class="kw-2">*</span><span class="ident">id</span> }),
                 <span class="ident">ValidToken::Valid</span>(<span class="ident">id</span>) =&gt; <span class="ident">Outcome::Success</span>(<span class="ident">Auth</span> { <span class="ident">id</span>: <span class="kw-2">*</span><span class="ident">id</span> }),
             },
-            <span class="prelude-val">None</span> =&gt; <span class="ident">Outcome::Failure</span>((
-                <span class="ident">Status::InternalServerError</span>,
-                <span class="ident">ErrorResponse::build</span>(<span class="ident">ErrorCode::DatabaseErr</span>, <span class="string">&quot;&quot;</span>),
-            )),
+            <span class="prelude-val">None</span> =&gt; <span class="ident">Outcome::Failure</span>((<span class="ident">Status::InternalServerError</span>, <span class="ident">ErrorResponse::default</span>())),
         }
     }
 }

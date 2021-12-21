@@ -590,7 +590,7 @@
 <span class="kw">use</span> <span class="ident">rocket_db_pools::Connection</span>;
 <span class="kw">use</span> <span class="ident">sea_orm</span>::{<span class="ident">entity</span>::<span class="kw-2">*</span>, <span class="ident">query</span>::<span class="kw-2">*</span>, <span class="ident">DbBackend</span>, <span class="ident">DbErr</span>};
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::config::burrow</span>::{<span class="ident">BURROW_LIMIT</span>, <span class="ident">BURROW_CREATE_DURATION</span>};
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::config::burrow</span>::{<span class="ident">BURROW_CREATE_DURATION</span>, <span class="ident">BURROW_LIMIT</span>};
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::config::content::REPLY_PER_PAGE</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::db</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::models</span>::{<span class="ident">burrow</span>::<span class="kw-2">*</span>, <span class="ident">content::Post</span>, <span class="ident">error</span>::<span class="kw-2">*</span>, <span class="ident">pulsar</span>::<span class="kw-2">*</span>};

@@ -754,18 +754,6 @@
 <span id="754">754</span>
 <span id="755">755</span>
 <span id="756">756</span>
-<span id="757">757</span>
-<span id="758">758</span>
-<span id="759">759</span>
-<span id="760">760</span>
-<span id="761">761</span>
-<span id="762">762</span>
-<span id="763">763</span>
-<span id="764">764</span>
-<span id="765">765</span>
-<span id="766">766</span>
-<span id="767">767</span>
-<span id="768">768</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Tasks for task_executor</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! This module contains a bunch of functions, each of which represents a background</span>
@@ -841,14 +829,14 @@
             {<span class="string">&quot;name&quot;</span>: <span class="string">&quot;post_id&quot;</span>, <span class="string">&quot;type&quot;</span>: <span class="string">&quot;int64&quot;</span>},
             {<span class="string">&quot;name&quot;</span>: <span class="string">&quot;burrow_id&quot;</span>, <span class="string">&quot;type&quot;</span>: <span class="string">&quot;int64&quot;</span>},
             {<span class="string">&quot;name&quot;</span>: <span class="string">&quot;title&quot;</span>, <span class="string">&quot;type&quot;</span>: <span class="string">&quot;string&quot;</span>, <span class="string">&quot;locale&quot;</span>: <span class="string">&quot;zh&quot;</span>},
-            {<span class="string">&quot;name&quot;</span>: <span class="string">&quot;section&quot;</span>, <span class="string">&quot;type&quot;</span>: <span class="string">&quot;string[]&quot;</span>, <span class="string">&quot;facet&quot;</span>:<span class="bool-val">true</span>},
-            {<span class="string">&quot;name&quot;</span>: <span class="string">&quot;tag&quot;</span>, <span class="string">&quot;type&quot;</span>: <span class="string">&quot;string[]&quot;</span>, <span class="string">&quot;facet&quot;</span>:<span class="bool-val">true</span>},
+            {<span class="string">&quot;name&quot;</span>: <span class="string">&quot;section&quot;</span>, <span class="string">&quot;type&quot;</span>: <span class="string">&quot;string[]&quot;</span>, <span class="string">&quot;facet&quot;</span>: <span class="bool-val">true</span>},
+            {<span class="string">&quot;name&quot;</span>: <span class="string">&quot;tag&quot;</span>, <span class="string">&quot;type&quot;</span>: <span class="string">&quot;string[]&quot;</span>, <span class="string">&quot;facet&quot;</span>: <span class="bool-val">true</span>},
         ]
     });
     <span class="kw">let</span> <span class="ident">collection_replies</span> <span class="op">=</span> <span class="macro">json!</span>({
         <span class="string">&quot;name&quot;</span>: <span class="string">&quot;replies&quot;</span>,
         <span class="string">&quot;fields&quot;</span>: [
-            {<span class="string">&quot;name&quot;</span>: <span class="string">&quot;post_id&quot;</span>, <span class="string">&quot;type&quot;</span>: <span class="string">&quot;int64&quot;</span>, <span class="string">&quot;facet&quot;</span>:<span class="bool-val">true</span>},
+            {<span class="string">&quot;name&quot;</span>: <span class="string">&quot;post_id&quot;</span>, <span class="string">&quot;type&quot;</span>: <span class="string">&quot;int64&quot;</span>, <span class="string">&quot;facet&quot;</span>: <span class="bool-val">true</span>},
             {<span class="string">&quot;name&quot;</span>: <span class="string">&quot;reply_id&quot;</span>, <span class="string">&quot;type&quot;</span>: <span class="string">&quot;int32&quot;</span>, <span class="string">&quot;index&quot;</span>: <span class="bool-val">false</span> , <span class="string">&quot;optional&quot;</span>: <span class="bool-val">true</span>},
             {<span class="string">&quot;name&quot;</span>: <span class="string">&quot;burrow_id&quot;</span>, <span class="string">&quot;type&quot;</span>: <span class="string">&quot;int64&quot;</span>},
             {<span class="string">&quot;name&quot;</span>: <span class="string">&quot;content&quot;</span>, <span class="string">&quot;type&quot;</span>: <span class="string">&quot;string&quot;</span>, <span class="string">&quot;locale&quot;</span>: <span class="string">&quot;zh&quot;</span>},
@@ -857,7 +845,7 @@
     <span class="kw">let</span> <span class="ident">client</span> <span class="op">=</span> <span class="ident">reqwest::Client::new</span>();
     <span class="kw">for</span> <span class="ident">each</span> <span class="kw">in</span> [<span class="ident">collection_burrows</span>, <span class="ident">collection_posts</span>, <span class="ident">collection_replies</span>].<span class="ident">iter</span>() {
         <span class="kw">match</span> <span class="ident">client</span>.<span class="ident">build_post</span>(<span class="string">&quot;/collections&quot;</span>).<span class="ident">json</span>(<span class="kw-2">&amp;</span><span class="ident">each</span>).<span class="ident">send</span>().<span class="kw">await</span> {
-            <span class="prelude-val">Ok</span>(<span class="ident">a</span>) =&gt; <span class="kw">match</span> <span class="ident">a</span>.<span class="ident">status</span>().<span class="ident">as_u16</span>() {
+            <span class="prelude-val">Ok</span>(<span class="ident">r</span>) =&gt; <span class="kw">match</span> <span class="ident">r</span>.<span class="ident">status</span>().<span class="ident">as_u16</span>() {
                 <span class="number">201</span> =&gt; {
                     <span class="macro">log::warn!</span>(
                         <span class="string">&quot;Collection {} created successfully.&quot;</span>,
@@ -865,42 +853,30 @@
                     );
                 }
                 <span class="number">400</span> =&gt; {
-                    <span class="kw">let</span> <span class="ident">text</span> <span class="op">=</span> <span class="ident">a</span>.<span class="ident">text</span>().<span class="kw">await</span>.<span class="ident">unwrap</span>();
                     <span class="macro">log::warn!</span>(
                         <span class="string">&quot;Create collection {} failed with bad request. {}&quot;</span>,
                         <span class="ident">each</span>[<span class="string">&quot;name&quot;</span>].<span class="ident">as_str</span>().<span class="ident">unwrap</span>(),
-                        <span class="ident">text</span>
+                        <span class="ident">r</span>.<span class="ident">text</span>().<span class="kw">await</span>.<span class="ident">unwrap</span>()
                     );
                     <span class="macro">panic!</span>(
                         <span class="string">&quot;Bad Request - The request could not be understood due to malformed syntax.&quot;</span>
                     )
                 }
-                <span class="number">401</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Unauthorized - Your API key is wrong.&quot;</span>),
-                <span class="number">404</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Not Found - The requested resource is not found.&quot;</span>),
                 <span class="number">409</span> =&gt; {
                     <span class="macro">log::warn!</span>(
                         <span class="string">&quot;Collection {} already exists. Skip creation.&quot;</span>,
                         <span class="ident">each</span>[<span class="string">&quot;name&quot;</span>].<span class="ident">as_str</span>().<span class="ident">unwrap</span>()
                     );
                 }
-                <span class="number">422</span> =&gt; {
-                    <span class="kw">let</span> <span class="ident">text</span> <span class="op">=</span> <span class="ident">a</span>.<span class="ident">text</span>().<span class="kw">await</span>.<span class="ident">unwrap</span>();
+                <span class="kw">_</span> =&gt; {
                     <span class="macro">log::warn!</span>(
-                        <span class="string">&quot;Create collection {} failed with bad request. {}&quot;</span>,
+                        <span class="string">&quot;{} Create collection {} failed with response. {}&quot;</span>,
+                        <span class="ident">r</span>.<span class="ident">status</span>().<span class="ident">as_u16</span>(),
                         <span class="ident">each</span>[<span class="string">&quot;name&quot;</span>].<span class="ident">as_str</span>().<span class="ident">unwrap</span>(),
-                        <span class="ident">text</span>
+                        <span class="ident">r</span>.<span class="ident">text</span>().<span class="kw">await</span>.<span class="ident">unwrap</span>()
                     );
-                    <span class="macro">panic!</span>(
-                        <span class="string">&quot;Unprocessable Entity - Request is well-formed, but cannot be processed.&quot;</span>
-                    )
+                    <span class="macro">panic!</span>(<span class="string">&quot;Unknown error when creating collections.&quot;</span>)
                 }
-                <span class="number">503</span> =&gt; <span class="macro">panic!</span>(
-                    <span class="string">&quot;Service Unavailable - We’re temporarily offline. Please try again later.&quot;</span>
-                ),
-                <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(
-                    <span class="string">&quot;Unknown error when creating collections. Status code:{}&quot;</span>,
-                    <span class="ident">a</span>.<span class="ident">status</span>().<span class="ident">as_u16</span>()
-                ),
             },
             <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Err when create typesense collections,{:?}&quot;</span>, <span class="ident">e</span>),
         }
