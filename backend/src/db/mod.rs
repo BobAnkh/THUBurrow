@@ -2,6 +2,7 @@
 
 pub mod prelude;
 
+pub mod admin;
 pub mod burrow;
 pub mod content_post;
 pub mod content_reply;

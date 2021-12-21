@@ -64,6 +64,7 @@ pub mod postgres {
         let _ = create_user_status_table(conn).await;
         let _ = create_burrow_table(conn).await;
         let _ = create_user_follow_table(conn).await;
+        let _ = create_admin_table(conn).await;
         // match t {
         //     Ok(_) => {}
         //     Err(e) => {
@@ -461,6 +462,31 @@ pub mod postgres {
                 Index::create()
                     .col(db::user_follow::Column::Uid)
                     .col(db::user_follow::Column::BurrowId),
+            )
+            .to_owned();
+        build_statement(db, &stmt).await
+    }
+
+    async fn create_admin_table(db: &DbConn) -> Result<ExecResult, DbErr> {
+        let stmt = sea_query::Table::create()
+            .table(db::admin::Entity)
+            .if_not_exists()
+            .col(
+                ColumnDef::new(db::admin::Column::Uid)
+                    .big_integer()
+                    .not_null()
+                    .primary_key(),
+            )
+            .col(
+                ColumnDef::new(db::admin::Column::Role)
+                    .integer()
+                    .not_null()
+                    .default(0),
+            )
+            .col(
+                ColumnDef::new(db::admin::Column::CreateTime)
+                    .timestamp_with_time_zone()
+                    .not_null(),
             )
             .to_owned();
         build_statement(db, &stmt).await

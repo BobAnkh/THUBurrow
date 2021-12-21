@@ -1,3 +1,7 @@
+//! Backend lib of THUBurrow
+//!
+//! See source code for more details: [Github](https://github.com/BobAnkh/THUBurrow)
+
 #[macro_use]
 extern crate rocket;
 
