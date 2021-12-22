@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Button, Form, List, message, Space } from 'antd';
 import TextArea from 'antd/lib/input/TextArea';
 import axios, { AxiosError } from 'axios';
+import { MarkdownViewer } from './markdown/markdown';
 
 axios.defaults.withCredentials = true;
 axios.defaults.headers.post['Content-Type'] = 'application/json';
@@ -86,7 +87,10 @@ export default function ReplyList({
             description={`#${item.reply_id}`}
           />
           {userBid.indexOf(item.burrow_id) === -1 ? (
-            item.content
+            //item.content
+            MarkdownViewer(
+              '![微信图片_20211201153143](https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fimg.shangdixinxi.com%2Fup%2Finfo%2F201912%2F20191202214508686820.png&refer=http%3A%2F%2Fimg.shangdixinxi.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=jpeg?sec=1642702403&t=46f7fe8a78c46f8dd98b1799cb659c60)'
+            )
           ) : edit[index] === false ? (
             <>
               <p>{item.content}</p>

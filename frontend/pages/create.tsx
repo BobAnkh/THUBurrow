@@ -5,6 +5,7 @@ import axios, { AxiosError } from 'axios';
 import { NextPage } from 'next';
 import GlobalHeader from '../components/header/header';
 import { useRouter } from 'next/router';
+import { Markdown } from '../components';
 
 axios.defaults.withCredentials = true;
 axios.defaults.headers.post['Content-Type'] = 'application/json';
@@ -90,6 +91,9 @@ const Create: NextPage = () => {
               rules={[{ required: true, message: '标题不能为空' }]}
             >
               <Input placeholder='请输入标题' />
+            </Form.Item>
+            <Form.Item label='内容'>
+              <Markdown content='## 1' mode='edit' />
             </Form.Item>
             <Form.Item
               label='内容'

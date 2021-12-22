@@ -12,7 +12,7 @@ import MdEditor from 'react-markdown-editor-lite';
 import { UploadFunc } from 'react-markdown-editor-lite/cjs/share/var';
 import 'react-markdown-editor-lite/lib/index.css';
 
-import './markdown.css';
+import './markdown.module.css';
 
 const MarkdownProcessor = unified()
   .use(remarkParse)
@@ -25,9 +25,9 @@ const MarkdownProcessor = unified()
   .use(rehypeReact, { createElement: React.createElement })
   .freeze();
 
-const MarkdownViewer = (text: string) => (
-  <div>{MarkdownProcessor.processSync(text).result}</div>
-);
+export function MarkdownViewer(text: string) {
+  return <div>{MarkdownProcessor.processSync(text).result}</div>;
+}
 
 interface MarkdownProps {
   content: string;
