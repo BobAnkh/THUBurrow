@@ -409,7 +409,7 @@
 <span class="doccomment">/// Pulsar Connection Pool</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Database</span>)]</span>
 <span class="attribute">#[<span class="ident">database</span>(<span class="string">&quot;pulsar-mq&quot;</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">PulsarSearchProducerMq</span>(<span class="ident">PulsarProducerPool</span>);
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">PulsarMq</span>(<span class="ident">PulsarProducerPool</span>);
 
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">PulsarProducerPool</span> {
     <span class="kw">pub</span> <span class="ident">pulsar</span>: <span class="ident">Pulsar</span><span class="op">&lt;</span><span class="ident">TokioExecutor</span><span class="op">&gt;</span>,

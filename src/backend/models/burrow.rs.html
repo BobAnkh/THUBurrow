@@ -200,6 +200,8 @@
 <span id="200">200</span>
 <span id="201">201</span>
 <span id="202">202</span>
+<span id="203">203</span>
+<span id="204">204</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Models of burrow</span>
 
 <span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">db::burrow</span>, <span class="ident">models::content::Post</span>};
@@ -358,6 +360,7 @@
             <span class="ident">credit</span>: <span class="number">0i32</span>,
             <span class="ident">badge</span>: <span class="string">&quot;badge&quot;</span>.<span class="ident">to_string</span>(),
             <span class="ident">avatar</span>: <span class="string">&quot;default.jpg&quot;</span>.<span class="ident">to_string</span>(),
+            <span class="ident">permission</span>: <span class="number">0</span>,
         };
         <span class="kw">let</span> <span class="ident">burrow_banned</span> <span class="op">=</span> <span class="ident">burrow::Model</span> {
             <span class="ident">burrow_id</span>,
@@ -371,6 +374,7 @@
             <span class="ident">credit</span>: <span class="number">1i32</span>,
             <span class="ident">badge</span>: <span class="string">&quot;badge&quot;</span>.<span class="ident">to_string</span>(),
             <span class="ident">avatar</span>: <span class="string">&quot;default.jpg&quot;</span>.<span class="ident">to_string</span>(),
+            <span class="ident">permission</span>: <span class="number">0</span>,
         };
         <span class="kw">let</span> <span class="ident">burrow_ref</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">burrow</span>;
         <span class="kw">let</span> <span class="ident">burrow_banned_ref</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">burrow_banned</span>;

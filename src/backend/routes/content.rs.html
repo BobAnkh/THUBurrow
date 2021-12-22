@@ -1194,6 +1194,7 @@
 <span id="1194">1194</span>
 <span id="1195">1195</span>
 <span id="1196">1196</span>
+<span id="1197">1197</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Routes for content</span>
 
 <span class="kw">use</span> <span class="ident">chrono</span>::{<span class="ident">prelude</span>::<span class="kw-2">*</span>, <span class="ident">Duration</span>};
@@ -1214,7 +1215,7 @@
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::db</span>::{<span class="self">self</span>, <span class="ident">prelude</span>::<span class="kw-2">*</span>};
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::models::search::SearchPostData</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::models</span>::{<span class="ident">content</span>::<span class="kw-2">*</span>, <span class="ident">error</span>::<span class="kw-2">*</span>, <span class="ident">pulsar</span>::<span class="kw-2">*</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::pool</span>::{<span class="ident">PgDb</span>, <span class="ident">PulsarSearchProducerMq</span>, <span class="ident">Search</span>, <span class="ident">TypesenseSearch</span>};
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::pool</span>::{<span class="ident">PgDb</span>, <span class="ident">PulsarMq</span>, <span class="ident">Search</span>, <span class="ident">TypesenseSearch</span>};
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::utils::auth::Auth</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::utils::burrow_valid::is_valid_burrow</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::utils::dedup::remove_duplicate</span>;
@@ -1290,7 +1291,7 @@
 <span class="doccomment">/// - `Auth`: Authenticated user</span>
 <span class="doccomment">/// - `Connection&lt;PgDb&gt;`: Postgres connection</span>
 <span class="doccomment">/// - `Json&lt;PostInfo&gt;`: Post information</span>
-<span class="doccomment">/// - `Connection&lt;PulsarSearchProducerMq&gt;`: Pulsar connection</span>
+<span class="doccomment">/// - `Connection&lt;PulsarMq&gt;`: Pulsar connection</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// ## Returns</span>
 <span class="doccomment">///</span>
@@ -1312,7 +1313,7 @@
     <span class="ident">auth</span>: <span class="ident">Auth</span>,
     <span class="ident">db</span>: <span class="ident">Connection</span><span class="op">&lt;</span><span class="ident">PgDb</span><span class="op">&gt;</span>,
     <span class="ident">post_info</span>: <span class="ident">Json</span><span class="op">&lt;</span><span class="ident">PostInfo</span><span class="op">&gt;</span>,
-    <span class="kw-2">mut</span> <span class="ident">producer</span>: <span class="ident">Connection</span><span class="op">&lt;</span><span class="ident">PulsarSearchProducerMq</span><span class="op">&gt;</span>,
+    <span class="kw-2">mut</span> <span class="ident">producer</span>: <span class="ident">Connection</span><span class="op">&lt;</span><span class="ident">PulsarMq</span><span class="op">&gt;</span>,
 ) -&gt; (
     <span class="ident">Status</span>,
     <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Json</span><span class="op">&lt;</span><span class="ident">PostCreateResponse</span><span class="op">&gt;</span>, <span class="ident">Json</span><span class="op">&lt;</span><span class="ident">ErrorResponse</span><span class="op">&gt;</span><span class="op">&gt;</span>,
@@ -1597,6 +1598,7 @@
 <span class="doccomment">/// - `Connection&lt;PgDb&gt;`: Postgres connection</span>
 <span class="doccomment">/// - `i64`: Post id</span>
 <span class="doccomment">/// - `Json&lt;PostUpdateInfo&gt;`: Updated post information</span>
+<span class="doccomment">/// - `Connection&lt;PulsarMq`: Pulsar MQ connection</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// ## Returns</span>
 <span class="doccomment">///</span>
@@ -1620,7 +1622,7 @@
     <span class="ident">db</span>: <span class="ident">Connection</span><span class="op">&lt;</span><span class="ident">PgDb</span><span class="op">&gt;</span>,
     <span class="ident">post_id</span>: <span class="ident">i64</span>,
     <span class="ident">post_info</span>: <span class="ident">Json</span><span class="op">&lt;</span><span class="ident">PostUpdateInfo</span><span class="op">&gt;</span>,
-    <span class="kw-2">mut</span> <span class="ident">producer</span>: <span class="ident">Connection</span><span class="op">&lt;</span><span class="ident">PulsarSearchProducerMq</span><span class="op">&gt;</span>,
+    <span class="kw-2">mut</span> <span class="ident">producer</span>: <span class="ident">Connection</span><span class="op">&lt;</span><span class="ident">PulsarMq</span><span class="op">&gt;</span>,
 ) -&gt; (<span class="ident">Status</span>, <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">Json</span><span class="op">&lt;</span><span class="ident">ErrorResponse</span><span class="op">&gt;</span><span class="op">&gt;</span>) {
     <span class="kw">let</span> <span class="ident">pg_con</span> <span class="op">=</span> <span class="ident">db</span>.<span class="ident">into_inner</span>();
     <span class="kw">let</span> <span class="ident">content</span> <span class="op">=</span> <span class="ident">post_info</span>.<span class="ident">into_inner</span>();
@@ -1758,7 +1760,7 @@
 <span class="doccomment">/// - `Auth`: Authenticated user</span>
 <span class="doccomment">/// - `Connection&lt;PgDb&gt;`: Postgres connection</span>
 <span class="doccomment">/// - `i64`: Post id</span>
-<span class="doccomment">/// - `Connection&lt;PulsarSearchProducerMq&gt;`: Pulsar connection</span>
+<span class="doccomment">/// - `Connection&lt;PulsarMq&gt;`: Pulsar connection</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// ## Returns</span>
 <span class="doccomment">///</span>
@@ -1779,7 +1781,7 @@
     <span class="ident">auth</span>: <span class="ident">Auth</span>,
     <span class="ident">db</span>: <span class="ident">Connection</span><span class="op">&lt;</span><span class="ident">PgDb</span><span class="op">&gt;</span>,
     <span class="ident">post_id</span>: <span class="ident">i64</span>,
-    <span class="kw-2">mut</span> <span class="ident">producer</span>: <span class="ident">Connection</span><span class="op">&lt;</span><span class="ident">PulsarSearchProducerMq</span><span class="op">&gt;</span>,
+    <span class="kw-2">mut</span> <span class="ident">producer</span>: <span class="ident">Connection</span><span class="op">&lt;</span><span class="ident">PulsarMq</span><span class="op">&gt;</span>,
 ) -&gt; (<span class="ident">Status</span>, <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">Json</span><span class="op">&lt;</span><span class="ident">ErrorResponse</span><span class="op">&gt;</span><span class="op">&gt;</span>) {
     <span class="kw">let</span> <span class="ident">pg_con</span> <span class="op">=</span> <span class="ident">db</span>.<span class="ident">into_inner</span>();
     <span class="kw">let</span> <span class="ident">now</span> <span class="op">=</span> <span class="ident">Utc::now</span>().<span class="ident">with_timezone</span>(<span class="kw-2">&amp;</span><span class="ident">FixedOffset::east</span>(<span class="number">8</span> <span class="op">*</span> <span class="number">3600</span>));
@@ -2078,7 +2080,7 @@
 <span class="doccomment">/// - `Auth`: Authenticated user</span>
 <span class="doccomment">/// - `Connection&lt;PgDb&gt;`: Postgres connection</span>
 <span class="doccomment">/// - `Json&lt;ReplyInfo&gt;`: Reply information</span>
-<span class="doccomment">/// - `Connection&lt;PulsarSearchProducerMq&gt;`: Pulsar connection</span>
+<span class="doccomment">/// - `Connection&lt;PulsarMq&gt;`: Pulsar connection</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// ## Returns</span>
 <span class="doccomment">///</span>
@@ -2099,7 +2101,7 @@
     <span class="ident">auth</span>: <span class="ident">Auth</span>,
     <span class="ident">db</span>: <span class="ident">Connection</span><span class="op">&lt;</span><span class="ident">PgDb</span><span class="op">&gt;</span>,
     <span class="ident">reply_info</span>: <span class="ident">Json</span><span class="op">&lt;</span><span class="ident">ReplyInfo</span><span class="op">&gt;</span>,
-    <span class="kw-2">mut</span> <span class="ident">producer</span>: <span class="ident">Connection</span><span class="op">&lt;</span><span class="ident">PulsarSearchProducerMq</span><span class="op">&gt;</span>,
+    <span class="kw-2">mut</span> <span class="ident">producer</span>: <span class="ident">Connection</span><span class="op">&lt;</span><span class="ident">PulsarMq</span><span class="op">&gt;</span>,
 ) -&gt; (
     <span class="ident">Status</span>,
     <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Json</span><span class="op">&lt;</span><span class="ident">ReplyCreateResponse</span><span class="op">&gt;</span>, <span class="ident">Json</span><span class="op">&lt;</span><span class="ident">ErrorResponse</span><span class="op">&gt;</span><span class="op">&gt;</span>,
@@ -2263,7 +2265,7 @@
     <span class="ident">auth</span>: <span class="ident">Auth</span>,
     <span class="ident">db</span>: <span class="ident">Connection</span><span class="op">&lt;</span><span class="ident">PgDb</span><span class="op">&gt;</span>,
     <span class="ident">reply_update_info</span>: <span class="ident">Json</span><span class="op">&lt;</span><span class="ident">ReplyUpdateInfo</span><span class="op">&gt;</span>,
-    <span class="kw-2">mut</span> <span class="ident">producer</span>: <span class="ident">Connection</span><span class="op">&lt;</span><span class="ident">PulsarSearchProducerMq</span><span class="op">&gt;</span>,
+    <span class="kw-2">mut</span> <span class="ident">producer</span>: <span class="ident">Connection</span><span class="op">&lt;</span><span class="ident">PulsarMq</span><span class="op">&gt;</span>,
 ) -&gt; (<span class="ident">Status</span>, <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">Json</span><span class="op">&lt;</span><span class="ident">ErrorResponse</span><span class="op">&gt;</span><span class="op">&gt;</span>) {
     <span class="kw">let</span> <span class="ident">pg_con</span> <span class="op">=</span> <span class="ident">db</span>.<span class="ident">into_inner</span>();
     <span class="comment">// get content info from request</span>

@@ -99,7 +99,7 @@
         .<span class="ident">manage</span>(<span class="ident">cors_handler</span>)
         .<span class="ident">attach</span>(<span class="ident">pool::PgDb::init</span>())
         .<span class="ident">attach</span>(<span class="ident">pool::RedisDb::init</span>())
-        .<span class="ident">attach</span>(<span class="ident">pool::PulsarSearchProducerMq::init</span>())
+        .<span class="ident">attach</span>(<span class="ident">pool::PulsarMq::init</span>())
         .<span class="ident">attach</span>(<span class="ident">pool::MinioImageStorage::init</span>())
         .<span class="ident">attach</span>(<span class="ident">pool::TypesenseSearch::init</span>())
         .<span class="ident">attach</span>(<span class="ident">AdHoc::on_ignite</span>(<span class="string">&quot;mount_routes&quot;</span>, <span class="ident">routes::routes_init</span>))

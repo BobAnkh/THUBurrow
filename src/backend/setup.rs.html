@@ -505,6 +505,30 @@
 <span id="505">505</span>
 <span id="506">506</span>
 <span id="507">507</span>
+<span id="508">508</span>
+<span id="509">509</span>
+<span id="510">510</span>
+<span id="511">511</span>
+<span id="512">512</span>
+<span id="513">513</span>
+<span id="514">514</span>
+<span id="515">515</span>
+<span id="516">516</span>
+<span id="517">517</span>
+<span id="518">518</span>
+<span id="519">519</span>
+<span id="520">520</span>
+<span id="521">521</span>
+<span id="522">522</span>
+<span id="523">523</span>
+<span id="524">524</span>
+<span id="525">525</span>
+<span id="526">526</span>
+<span id="527">527</span>
+<span id="528">528</span>
+<span id="529">529</span>
+<span id="530">530</span>
+<span id="531">531</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Setup of PostgreSQL database.</span>
 
 <span class="doccomment">/// Initialize the unique id generator.</span>
@@ -699,6 +723,12 @@
                     .<span class="ident">not_null</span>()
                     .<span class="ident">default</span>(<span class="string">&quot;&quot;</span>.<span class="ident">to_string</span>()),
             )
+            .<span class="ident">col</span>(
+                <span class="ident">ColumnDef::new</span>(<span class="ident">db::user_status::Column::Permission</span>)
+                    .<span class="ident">integer</span>()
+                    .<span class="ident">not_null</span>()
+                    .<span class="ident">default</span>(<span class="number">0</span>),
+            )
             .<span class="ident">to_owned</span>();
         <span class="ident">build_statement</span>(<span class="ident">db</span>, <span class="kw-2">&amp;</span><span class="ident">stmt</span>).<span class="kw">await</span>
     }
@@ -773,6 +803,12 @@
                     .<span class="ident">not_null</span>()
                     .<span class="ident">default</span>(<span class="number">0</span>),
             )
+            .<span class="ident">col</span>(
+                <span class="ident">ColumnDef::new</span>(<span class="ident">db::content_post::Column::Permission</span>)
+                    .<span class="ident">integer</span>()
+                    .<span class="ident">not_null</span>()
+                    .<span class="ident">default</span>(<span class="number">0</span>),
+            )
             .<span class="ident">to_owned</span>();
         <span class="comment">// println!(&quot;user table: {}&quot;, stmt.to_string(PostgresQueryBuilder));</span>
         <span class="ident">build_statement</span>(<span class="ident">db</span>, <span class="kw-2">&amp;</span><span class="ident">stmt</span>).<span class="kw">await</span>
@@ -814,6 +850,12 @@
             )
             .<span class="ident">col</span>(
                 <span class="ident">ColumnDef::new</span>(<span class="ident">db::content_reply::Column::ReplyState</span>)
+                    .<span class="ident">integer</span>()
+                    .<span class="ident">not_null</span>()
+                    .<span class="ident">default</span>(<span class="number">0</span>),
+            )
+            .<span class="ident">col</span>(
+                <span class="ident">ColumnDef::new</span>(<span class="ident">db::content_reply::Column::Permission</span>)
                     .<span class="ident">integer</span>()
                     .<span class="ident">not_null</span>()
                     .<span class="ident">default</span>(<span class="number">0</span>),
@@ -940,6 +982,12 @@
                     .<span class="ident">text</span>()
                     .<span class="ident">not_null</span>()
                     .<span class="ident">default</span>(<span class="string">&quot;default.jpg&quot;</span>.<span class="ident">to_string</span>()),
+            )
+            .<span class="ident">col</span>(
+                <span class="ident">ColumnDef::new</span>(<span class="ident">db::burrow::Column::Permission</span>)
+                    .<span class="ident">integer</span>()
+                    .<span class="ident">not_null</span>()
+                    .<span class="ident">default</span>(<span class="number">0</span>),
             )
             .<span class="ident">to_owned</span>();
         <span class="ident">build_statement</span>(<span class="ident">db</span>, <span class="kw-2">&amp;</span><span class="ident">stmt</span>).<span class="kw">await</span>

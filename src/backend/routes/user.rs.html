@@ -1373,7 +1373,7 @@
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::config::user::SEND_EMAIL_LIMIT</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::db</span>::{<span class="self">self</span>, <span class="ident">prelude</span>::<span class="kw-2">*</span>};
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::models</span>::{<span class="ident">burrow::BurrowMetadata</span>, <span class="ident">content::Post</span>, <span class="ident">error</span>::<span class="kw-2">*</span>, <span class="ident">pulsar</span>::<span class="kw-2">*</span>, <span class="ident">user</span>::<span class="kw-2">*</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::pool</span>::{<span class="ident">PgDb</span>, <span class="ident">PulsarSearchProducerMq</span>, <span class="ident">RedisDb</span>};
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::pool</span>::{<span class="ident">PgDb</span>, <span class="ident">PulsarMq</span>, <span class="ident">RedisDb</span>};
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::utils::auth</span>::{<span class="ident">delete_token</span>, <span class="ident">set_token</span>, <span class="ident">Auth</span>, <span class="ident">CookieOptions</span>};
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::utils::burrow_valid</span>::<span class="kw-2">*</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::utils::email</span>;
@@ -1414,7 +1414,7 @@
 <span class="doccomment">/// ## Parameters</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// - `Auth`: Authenticated user</span>
-<span class="doccomment">/// - `Connection&lt;PulsarSearchProduceMq&gt;`: Pulsar connection</span>
+<span class="doccomment">/// - `Connection&lt;PulsarMq&gt;`: Pulsar connection</span>
 <span class="doccomment">/// - `Json&lt;RelationData&gt;`: Json of relation between user and certain post/burrow</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// ## Returns</span>
@@ -1429,7 +1429,7 @@
 <span class="attribute">#[<span class="ident">post</span>(<span class="string">&quot;/relation&quot;</span>, <span class="ident">data</span> <span class="op">=</span> <span class="string">&quot;&lt;relation_info&gt;&quot;</span>, <span class="ident">format</span> <span class="op">=</span> <span class="string">&quot;json&quot;</span>)]</span>
 <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">user_relation</span>(
     <span class="ident">auth</span>: <span class="ident">Auth</span>,
-    <span class="kw-2">mut</span> <span class="ident">producer</span>: <span class="ident">Connection</span><span class="op">&lt;</span><span class="ident">PulsarSearchProducerMq</span><span class="op">&gt;</span>,
+    <span class="kw-2">mut</span> <span class="ident">producer</span>: <span class="ident">Connection</span><span class="op">&lt;</span><span class="ident">PulsarMq</span><span class="op">&gt;</span>,
     <span class="ident">relation_info</span>: <span class="ident">Json</span><span class="op">&lt;</span><span class="ident">RelationData</span><span class="op">&gt;</span>,
 ) -&gt; (<span class="ident">Status</span>, <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">Json</span><span class="op">&lt;</span><span class="ident">ErrorResponse</span><span class="op">&gt;</span><span class="op">&gt;</span>) {
     <span class="kw">let</span> <span class="ident">relation</span> <span class="op">=</span> <span class="ident">relation_info</span>.<span class="ident">into_inner</span>();
@@ -1459,7 +1459,7 @@
 <span class="doccomment">/// - `Connection&lt;PgDb&gt;`: Postgres connection</span>
 <span class="doccomment">/// - `Connection&lt;RedisDb&gt;`: Redis connection</span>
 <span class="doccomment">/// - `Json&lt;UserEmail&gt;`: Json of user email</span>
-<span class="doccomment">/// - `Connection&lt;PulsarSearchProducerMq&gt;`: Pulsar connection</span>
+<span class="doccomment">/// - `Connection&lt;PulsarMq&gt;`: Pulsar connection</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// ## Returns</span>
 <span class="doccomment">///</span>
@@ -1478,7 +1478,7 @@
     <span class="ident">db</span>: <span class="ident">Connection</span><span class="op">&lt;</span><span class="ident">PgDb</span><span class="op">&gt;</span>,
     <span class="ident">kvdb</span>: <span class="ident">Connection</span><span class="op">&lt;</span><span class="ident">RedisDb</span><span class="op">&gt;</span>,
     <span class="ident">email_info</span>: <span class="ident">Json</span><span class="op">&lt;</span><span class="ident">UserEmail</span><span class="op">&gt;</span>,
-    <span class="kw-2">mut</span> <span class="ident">producer</span>: <span class="ident">Connection</span><span class="op">&lt;</span><span class="ident">PulsarSearchProducerMq</span><span class="op">&gt;</span>,
+    <span class="kw-2">mut</span> <span class="ident">producer</span>: <span class="ident">Connection</span><span class="op">&lt;</span><span class="ident">PulsarMq</span><span class="op">&gt;</span>,
 ) -&gt; (<span class="ident">Status</span>, <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">Json</span><span class="op">&lt;</span><span class="ident">ErrorResponse</span><span class="op">&gt;</span><span class="op">&gt;</span>) {
     <span class="kw">let</span> <span class="ident">pg_con</span> <span class="op">=</span> <span class="ident">db</span>.<span class="ident">into_inner</span>();
     <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">kvdb_con</span> <span class="op">=</span> <span class="ident">kvdb</span>.<span class="ident">into_inner</span>();
@@ -1573,7 +1573,7 @@
 <span class="doccomment">/// - `Connection&lt;PgDb&gt;`: Postgres connection</span>
 <span class="doccomment">/// - `Connection&lt;RedisDb&gt;`: Redis connection</span>
 <span class="doccomment">/// - `Json&lt;UserEmail&gt;`: Json of user email</span>
-<span class="doccomment">/// - `Connection&lt;PulsarSearchProducerMq&gt;`: Pulsar connection</span>
+<span class="doccomment">/// - `Connection&lt;PulsarMq&gt;`: Pulsar connection</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// ## Returns</span>
 <span class="doccomment">///</span>
@@ -1592,7 +1592,7 @@
     <span class="ident">db</span>: <span class="ident">Connection</span><span class="op">&lt;</span><span class="ident">PgDb</span><span class="op">&gt;</span>,
     <span class="ident">kvdb</span>: <span class="ident">Connection</span><span class="op">&lt;</span><span class="ident">RedisDb</span><span class="op">&gt;</span>,
     <span class="ident">email_info</span>: <span class="ident">Json</span><span class="op">&lt;</span><span class="ident">UserEmail</span><span class="op">&gt;</span>,
-    <span class="kw-2">mut</span> <span class="ident">producer</span>: <span class="ident">Connection</span><span class="op">&lt;</span><span class="ident">PulsarSearchProducerMq</span><span class="op">&gt;</span>,
+    <span class="kw-2">mut</span> <span class="ident">producer</span>: <span class="ident">Connection</span><span class="op">&lt;</span><span class="ident">PulsarMq</span><span class="op">&gt;</span>,
 ) -&gt; (<span class="ident">Status</span>, <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">Json</span><span class="op">&lt;</span><span class="ident">ErrorResponse</span><span class="op">&gt;</span><span class="op">&gt;</span>) {
     <span class="kw">let</span> <span class="ident">pg_con</span> <span class="op">=</span> <span class="ident">db</span>.<span class="ident">into_inner</span>();
     <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">kvdb_con</span> <span class="op">=</span> <span class="ident">kvdb</span>.<span class="ident">into_inner</span>();

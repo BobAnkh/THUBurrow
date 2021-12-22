@@ -592,9 +592,9 @@
 
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::config::burrow</span>::{<span class="ident">BURROW_CREATE_DURATION</span>, <span class="ident">BURROW_LIMIT</span>};
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::config::content::REPLY_PER_PAGE</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::db</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::db</span>::{<span class="self">self</span>, <span class="ident">prelude</span>::<span class="kw-2">*</span>};
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::models</span>::{<span class="ident">burrow</span>::<span class="kw-2">*</span>, <span class="ident">content::Post</span>, <span class="ident">error</span>::<span class="kw-2">*</span>, <span class="ident">pulsar</span>::<span class="kw-2">*</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::pool</span>::{<span class="ident">PgDb</span>, <span class="ident">PulsarSearchProducerMq</span>};
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::pool</span>::{<span class="ident">PgDb</span>, <span class="ident">PulsarMq</span>};
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::utils::auth::Auth</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::utils::burrow_valid</span>::<span class="kw-2">*</span>;
 
@@ -666,7 +666,7 @@
 <span class="doccomment">/// - `Auth`: Authenticated user</span>
 <span class="doccomment">/// - `Connection&lt;PgDb&gt;`: Postgres connection</span>
 <span class="doccomment">/// - `Json&lt;BurrowInfo&gt;`: Burrow information</span>
-<span class="doccomment">/// - `Connection&lt;PulsarSearchProducerMq&gt;`: Pulsar connection</span>
+<span class="doccomment">/// - `Connection&lt;PulsarMq&gt;`: Pulsar connection</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// ## Returns</span>
 <span class="doccomment">///</span>
@@ -687,7 +687,7 @@
 <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">create_burrow</span>(
     <span class="ident">db</span>: <span class="ident">Connection</span><span class="op">&lt;</span><span class="ident">PgDb</span><span class="op">&gt;</span>,
     <span class="ident">burrow_info</span>: <span class="ident">Json</span><span class="op">&lt;</span><span class="ident">BurrowInfo</span><span class="op">&gt;</span>,
-    <span class="kw-2">mut</span> <span class="ident">producer</span>: <span class="ident">Connection</span><span class="op">&lt;</span><span class="ident">PulsarSearchProducerMq</span><span class="op">&gt;</span>,
+    <span class="kw-2">mut</span> <span class="ident">producer</span>: <span class="ident">Connection</span><span class="op">&lt;</span><span class="ident">PulsarMq</span><span class="op">&gt;</span>,
     <span class="ident">auth</span>: <span class="ident">Auth</span>,
 ) -&gt; (
     <span class="ident">Status</span>,
@@ -695,7 +695,7 @@
 ) {
     <span class="kw">let</span> <span class="ident">pg_con</span> <span class="op">=</span> <span class="ident">db</span>.<span class="ident">into_inner</span>();
     <span class="comment">// check if user has too many burrows, return corresponding error if so</span>
-    <span class="kw">match</span> <span class="ident">db::user_status::Entity::find_by_id</span>(<span class="ident">auth</span>.<span class="ident">id</span>)
+    <span class="kw">match</span> <span class="ident">UserStatus::find_by_id</span>(<span class="ident">auth</span>.<span class="ident">id</span>)
         .<span class="ident">one</span>(<span class="kw-2">&amp;</span><span class="ident">pg_con</span>)
         .<span class="kw">await</span>
     {
@@ -820,7 +820,7 @@
             }
         },
         <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; {
-            <span class="macro">error!</span>(<span class="string">&quot;[CREATE BURROW] Database Error: {:?}&quot;</span>, <span class="ident">e</span>.<span class="ident">to_string</span>());
+            <span class="macro">error!</span>(<span class="string">&quot;[CREATE BURROW] Database Error: {:?}&quot;</span>, <span class="ident">e</span>);
             (
                 <span class="ident">Status::InternalServerError</span>,
                 <span class="prelude-val">Err</span>(<span class="ident">Json</span>(<span class="ident">ErrorResponse::default</span>())),
@@ -856,7 +856,7 @@
     <span class="ident">auth</span>: <span class="ident">Auth</span>,
 ) -&gt; (<span class="ident">Status</span>, <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">Json</span><span class="op">&lt;</span><span class="ident">ErrorResponse</span><span class="op">&gt;</span><span class="op">&gt;</span>) {
     <span class="kw">let</span> <span class="ident">pg_con</span> <span class="op">=</span> <span class="ident">db</span>.<span class="ident">into_inner</span>();
-    <span class="kw">match</span> <span class="ident">db::user_status::Entity::find_by_id</span>(<span class="ident">auth</span>.<span class="ident">id</span>)
+    <span class="kw">match</span> <span class="ident">UserStatus::find_by_id</span>(<span class="ident">auth</span>.<span class="ident">id</span>)
         .<span class="ident">one</span>(<span class="kw-2">&amp;</span><span class="ident">pg_con</span>)
         .<span class="kw">await</span>
     {
@@ -998,10 +998,10 @@
 ) {
     <span class="kw">let</span> <span class="ident">pg_con</span> <span class="op">=</span> <span class="ident">db</span>.<span class="ident">into_inner</span>();
     <span class="kw">let</span> <span class="ident">page</span> <span class="op">=</span> <span class="ident">page</span>.<span class="ident">unwrap_or</span>(<span class="number">0</span>);
-    <span class="kw">match</span> <span class="ident">db::burrow::Entity::find_by_id</span>(<span class="ident">burrow_id</span>).<span class="ident">one</span>(<span class="kw-2">&amp;</span><span class="ident">pg_con</span>).<span class="kw">await</span> {
+    <span class="kw">match</span> <span class="ident">Burrow::find_by_id</span>(<span class="ident">burrow_id</span>).<span class="ident">one</span>(<span class="kw-2">&amp;</span><span class="ident">pg_con</span>).<span class="kw">await</span> {
         <span class="prelude-val">Ok</span>(<span class="ident">opt_burrow</span>) =&gt; <span class="kw">match</span> <span class="ident">opt_burrow</span> {
             <span class="prelude-val">Some</span>(<span class="ident">burrow</span>) =&gt; {
-                <span class="kw">match</span> <span class="ident">db::content_post::Entity::find</span>()
+                <span class="kw">match</span> <span class="ident">ContentPost::find</span>()
                     .<span class="ident">filter</span>(<span class="ident">db::content_post::Column::BurrowId</span>.<span class="ident">eq</span>(<span class="ident">burrow_id</span>))
                     .<span class="ident">order_by_desc</span>(<span class="ident">db::content_post::Column::PostId</span>)
                     .<span class="ident">paginate</span>(<span class="kw-2">&amp;</span><span class="ident">pg_con</span>, <span class="ident">REPLY_PER_PAGE</span>)
@@ -1055,7 +1055,7 @@
 <span class="doccomment">/// - `Connection&lt;PgDb&gt;`: Postgres connection</span>
 <span class="doccomment">/// - `i64`: Burrow id</span>
 <span class="doccomment">/// - `Json&lt;BurrowInfo&gt;`: Burrow information</span>
-<span class="doccomment">/// - `Connection&lt;PulsarSearchProducerMq&gt;`: Pulsar connection</span>
+<span class="doccomment">/// - `Connection&lt;PulsarMq&gt;`: Pulsar connection</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// ## Returns</span>
 <span class="doccomment">///</span>
@@ -1075,7 +1075,7 @@
     <span class="ident">db</span>: <span class="ident">Connection</span><span class="op">&lt;</span><span class="ident">PgDb</span><span class="op">&gt;</span>,
     <span class="ident">burrow_id</span>: <span class="ident">i64</span>,
     <span class="ident">burrow_info</span>: <span class="ident">Json</span><span class="op">&lt;</span><span class="ident">BurrowInfo</span><span class="op">&gt;</span>,
-    <span class="kw-2">mut</span> <span class="ident">producer</span>: <span class="ident">Connection</span><span class="op">&lt;</span><span class="ident">PulsarSearchProducerMq</span><span class="op">&gt;</span>,
+    <span class="kw-2">mut</span> <span class="ident">producer</span>: <span class="ident">Connection</span><span class="op">&lt;</span><span class="ident">PulsarMq</span><span class="op">&gt;</span>,
     <span class="ident">auth</span>: <span class="ident">Auth</span>,
 ) -&gt; (<span class="ident">Status</span>, <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">Json</span><span class="op">&lt;</span><span class="ident">ErrorResponse</span><span class="op">&gt;</span><span class="op">&gt;</span>) {
     <span class="kw">let</span> <span class="ident">pg_con</span> <span class="op">=</span> <span class="ident">db</span>.<span class="ident">into_inner</span>();
@@ -1089,7 +1089,7 @@
             ))),
         );
     }
-    <span class="kw">match</span> <span class="ident">db::user_status::Entity::find_by_id</span>(<span class="ident">auth</span>.<span class="ident">id</span>)
+    <span class="kw">match</span> <span class="ident">UserStatus::find_by_id</span>(<span class="ident">auth</span>.<span class="ident">id</span>)
         .<span class="ident">one</span>(<span class="kw-2">&amp;</span><span class="ident">pg_con</span>)
         .<span class="kw">await</span>
     {
