@@ -1,15 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Button,
-  Card,
-  Form,
-  Input,
-  Layout,
-  message,
-  Select,
-  Row,
-  Breadcrumb,
-} from 'antd';
+import { Button, Card, Form, Input, Layout, message, Select } from 'antd';
 import TextArea from 'antd/lib/input/TextArea';
 import axios, { AxiosError } from 'axios';
 import { NextPage } from 'next';
@@ -52,14 +42,14 @@ const Create: NextPage = () => {
       }
     };
     fetchBid();
-  }, []);
+  }, [router]);
   const onFinish = async (values: any) => {
     const data = {
       ...values,
     };
     try {
       const res = await axios.post(
-        `${process.env.NEXT_PUBLIC_BASEURL}/content/post`,
+        `${process.env.NEXT_PUBLIC_BASEURL}/content/posts`,
         { ...data },
         { headers: { 'Content-Type': 'application/json' } }
       );
@@ -108,6 +98,7 @@ const Create: NextPage = () => {
             >
               <TextArea rows={4} />
             </Form.Item>
+            {/* <Form.Item> <Markdown/></Form.Item> */}
             <Form.Item label='详情'>
               <Form.Item
                 name='burrow_id'
@@ -136,9 +127,10 @@ const Create: NextPage = () => {
                   style={{ width: '100%' }}
                   placeholder='分区'
                 >
-                  <Option value='分区1'>分区1</Option>
-                  <Option value='分区2'>分区2</Option>
-                  <Option value='分区3'>分区3</Option>
+                  <Option value='Life'>日常生活</Option>
+                  <Option value='Learning'>学习科研</Option>
+                  <Option value='Entertainment'>休闲娱乐</Option>
+                  <Option value='NSFW'>NSFW</Option>
                 </Select>
               </Form.Item>
             </Form.Item>

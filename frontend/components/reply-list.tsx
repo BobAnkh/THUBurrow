@@ -30,8 +30,8 @@ export default function ReplyList({
 
   const onSave = async (values: any, index: number) => {
     try {
-      const res = await axios.post(
-        `${process.env.NEXT_PUBLIC_BASEURL}/content/reply/update`,
+      const res = await axios.patch(
+        `${process.env.NEXT_PUBLIC_BASEURL}/content/replies`,
         {
           post_id: listData[0].post_id,
           reply_id: listData[0].reply_id,

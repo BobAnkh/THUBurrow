@@ -1,16 +1,7 @@
 import type { NextPage } from 'next';
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import {
-  Layout,
-  Breadcrumb,
-  Form,
-  Button,
-  Input,
-  message,
-  Card,
-  Select,
-} from 'antd';
+import { Layout, Form, Button, Input, message, Card, Select } from 'antd';
 import {
   LikeOutlined,
   LikeTwoTone,
@@ -51,7 +42,9 @@ const PostDetial: NextPage = () => {
     const fetchReplyList = async () => {
       try {
         const res = await axios.get(
-          `${process.env.NEXT_PUBLIC_BASEURL}/content/${pid}?page=${page - 1}`,
+          `${process.env.NEXT_PUBLIC_BASEURL}/content/posts/${pid}?page=${
+            page - 1
+          }`,
           {
             headers: { 'Content-Type': 'application/json' },
           }
@@ -166,7 +159,7 @@ const PostDetial: NextPage = () => {
     };
     try {
       const res = await axios.post(
-        `${process.env.NEXT_PUBLIC_BASEURL}/content/reply`,
+        `${process.env.NEXT_PUBLIC_BASEURL}/content/replies`,
         { ...data, post_id: pid },
         { headers: { 'Content-Type': 'application/json' } }
       );
@@ -180,10 +173,6 @@ const PostDetial: NextPage = () => {
     } catch (e) {
       message.error('回复失败');
     }
-  };
-
-  const onFinishFailed = (errorInfo: any) => {
-    message.error(errorInfo);
   };
 
   return (
@@ -248,7 +237,6 @@ const PostDetial: NextPage = () => {
             wrapperCol={{ span: 14 }}
             layout='horizontal'
             onFinish={onFinish}
-            onFinishFailed={onFinishFailed}
             style={{ padding: '20px' }}
           >
             <Form.Item
