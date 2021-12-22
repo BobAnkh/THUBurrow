@@ -21,6 +21,7 @@ pub struct Model {
     pub post_state: i32,
     pub like_num: i32,
     pub collection_num: i32,
+    pub permission: i32,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter)]

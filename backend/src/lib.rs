@@ -44,7 +44,7 @@ pub fn rocket_init() -> Rocket<Build> {
         .manage(cors_handler)
         .attach(pool::PgDb::init())
         .attach(pool::RedisDb::init())
-        .attach(pool::PulsarSearchProducerMq::init())
+        .attach(pool::PulsarMq::init())
         .attach(pool::MinioImageStorage::init())
         .attach(pool::TypesenseSearch::init())
         .attach(AdHoc::on_ignite("mount_routes", routes::routes_init))

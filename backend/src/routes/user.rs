@@ -18,7 +18,7 @@ use crate::config::content::POST_PER_PAGE;
 use crate::config::user::SEND_EMAIL_LIMIT;
 use crate::db::{self, prelude::*};
 use crate::models::{burrow::BurrowMetadata, content::Post, error::*, pulsar::*, user::*};
-use crate::pool::{PgDb, PulsarSearchProducerMq, RedisDb};
+use crate::pool::{PgDb, PulsarMq, RedisDb};
 use crate::utils::auth::{delete_token, set_token, Auth, CookieOptions};
 use crate::utils::burrow_valid::*;
 use crate::utils::email;
@@ -59,7 +59,7 @@ async fn gen_salt() -> String {
 /// ## Parameters
 ///
 /// - `Auth`: Authenticated user
-/// - `Connection<PulsarSearchProduceMq>`: Pulsar connection
+/// - `Connection<PulsarMq>`: Pulsar connection
 /// - `Json<RelationData>`: Json of relation between user and certain post/burrow
 ///
 /// ## Returns
@@ -74,7 +74,7 @@ async fn gen_salt() -> String {
 #[post("/relation", data = "<relation_info>", format = "json")]
 pub async fn user_relation(
     auth: Auth,
-    mut producer: Connection<PulsarSearchProducerMq>,
+    mut producer: Connection<PulsarMq>,
     relation_info: Json<RelationData>,
 ) -> (Status, Result<String, Json<ErrorResponse>>) {
     let relation = relation_info.into_inner();
@@ -104,7 +104,7 @@ pub async fn user_relation(
 /// - `Connection<PgDb>`: Postgres connection
 /// - `Connection<RedisDb>`: Redis connection
 /// - `Json<UserEmail>`: Json of user email
-/// - `Connection<PulsarSearchProducerMq>`: Pulsar connection
+/// - `Connection<PulsarMq>`: Pulsar connection
 ///
 /// ## Returns
 ///
@@ -123,7 +123,7 @@ pub async fn user_email_activate(
     db: Connection<PgDb>,
     kvdb: Connection<RedisDb>,
     email_info: Json<UserEmail>,
-    mut producer: Connection<PulsarSearchProducerMq>,
+    mut producer: Connection<PulsarMq>,
 ) -> (Status, Result<String, Json<ErrorResponse>>) {
     let pg_con = db.into_inner();
     let mut kvdb_con = kvdb.into_inner();
@@ -218,7 +218,7 @@ pub async fn user_email_activate(
 /// - `Connection<PgDb>`: Postgres connection
 /// - `Connection<RedisDb>`: Redis connection
 /// - `Json<UserEmail>`: Json of user email
-/// - `Connection<PulsarSearchProducerMq>`: Pulsar connection
+/// - `Connection<PulsarMq>`: Pulsar connection
 ///
 /// ## Returns
 ///
@@ -237,7 +237,7 @@ pub async fn user_reset_email(
     db: Connection<PgDb>,
     kvdb: Connection<RedisDb>,
     email_info: Json<UserEmail>,
-    mut producer: Connection<PulsarSearchProducerMq>,
+    mut producer: Connection<PulsarMq>,
 ) -> (Status, Result<String, Json<ErrorResponse>>) {
     let pg_con = db.into_inner();
     let mut kvdb_con = kvdb.into_inner();

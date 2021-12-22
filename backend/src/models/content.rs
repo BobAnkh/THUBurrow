@@ -442,6 +442,7 @@ mod tests {
             like_num,
             collection_num,
             post_len,
+            permission: 0,
         };
         let post_banned_info = content_post::Model {
             post_id,
@@ -456,6 +457,7 @@ mod tests {
             like_num,
             collection_num,
             post_len,
+            permission: 0,
         };
         let post_info_ref = &post_info;
         let post_banned_info_ref = &post_banned_info;
@@ -501,6 +503,7 @@ mod tests {
             update_time: now,
             content: content.clone(),
             reply_state,
+            permission: 0,
         };
         let reply_banned_info = content_reply::Model {
             post_id,
@@ -510,6 +513,7 @@ mod tests {
             update_time: now,
             content: content.clone(),
             reply_state: reply_banned_state,
+            permission: 0,
         };
         let reply_info_ref = &reply_info;
         let reply_banned_info_ref = &reply_banned_info;

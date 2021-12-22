@@ -1,5 +1,6 @@
 //! Models of backend
 
+pub mod admin;
 pub mod burrow;
 pub mod content;
 pub mod error;

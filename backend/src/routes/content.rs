@@ -18,7 +18,7 @@ use crate::config::content::{
 use crate::db::{self, prelude::*};
 use crate::models::search::SearchPostData;
 use crate::models::{content::*, error::*, pulsar::*};
-use crate::pool::{PgDb, PulsarSearchProducerMq, Search, TypesenseSearch};
+use crate::pool::{PgDb, PulsarMq, Search, TypesenseSearch};
 use crate::utils::auth::Auth;
 use crate::utils::burrow_valid::is_valid_burrow;
 use crate::utils::dedup::remove_duplicate;
@@ -94,7 +94,7 @@ pub async fn get_total_post_count(
 /// - `Auth`: Authenticated user
 /// - `Connection<PgDb>`: Postgres connection
 /// - `Json<PostInfo>`: Post information
-/// - `Connection<PulsarSearchProducerMq>`: Pulsar connection
+/// - `Connection<PulsarMq>`: Pulsar connection
 ///
 /// ## Returns
 ///
@@ -116,7 +116,7 @@ pub async fn create_post(
     auth: Auth,
     db: Connection<PgDb>,
     post_info: Json<PostInfo>,
-    mut producer: Connection<PulsarSearchProducerMq>,
+    mut producer: Connection<PulsarMq>,
 ) -> (
     Status,
     Result<Json<PostCreateResponse>, Json<ErrorResponse>>,
@@ -401,6 +401,7 @@ pub async fn read_post(
 /// - `Connection<PgDb>`: Postgres connection
 /// - `i64`: Post id
 /// - `Json<PostUpdateInfo>`: Updated post information
+/// - `Connection<PulsarMq`: Pulsar MQ connection
 ///
 /// ## Returns
 ///
@@ -424,7 +425,7 @@ pub async fn update_post(
     db: Connection<PgDb>,
     post_id: i64,
     post_info: Json<PostUpdateInfo>,
-    mut producer: Connection<PulsarSearchProducerMq>,
+    mut producer: Connection<PulsarMq>,
 ) -> (Status, Result<String, Json<ErrorResponse>>) {
     let pg_con = db.into_inner();
     let content = post_info.into_inner();
@@ -562,7 +563,7 @@ pub async fn update_post(
 /// - `Auth`: Authenticated user
 /// - `Connection<PgDb>`: Postgres connection
 /// - `i64`: Post id
-/// - `Connection<PulsarSearchProducerMq>`: Pulsar connection
+/// - `Connection<PulsarMq>`: Pulsar connection
 ///
 /// ## Returns
 ///
@@ -583,7 +584,7 @@ pub async fn delete_post(
     auth: Auth,
     db: Connection<PgDb>,
     post_id: i64,
-    mut producer: Connection<PulsarSearchProducerMq>,
+    mut producer: Connection<PulsarMq>,
 ) -> (Status, Result<String, Json<ErrorResponse>>) {
     let pg_con = db.into_inner();
     let now = Utc::now().with_timezone(&FixedOffset::east(8 * 3600));
@@ -882,7 +883,7 @@ pub async fn read_post_list(
 /// - `Auth`: Authenticated user
 /// - `Connection<PgDb>`: Postgres connection
 /// - `Json<ReplyInfo>`: Reply information
-/// - `Connection<PulsarSearchProducerMq>`: Pulsar connection
+/// - `Connection<PulsarMq>`: Pulsar connection
 ///
 /// ## Returns
 ///
@@ -903,7 +904,7 @@ pub async fn create_reply(
     auth: Auth,
     db: Connection<PgDb>,
     reply_info: Json<ReplyInfo>,
-    mut producer: Connection<PulsarSearchProducerMq>,
+    mut producer: Connection<PulsarMq>,
 ) -> (
     Status,
     Result<Json<ReplyCreateResponse>, Json<ErrorResponse>>,
@@ -1067,7 +1068,7 @@ pub async fn update_reply(
     auth: Auth,
     db: Connection<PgDb>,
     reply_update_info: Json<ReplyUpdateInfo>,
-    mut producer: Connection<PulsarSearchProducerMq>,
+    mut producer: Connection<PulsarMq>,
 ) -> (Status, Result<String, Json<ErrorResponse>>) {
     let pg_con = db.into_inner();
     // get content info from request

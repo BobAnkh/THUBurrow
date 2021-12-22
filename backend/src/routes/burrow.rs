@@ -9,9 +9,9 @@ use sea_orm::{entity::*, query::*, DbBackend, DbErr};
 
 use crate::config::burrow::{BURROW_CREATE_DURATION, BURROW_LIMIT};
 use crate::config::content::REPLY_PER_PAGE;
-use crate::db;
+use crate::db::{self, prelude::*};
 use crate::models::{burrow::*, content::Post, error::*, pulsar::*};
-use crate::pool::{PgDb, PulsarSearchProducerMq};
+use crate::pool::{PgDb, PulsarMq};
 use crate::utils::auth::Auth;
 use crate::utils::burrow_valid::*;
 
@@ -83,7 +83,7 @@ pub async fn get_total_burrow_count(
 /// - `Auth`: Authenticated user
 /// - `Connection<PgDb>`: Postgres connection
 /// - `Json<BurrowInfo>`: Burrow information
-/// - `Connection<PulsarSearchProducerMq>`: Pulsar connection
+/// - `Connection<PulsarMq>`: Pulsar connection
 ///
 /// ## Returns
 ///
@@ -104,7 +104,7 @@ pub async fn get_total_burrow_count(
 pub async fn create_burrow(
     db: Connection<PgDb>,
     burrow_info: Json<BurrowInfo>,
-    mut producer: Connection<PulsarSearchProducerMq>,
+    mut producer: Connection<PulsarMq>,
     auth: Auth,
 ) -> (
     Status,
@@ -112,7 +112,7 @@ pub async fn create_burrow(
 ) {
     let pg_con = db.into_inner();
     // check if user has too many burrows, return corresponding error if so
-    match db::user_status::Entity::find_by_id(auth.id)
+    match UserStatus::find_by_id(auth.id)
         .one(&pg_con)
         .await
     {
@@ -237,7 +237,7 @@ pub async fn create_burrow(
             }
         },
         Err(e) => {
-            error!("[CREATE BURROW] Database Error: {:?}", e.to_string());
+            error!("[CREATE BURROW] Database Error: {:?}", e);
             (
                 Status::InternalServerError,
                 Err(Json(ErrorResponse::default())),
@@ -273,7 +273,7 @@ pub async fn discard_burrow(
     auth: Auth,
 ) -> (Status, Result<String, Json<ErrorResponse>>) {
     let pg_con = db.into_inner();
-    match db::user_status::Entity::find_by_id(auth.id)
+    match UserStatus::find_by_id(auth.id)
         .one(&pg_con)
         .await
     {
@@ -415,10 +415,10 @@ pub async fn show_burrow(
 ) {
     let pg_con = db.into_inner();
     let page = page.unwrap_or(0);
-    match db::burrow::Entity::find_by_id(burrow_id).one(&pg_con).await {
+    match Burrow::find_by_id(burrow_id).one(&pg_con).await {
         Ok(opt_burrow) => match opt_burrow {
             Some(burrow) => {
-                match db::content_post::Entity::find()
+                match ContentPost::find()
                     .filter(db::content_post::Column::BurrowId.eq(burrow_id))
                     .order_by_desc(db::content_post::Column::PostId)
                     .paginate(&pg_con, REPLY_PER_PAGE)
@@ -472,7 +472,7 @@ pub async fn show_burrow(
 /// - `Connection<PgDb>`: Postgres connection
 /// - `i64`: Burrow id
 /// - `Json<BurrowInfo>`: Burrow information
-/// - `Connection<PulsarSearchProducerMq>`: Pulsar connection
+/// - `Connection<PulsarMq>`: Pulsar connection
 ///
 /// ## Returns
 ///
@@ -492,7 +492,7 @@ pub async fn update_burrow(
     db: Connection<PgDb>,
     burrow_id: i64,
     burrow_info: Json<BurrowInfo>,
-    mut producer: Connection<PulsarSearchProducerMq>,
+    mut producer: Connection<PulsarMq>,
     auth: Auth,
 ) -> (Status, Result<String, Json<ErrorResponse>>) {
     let pg_con = db.into_inner();
@@ -506,7 +506,7 @@ pub async fn update_burrow(
             ))),
         );
     }
-    match db::user_status::Entity::find_by_id(auth.id)
+    match UserStatus::find_by_id(auth.id)
         .one(&pg_con)
         .await
     {

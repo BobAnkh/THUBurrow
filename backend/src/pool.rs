@@ -104,7 +104,7 @@ impl Pool for SeaOrmPool {
 /// Pulsar Connection Pool
 #[derive(Database)]
 #[database("pulsar-mq")]
-pub struct PulsarSearchProducerMq(PulsarProducerPool);
+pub struct PulsarMq(PulsarProducerPool);
 
 pub struct PulsarProducerPool {
     pub pulsar: Pulsar<TokioExecutor>,

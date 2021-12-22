@@ -156,6 +156,7 @@ mod tests {
             credit: 0i32,
             badge: "badge".to_string(),
             avatar: "default.jpg".to_string(),
+            permission: 0,
         };
         let burrow_banned = burrow::Model {
             burrow_id,
@@ -169,6 +170,7 @@ mod tests {
             credit: 1i32,
             badge: "badge".to_string(),
             avatar: "default.jpg".to_string(),
+            permission: 0,
         };
         let burrow_ref = &burrow;
         let burrow_banned_ref = &burrow_banned;

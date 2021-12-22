@@ -15,6 +15,7 @@ pub struct Model {
     #[sea_orm(column_type = "Text")]
     pub content: String,
     pub reply_state: i32,
+    pub permission: i32,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter)]

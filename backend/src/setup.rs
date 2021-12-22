@@ -192,6 +192,12 @@ pub mod postgres {
                     .not_null()
                     .default("".to_string()),
             )
+            .col(
+                ColumnDef::new(db::user_status::Column::Permission)
+                    .integer()
+                    .not_null()
+                    .default(0),
+            )
             .to_owned();
         build_statement(db, &stmt).await
     }
@@ -266,6 +272,12 @@ pub mod postgres {
                     .not_null()
                     .default(0),
             )
+            .col(
+                ColumnDef::new(db::content_post::Column::Permission)
+                    .integer()
+                    .not_null()
+                    .default(0),
+            )
             .to_owned();
         // println!("user table: {}", stmt.to_string(PostgresQueryBuilder));
         build_statement(db, &stmt).await
@@ -307,6 +319,12 @@ pub mod postgres {
             )
             .col(
                 ColumnDef::new(db::content_reply::Column::ReplyState)
+                    .integer()
+                    .not_null()
+                    .default(0),
+            )
+            .col(
+                ColumnDef::new(db::content_reply::Column::Permission)
                     .integer()
                     .not_null()
                     .default(0),
@@ -433,6 +451,12 @@ pub mod postgres {
                     .text()
                     .not_null()
                     .default("default.jpg".to_string()),
+            )
+            .col(
+                ColumnDef::new(db::burrow::Column::Permission)
+                    .integer()
+                    .not_null()
+                    .default(0),
             )
             .to_owned();
         build_statement(db, &stmt).await

@@ -13,6 +13,7 @@ pub struct Model {
     pub valid_burrow: String,
     #[sea_orm(column_type = "Text")]
     pub banned_burrow: String,
+    pub permission: i32,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter)]

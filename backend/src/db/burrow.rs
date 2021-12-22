@@ -21,6 +21,7 @@ pub struct Model {
     pub badge: String,
     #[sea_orm(column_type = "Text")]
     pub avatar: String,
+    pub permission: i32,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter)]
