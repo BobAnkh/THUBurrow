@@ -24,10 +24,18 @@
 
 .EditText{
     border-radius: 15px;
-    width: 80%;
-    border: 2px solid rgb(47, 115, 204);
+    width: 100%;
+    border: 2px solid rgb(109, 162, 231);
+    background-color: white;
 }
 
 .ButtonLayout{
     width: 100px;
+}
+
+
+.Title{
+  font-family: 'Microsoft YaHei', serif;
+  font-weight: bold;
+  font-size: 1.28pc
 }

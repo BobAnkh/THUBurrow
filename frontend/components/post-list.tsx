@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import axios from 'axios';
+import styles from '../pages/burrow/burrow.module.css';
 import { Button, List, message, Space, Tag } from 'antd';
 import {
   MessageOutlined,
@@ -125,7 +126,7 @@ export default function PostList({ listData, setPage, totalNum }: Props) {
       dataSource={listData}
       renderItem={(item: any, index: number) => (
         <List.Item
-          key={item.post.title}
+          key={item.title}
           actions={[
             <Button
               type='text'
@@ -140,7 +141,7 @@ export default function PostList({ listData, setPage, totalNum }: Props) {
               key='list-vertical-like-o'
               onClick={() => {
                 clickLike(
-                  item.post.post_id,
+                  item.post_id,
                   (!changeLike[index] && item.like) ||
                     (changeLike[index] && !item.like),
                   index
@@ -148,7 +149,7 @@ export default function PostList({ listData, setPage, totalNum }: Props) {
               }}
             >
               {' '}
-              {item.post.like_num + likeNum[index]}
+              {item.like_num + likeNum[index]}
             </Button>,
             <Button
               type='text'
@@ -171,23 +172,25 @@ export default function PostList({ listData, setPage, totalNum }: Props) {
               }}
             >
               {' '}
-              {item.post.collection_num + colNum[index]}
+              {item.collection_num + colNum[index]}
             </Button>,
             <IconText
               icon={MessageOutlined}
-              text={item.post.post_len}
+              text={item.post_len}
               key='list-vertical-message'
             />,
           ]}
         >
           <List.Item.Meta
             title={
-              <Link href={`post/${item.post.post_id}`}>{item.post.title}</Link>
+              <a href={`post/${item.post_id}`} className={styles.Title}>
+                {item.title}
+              </a>
             }
-            description={`#${item.post.burrow_id} 洞主`}
+            description={`#${item.burrow_id} 洞主`}
           />
-          {item.post.content}
-          {showtag(item.post.tag)}
+          {item.content}
+          {showtag(item.tag)}
         </List.Item>
       )}
     />
