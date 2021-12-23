@@ -227,7 +227,7 @@ const UserPage: NextPage = () => {
             headers: { 'Content-Type': 'application/json' },
           }
         );
-        const postlist = res.data.list_page.post_page;
+        const postlist = res.data.post_page;
         const postnum = res.data.list_page.post_num;
         setPostList(postlist); //TODO: each child should have a unique key?
         setPostNum(postnum);
