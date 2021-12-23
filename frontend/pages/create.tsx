@@ -136,7 +136,8 @@ const Create: NextPage = () => {
                   mode='multiple'
                   allowClear
                   style={{ width: '100%' }}
-                  placeholder='分区'
+                  placeholder='分区(1-3个)'
+                  maxTagCount={3}
                 >
                   <Option value='Life'>日常生活</Option>
                   <Option value='Learning'>学习科研</Option>
@@ -150,7 +151,7 @@ const Create: NextPage = () => {
                 mode='tags'
                 allowClear
                 style={{ width: '100%' }}
-                placeholder='Tag'
+                placeholder='自定义Tag(0-10个)'
               />
             </Form.Item>
             <Form.Item wrapperCol={{ offset: 11, span: 16 }}>

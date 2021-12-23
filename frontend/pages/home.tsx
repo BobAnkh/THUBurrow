@@ -61,7 +61,7 @@ const Home: NextPage = () => {
         const res = await axios.get(url, {
           headers: { 'Content-Type': 'application/json' },
         });
-        const postlist = res.data.list_page.post_page;
+        const postlist = res.data.post_page;
         setPostList(postlist);
       } catch (error) {
         const err = error as AxiosError;
@@ -71,6 +71,11 @@ const Home: NextPage = () => {
         }
       }
     };
+
+    fetchPostList();
+  }, [page, router, section]);
+
+  useEffect(() => {
     const fetchPostNum = async () => {
       try {
         const res = await axios.get(
@@ -85,9 +90,8 @@ const Home: NextPage = () => {
         }
       }
     };
-    fetchPostList();
     fetchPostNum();
-  }, [page, router, section]);
+  }, [router]);
 
   const changesection = (value: string) => {
     setsection(value);
