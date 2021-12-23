@@ -125,7 +125,7 @@ export default function PostList({ listData, setPage, totalNum }: Props) {
       dataSource={listData}
       renderItem={(item: any, index: number) => (
         <List.Item
-          key={item.title}
+          key={item.post.title}
           actions={[
             <Button
               type='text'
@@ -140,7 +140,7 @@ export default function PostList({ listData, setPage, totalNum }: Props) {
               key='list-vertical-like-o'
               onClick={() => {
                 clickLike(
-                  item.post_id,
+                  item.post.post_id,
                   (!changeLike[index] && item.like) ||
                     (changeLike[index] && !item.like),
                   index
@@ -148,7 +148,7 @@ export default function PostList({ listData, setPage, totalNum }: Props) {
               }}
             >
               {' '}
-              {item.like_num + likeNum[index]}
+              {item.post.like_num + likeNum[index]}
             </Button>,
             <Button
               type='text'
@@ -171,21 +171,23 @@ export default function PostList({ listData, setPage, totalNum }: Props) {
               }}
             >
               {' '}
-              {item.collection_num + colNum[index]}
+              {item.post.collection_num + colNum[index]}
             </Button>,
             <IconText
               icon={MessageOutlined}
-              text={item.post_len}
+              text={item.post.post_len}
               key='list-vertical-message'
             />,
           ]}
         >
           <List.Item.Meta
-            title={<Link href={`post/${item.post_id}`}>{item.title}</Link>}
-            description={`#${item.burrow_id} 洞主`}
+            title={
+              <Link href={`post/${item.post.post_id}`}>{item.post.title}</Link>
+            }
+            description={`#${item.post.burrow_id} 洞主`}
           />
-          {item.content}
-          {showtag(item.tag)}
+          {item.post.content}
+          {showtag(item.post.tag)}
         </List.Item>
       )}
     />

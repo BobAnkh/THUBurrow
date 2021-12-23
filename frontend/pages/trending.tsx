@@ -25,7 +25,7 @@ const Trending: NextPage = () => {
             headers: { 'Content-Type': 'application/json' },
           }
         );
-        const postlist = res.data.list_page.post_page;
+        const postlist = res.data.post_page;
         setPostList(postlist);
       } catch (error) {
         const err = error as AxiosError;
