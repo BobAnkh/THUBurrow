@@ -30,14 +30,9 @@ const SearchPage: FC = () => {
   const [page, setpage] = useState(1);
   const [area, setarea] = useState('post');
 
-  const [form] = Form.useForm();
-
   const [loading, setloading] = useState(false);
   const [loadingMore, setloadingMore] = useState(false);
   const [state, setstate] = useState('');
-
-  const [title, setitle] = useState('');
-  const [description, setdescription] = useState('');
 
   const [replydata, setreply] = useState<any[]>([]);
   const [listData, setdata] = useState(new Array());
@@ -75,6 +70,7 @@ const SearchPage: FC = () => {
           }
         });
       setloading(false);
+      setloadingMore(false);
     } else {
       const SearchBurrowKeyword = { keyword: Keyword };
       setloading(true);
@@ -99,6 +95,7 @@ const SearchPage: FC = () => {
           }
         });
       setloading(false);
+      setloadingMore(false);
     }
   }
 
@@ -162,6 +159,7 @@ const SearchPage: FC = () => {
         }
       });
     setloading(false);
+    setloadingMore(false);
   }
 
   useEffect(() => {
@@ -204,7 +202,6 @@ const SearchPage: FC = () => {
     setpage(() => {
       return page + 1;
     });
-    setloadingMore(false);
   };
 
   const loadMoreDom = listData.length > 0 && (
