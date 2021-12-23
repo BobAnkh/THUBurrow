@@ -5,8 +5,6 @@ import 'antd/dist/antd.css';
 import styles from '../styles/register.module.css';
 import CryptoJS from 'crypto-js';
 import axios, { AxiosError } from 'axios';
-import { assertLiteral } from '@babel/types';
-import { OmitProps } from 'antd/lib/transfer/ListBody';
 
 axios.defaults.withCredentials = true;
 axios.defaults.headers.post['Content-Type'] = 'application/json';
