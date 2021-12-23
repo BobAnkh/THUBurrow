@@ -8,3 +8,18 @@ lazy_static! {
         .ok()
         .unwrap_or_else(|| "".to_string());
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_secret_id_config() {
+        assert_eq!("", *SECRET_ID);
+    }
+
+    #[test]
+    fn test_secret_key_config() {
+        assert_eq!("", *SECRET_KEY);
+    }
+}

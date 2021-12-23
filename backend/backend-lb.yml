@@ -1,0 +1,29 @@
+version: '3'
+
+services:
+
+  backend-lb:
+    image: nginx:${NGINX_IMAGE_VERSION:-stable-alpine}
+    container_name: ${BACKEND_LB_NAME:-backend-lb}
+    restart: always
+    expose:
+      - "80"
+    environment:
+      SSL_POLICY: ${SSL_POLICY:-Mozilla-Intermediate}
+      VIRTUAL_HOST: ${BACKEND_HOST}
+    volumes:
+      - ./data/lb-data/conf.d:/etc/nginx/conf.d
+      - ./data/lb-data/vhost.d:/etc/nginx/vhost.d
+      - ./data/lb-data/html:/usr/share/nginx/html
+      - ./data/lb-data/certs:/etc/nginx/certs:ro
+      - ./data/lb-data/htpasswd:/etc/nginx/htpasswd:ro
+    logging:
+      driver: ${NGINX_WEB_LOG_DRIVER:-json-file}
+      options:
+        max-size: ${NGINX_WEB_LOG_MAX_SIZE:-4m}
+        max-file: ${NGINX_WEB_LOG_MAX_FILE:-10}
+
+networks:
+  default:
+    external: true
+    name: ${NETWORK:-proxy}

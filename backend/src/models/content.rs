@@ -1,12 +1,8 @@
-use crate::pgdb::{content_post, content_reply};
+//! Models for content
+
+use crate::db::{content_post, content_reply};
 use rocket::serde::{Deserialize, Serialize};
 use sea_orm::{prelude::DateTimeWithTimeZone, FromQueryResult};
-use std::convert::From;
-
-pub static POST_PER_PAGE: usize = 20;
-pub static REPLY_PER_PAGE: usize = 20;
-pub static MAX_SECTION: usize = 3;
-pub static MAX_TAG: usize = 10;
 
 /// Section of post
 ///
@@ -446,6 +442,7 @@ mod tests {
             like_num,
             collection_num,
             post_len,
+            permission: 0,
         };
         let post_banned_info = content_post::Model {
             post_id,
@@ -460,6 +457,7 @@ mod tests {
             like_num,
             collection_num,
             post_len,
+            permission: 0,
         };
         let post_info_ref = &post_info;
         let post_banned_info_ref = &post_banned_info;
@@ -505,6 +503,7 @@ mod tests {
             update_time: now,
             content: content.clone(),
             reply_state,
+            permission: 0,
         };
         let reply_banned_info = content_reply::Model {
             post_id,
@@ -514,6 +513,7 @@ mod tests {
             update_time: now,
             content: content.clone(),
             reply_state: reply_banned_state,
+            permission: 0,
         };
         let reply_info_ref = &reply_info;
         let reply_banned_info_ref = &reply_banned_info;

@@ -1,8 +1,10 @@
 use backend::utils::mq::*;
-use tokio::signal;
-use tokio::signal::unix::{signal, SignalKind};
+use tokio::signal::{
+    self,
+    unix::{signal, SignalKind},
+};
 use tokio::sync::broadcast;
-use tokio::time::Duration;
+use tokio::time::{sleep, Duration};
 
 #[tokio::main]
 async fn main() {
@@ -18,18 +20,18 @@ async fn main() {
     // futures::future::join_all(scheduler).await;
     tokio::select! {
         _ = signal::ctrl_c() => {
-            log::warn!("\n[TASK-EXEC] Gracefully shutdown. Wait for 5 seconds...\n");
-            std::thread::sleep(Duration::from_millis(5000));
+            log::warn!("[TASK-EXEC] Gracefully shutdown of ctrl_c. Wait for 5 seconds...\n");
+            sleep(Duration::from_millis(5000)).await;
             drop(notify_shutdown);
-            std::thread::sleep(Duration::from_millis(1000));
-            log::warn!("\n[TASK-EXEC] Shutdown finished\n");
+            sleep(Duration::from_millis(1000)).await;
+            log::warn!("[TASK-EXEC] Shutdown finished\n");
         },
         _ = shutdown_recv.recv() => {
-            log::warn!("\n[TASK-EXEC] Gracefully shutdown. Wait for 5 seconds...\n");
-            std::thread::sleep(Duration::from_millis(5000));
+            log::warn!("[TASK-EXEC] Gracefully shutdown of SIGTERM. Wait for 5 seconds...\n");
+            sleep(Duration::from_millis(5000)).await;
             drop(notify_shutdown);
-            std::thread::sleep(Duration::from_millis(1000));
-            log::warn!("\n[TASK-EXEC] Shutdown finished\n");
+            sleep(Duration::from_millis(1000)).await;
+            log::warn!("[TASK-EXEC] Shutdown finished\n");
         },
     }
 }

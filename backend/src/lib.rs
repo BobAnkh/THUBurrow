@@ -1,9 +1,13 @@
+//! Backend lib of THUBurrow
+//!
+//! See source code for more details: [Github](https://github.com/BobAnkh/THUBurrow)
+
 #[macro_use]
 extern crate rocket;
 
 pub mod config;
+pub mod db;
 pub mod models;
-pub mod pgdb;
 pub mod pool;
 pub mod routes;
 pub mod setup;
@@ -40,7 +44,7 @@ pub fn rocket_init() -> Rocket<Build> {
         .manage(cors_handler)
         .attach(pool::PgDb::init())
         .attach(pool::RedisDb::init())
-        .attach(pool::PulsarSearchProducerMq::init())
+        .attach(pool::PulsarMq::init())
         .attach(pool::MinioImageStorage::init())
         .attach(pool::TypesenseSearch::init())
         .attach(AdHoc::on_ignite("mount_routes", routes::routes_init))

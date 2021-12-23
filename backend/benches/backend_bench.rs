@@ -57,5 +57,73 @@ fn id_generator(c: &mut Criterion) {
     group.finish();
 }
 
-criterion_group!(benches, valid_burrow_list, check_email_syntax, id_generator);
+fn sign(c: &mut Criterion) {
+    let mut group = c.benchmark_group("sign");
+    let input = (b"key", b"msg");
+    group.bench_with_input(BenchmarkId::new("id", 0), &input, |b, &input| {
+        b.iter(|| email::sign(input.0, input.1));
+    });
+    group.finish();
+}
+
+fn assemble_headers(c: &mut Criterion) {
+    let mut group = c.benchmark_group("assenmble_headers");
+    let timestamp = "1638791815".to_string();
+    group.bench_with_input(
+        BenchmarkId::from_parameter(timestamp.clone()),
+        &(timestamp.clone()),
+        |b, timestamp| {
+            b.iter(|| email::assemble_headers(timestamp.to_string()));
+        },
+    );
+    group.finish();
+}
+
+fn gen_payload(c: &mut Criterion) {
+    let mut group = c.benchmark_group("gen_payload");
+    let input = email::Body {
+        from_email_address: "THUBurrow <noreply@testmail.thuburrow.com>".to_string(),
+        destination: vec!["abc@qq.com".to_string()],
+        template: email::Template {
+            template_id: 21517,
+            template_data: format!("{{\\\"code\\\":\"{}\"}}", "abc123"),
+        },
+        subject: "Verification Email".to_string(),
+    };
+    group.bench_with_input(BenchmarkId::new("id", 0), &input, |b, input| {
+        b.iter(|| email::get_payload(input));
+    });
+    group.finish();
+}
+
+fn signature(c: &mut Criterion) {
+    let mut group = c.benchmark_group("signature");
+    let param = email::Body {
+        from_email_address: "THUBurrow <noreply@testmail.thuburrow.com>".to_string(),
+        destination: vec!["abc@qq.com".to_string()],
+        template: email::Template {
+            template_id: 21517,
+            template_data: format!("{{\\\"code\\\":\"{}\"}}", "abc123"),
+        },
+        subject: "Verification Email".to_string(),
+    };
+    let timestamp = "1638791815".to_string();
+    let date = "2021-12-06".to_string();
+    let input = (&param, timestamp, date);
+    group.bench_with_input(BenchmarkId::new("id", 0), &input, |b, input| {
+        b.iter(|| email::signature(input.0, input.clone().1, input.clone().2));
+    });
+    group.finish();
+}
+
+criterion_group!(
+    benches,
+    sign,
+    assemble_headers,
+    gen_payload,
+    signature,
+    valid_burrow_list,
+    check_email_syntax,
+    id_generator
+);
 criterion_main!(benches);

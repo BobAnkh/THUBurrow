@@ -1,12 +1,12 @@
+//! Module for authentication
+
 use crypto::digest::Digest;
 use crypto::sha3::Sha3;
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
-use rocket::http::private::cookie::CookieBuilder;
-use rocket::http::{Cookie, SameSite, Status};
+use rocket::http::{private::cookie::CookieBuilder, Cookie, SameSite, Status};
 use rocket::request::{self, FromRequest, Outcome, Request};
 use rocket::State;
-use std::iter;
 
 use crate::config::user::*;
 use crate::models::error::*;
@@ -109,7 +109,7 @@ pub async fn set_token(
     kv_conn: &mut redis::aio::Connection,
 ) -> Result<String, ErrorResponse> {
     // generate token and refresh token
-    let token: String = iter::repeat(())
+    let token: String = std::iter::repeat(())
         .map(|()| thread_rng().sample(Alphanumeric))
         .map(char::from)
         .take(32)
@@ -410,17 +410,13 @@ impl<'r> FromRequest<'r> for Auth {
                         "Authentication token is invalid.",
                     ),
                 )),
-                ValidToken::DatabaseErr => Outcome::Failure((
-                    Status::InternalServerError,
-                    ErrorResponse::build(ErrorCode::DatabaseErr, ""),
-                )),
+                ValidToken::DatabaseErr => {
+                    Outcome::Failure((Status::InternalServerError, ErrorResponse::default()))
+                }
                 ValidToken::Refresh(id) => Outcome::Success(Auth { id: *id }),
                 ValidToken::Valid(id) => Outcome::Success(Auth { id: *id }),
             },
-            None => Outcome::Failure((
-                Status::InternalServerError,
-                ErrorResponse::build(ErrorCode::DatabaseErr, ""),
-            )),
+            None => Outcome::Failure((Status::InternalServerError, ErrorResponse::default())),
         }
     }
 }

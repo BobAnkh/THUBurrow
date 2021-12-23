@@ -1,229 +1,24 @@
-extern crate serde;
-use crate::config::mq::*;
+//! Tasks for task_executor
+//!
+//! This module contains a bunch of functions, each of which represents a background
+//! task behind Message Queue executed by task_executor.
+
 use futures::TryStreamExt;
-use lazy_static::lazy_static;
 use pulsar::{Consumer, Pulsar, SubType, TokioExecutor};
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 use sea_orm::sea_query::Expr;
 use sea_orm::{entity::*, ConnectionTrait, Database, DatabaseConnection, DbErr, QueryFilter};
 use serde_json::json;
-use std::collections::HashMap;
-use std::env;
-use std::iter;
 use tokio::time::Duration;
 
 use super::email::{self, check_email_exist};
+use crate::config::mq::*;
+use crate::config::user::SEND_EMAIL_LIMIT;
 use crate::config::BACKEND_TEST_MODE;
-use crate::models::{pulsar::*, search::*, user::SEND_EMAIL_LIMIT};
-use crate::pgdb::{content_post, prelude::*, user_collection, user_follow, user_like};
+use crate::db::{content_post, prelude::*, user_collection, user_follow, user_like};
+use crate::models::{pulsar::*, search::*};
 use crate::routes::trending::select_trending;
-
-lazy_static! {
-    static ref TYPESENSE_API_KEY: String = {
-        let env_v = "ROCKET_DATABASES=".to_string() + &env::var("ROCKET_DATABASES").ok().unwrap_or_else(|| r#"{search={url="http://127.0.0.1:8108@8Dz4jRrsBjYgdCD/VGP1bleph7oBThJr5IcF43l0U24="}}"#.to_string());
-        let env_v =
-            toml::from_str::<HashMap<String, HashMap<String, HashMap<String, String>>>>(&env_v)
-                .unwrap();
-        let url: String = match env_v.get("ROCKET_DATABASES") {
-            Some(r) => match r.get("search") {
-                Some(r) => match r.get("url") {
-                    Some(r) => r.to_owned(),
-                    None => "http://127.0.0.1:8108@8Dz4jRrsBjYgdCD/VGP1bleph7oBThJr5IcF43l0U24="
-                        .to_string(),
-                },
-                None => {
-                    "http://127.0.0.1:8108@8Dz4jRrsBjYgdCD/VGP1bleph7oBThJr5IcF43l0U24=".to_string()
-                }
-            },
-            None => {
-                "http://127.0.0.1:8108@8Dz4jRrsBjYgdCD/VGP1bleph7oBThJr5IcF43l0U24=".to_string()
-            }
-        };
-        let info: Vec<&str> = url.split('@').collect();
-        let api_key: String;
-        if info.len() == 1 {
-            api_key = "8Dz4jRrsBjYgdCD/VGP1bleph7oBThJr5IcF43l0U24=".to_owned();
-        } else if info.len() == 2 {
-            api_key = info[1].to_owned();
-        } else {
-            panic!("Invalid typesense url.");
-        }
-        api_key
-    };
-    static ref TYPESENSE_ADDR: String = {
-        let env_v = "ROCKET_DATABASES=".to_string() + &env::var("ROCKET_DATABASES").ok().unwrap_or_else(|| r#"{search={url="http://127.0.0.1:8108@8Dz4jRrsBjYgdCD/VGP1bleph7oBThJr5IcF43l0U24="}}"#.to_string());
-        let env_v =
-            toml::from_str::<HashMap<String, HashMap<String, HashMap<String, String>>>>(&env_v)
-                .unwrap();
-        let url: String = match env_v.get("ROCKET_DATABASES") {
-            Some(r) => match r.get("search") {
-                Some(r) => match r.get("url") {
-                    Some(r) => r.to_owned(),
-                    None => "http://127.0.0.1:8108@8Dz4jRrsBjYgdCD/VGP1bleph7oBThJr5IcF43l0U24="
-                        .to_string(),
-                },
-                None => {
-                    "http://127.0.0.1:8108@8Dz4jRrsBjYgdCD/VGP1bleph7oBThJr5IcF43l0U24=".to_string()
-                }
-            },
-            None => {
-                "http://127.0.0.1:8108@8Dz4jRrsBjYgdCD/VGP1bleph7oBThJr5IcF43l0U24=".to_string()
-            }
-        };
-        let info: Vec<&str> = url.split('@').collect();
-        let addr: String;
-        if info.len() == 1 || info.len() == 2 {
-            addr = info[0].to_owned();
-        } else {
-            panic!("Invalid typesense url.");
-        }
-        addr
-    };
-    static ref POSTGRES_ADDR: String = {
-        let env_v = "ROCKET_DATABASES=".to_string()
-            + &env::var("ROCKET_DATABASES").ok().unwrap_or_else(|| {
-                r#"{pgdb={url="postgres://postgres:postgres@127.0.0.1:5432/pgdb"}}"#.to_string()
-            });
-        let env_v =
-            toml::from_str::<HashMap<String, HashMap<String, HashMap<String, String>>>>(&env_v)
-                .unwrap();
-        let url: String = match env_v.get("ROCKET_DATABASES") {
-            Some(r) => match r.get("pgdb") {
-                Some(r) => match r.get("url") {
-                    Some(r) => r.to_owned(),
-                    None => "postgres://postgres:postgres@127.0.0.1:5432/pgdb".to_string(),
-                },
-                None => "postgres://postgres:postgres@127.0.0.1:5432/pgdb".to_string(),
-            },
-            None => "postgres://postgres:postgres@127.0.0.1:5432/pgdb".to_string(),
-        };
-        url
-    };
-    static ref PULSAR_ADDR: String = {
-        let env_v = "ROCKET_DATABASES=".to_string()
-            + &env::var("ROCKET_DATABASES")
-                .ok()
-                .unwrap_or_else(|| r#"{pulsar-mq={url="pulsar://127.0.0.1:6650"}}"#.to_string());
-        let env_v =
-            toml::from_str::<HashMap<String, HashMap<String, HashMap<String, String>>>>(&env_v)
-                .unwrap();
-        let url: String = match env_v.get("ROCKET_DATABASES") {
-            Some(r) => match r.get("pulsar-mq") {
-                Some(r) => match r.get("url") {
-                    Some(r) => r.to_owned(),
-                    None => "pulsar://127.0.0.1:6650".to_string(),
-                },
-                None => "pulsar://127.0.0.1:6650".to_string(),
-            },
-            None => "pulsar://127.0.0.1:6650".to_string(),
-        };
-        url
-    };
-    static ref REDIS_ADDR: String = {
-        let env_v = "ROCKET_DATABASES=".to_string()
-            + &env::var("ROCKET_DATABASES").ok().unwrap_or_else(|| {
-                r#"{keydb={url="redis://:keypassword@127.0.0.1:6300"}}"#.to_string()
-            });
-        let env_v =
-            toml::from_str::<HashMap<String, HashMap<String, HashMap<String, String>>>>(&env_v)
-                .unwrap();
-        let url: String = match env_v.get("ROCKET_DATABASES") {
-            Some(r) => match r.get("keydb") {
-                Some(r) => match r.get("url") {
-                    Some(r) => r.to_owned(),
-                    None => "redis://:keypassword@127.0.0.1:6300".to_string(),
-                },
-                None => "redis://:keypassword@127.0.0.1:6300".to_string(),
-            },
-            None => "redis://:keypassword@127.0.0.1:6300".to_string(),
-        };
-        url
-    };
-}
-
-async fn create_typesense_collections() -> Result<(), reqwest::Error> {
-    //create typesense collections
-    let collection_burrows = json!({
-        "name": "burrows",
-        "fields": [
-            {"name": "burrow_id", "type": "int64"},
-            {"name": "title", "type": "string", "locale": "zh"},
-            {"name": "description", "type": "string", "locale": "zh"},
-        ]
-    });
-    let collection_posts = json!({
-        "name": "posts",
-        "fields": [
-            {"name": "post_id", "type": "int64"},
-            {"name": "burrow_id", "type": "int64"},
-            {"name": "title", "type": "string", "locale": "zh"},
-            {"name": "section", "type": "string[]", "facet":true},
-            {"name": "tag", "type": "string[]", "facet":true},
-        ]
-    });
-    let collection_replies = json!({
-        "name": "replies",
-        "fields": [
-            {"name": "post_id", "type": "int64", "facet":true},
-            {"name": "reply_id", "type": "int32", "index": false , "optional": true},
-            {"name": "burrow_id", "type": "int64"},
-            {"name": "content", "type": "string", "locale": "zh"},
-        ]
-    });
-    let client = reqwest::Client::new();
-    for each in [collection_burrows, collection_posts, collection_replies].iter() {
-        match client.build_post("/collections").json(&each).send().await {
-            Ok(a) => match a.status().as_u16() {
-                201 => {
-                    log::warn!(
-                        "Collection {} created successfully.",
-                        each["name"].as_str().unwrap()
-                    );
-                }
-                400 => {
-                    let text = a.text().await.unwrap();
-                    log::warn!(
-                        "Create collection {} failed with bad request. {}",
-                        each["name"].as_str().unwrap(),
-                        text
-                    );
-                    panic!(
-                        "Bad Request - The request could not be understood due to malformed syntax."
-                    )
-                }
-                401 => panic!("Unauthorized - Your API key is wrong."),
-                404 => panic!("Not Found - The requested resource is not found."),
-                409 => {
-                    log::warn!(
-                        "Collection {} already exists. Skip creation.",
-                        each["name"].as_str().unwrap()
-                    );
-                }
-                422 => {
-                    let text = a.text().await.unwrap();
-                    log::warn!(
-                        "Create collection {} failed with bad request. {}",
-                        each["name"].as_str().unwrap(),
-                        text
-                    );
-                    panic!(
-                        "Unprocessable Entity - Request is well-formed, but cannot be processed."
-                    )
-                }
-                503 => panic!(
-                    "Service Unavailable - We’re temporarily offline. Please try again later."
-                ),
-                _ => panic!(
-                    "Unknown error when creating collections. Status code:{}",
-                    a.status().as_u16()
-                ),
-            },
-            Err(e) => panic!("Err when create typesense collections,{:?}", e),
-        }
-    }
-    Ok(())
-}
 
 pub trait Typesense {
     fn build_get(&self, uri: &str) -> reqwest::RequestBuilder;
@@ -260,6 +55,77 @@ impl Typesense for reqwest::Client {
         self.patch(typesense_addr + uri)
             .header("X-TYPESENSE-API-KEY", typesense_api_key)
     }
+}
+
+async fn create_typesense_collections() -> Result<(), reqwest::Error> {
+    //create typesense collections
+    let collection_burrows = json!({
+        "name": "burrows",
+        "fields": [
+            {"name": "burrow_id", "type": "int64"},
+            {"name": "title", "type": "string", "locale": "zh"},
+            {"name": "description", "type": "string", "locale": "zh"},
+        ]
+    });
+    let collection_posts = json!({
+        "name": "posts",
+        "fields": [
+            {"name": "post_id", "type": "int64"},
+            {"name": "burrow_id", "type": "int64"},
+            {"name": "title", "type": "string", "locale": "zh"},
+            {"name": "section", "type": "string[]", "facet": true},
+            {"name": "tag", "type": "string[]", "facet": true},
+        ]
+    });
+    let collection_replies = json!({
+        "name": "replies",
+        "fields": [
+            {"name": "post_id", "type": "int64", "facet": true},
+            {"name": "reply_id", "type": "int32", "index": false , "optional": true},
+            {"name": "burrow_id", "type": "int64"},
+            {"name": "content", "type": "string", "locale": "zh"},
+        ]
+    });
+    let client = reqwest::Client::new();
+    for each in [collection_burrows, collection_posts, collection_replies].iter() {
+        match client.build_post("/collections").json(&each).send().await {
+            Ok(r) => match r.status().as_u16() {
+                201 => {
+                    log::warn!(
+                        "Collection {} created successfully.",
+                        each["name"].as_str().unwrap()
+                    );
+                }
+                400 => {
+                    log::warn!(
+                        "Create collection {} failed with bad request. {}",
+                        each["name"].as_str().unwrap(),
+                        r.text().await.unwrap()
+                    );
+                    panic!(
+                        "Bad Request - The request could not be understood due to malformed syntax."
+                    )
+                }
+                409 => {
+                    log::warn!(
+                        "Collection {} already exists. Skip creation.",
+                        each["name"].as_str().unwrap()
+                    );
+                }
+                _ => {
+                    log::warn!(
+                        "{} Create collection {} failed with response. {}",
+                        r.status().as_u16(),
+                        each["name"].as_str().unwrap(),
+                        r.text().await.unwrap()
+                    );
+                    panic!("Unknown error when creating collections.")
+                }
+            },
+            Err(e) => panic!("Err when create typesense collections,{:?}", e),
+        }
+    }
+    Ok(())
 }
 
 pub async fn pulsar_typesense() -> Result<(), pulsar::Error> {
@@ -842,7 +708,7 @@ pub async fn pulsar_email() -> Result<(), pulsar::Error> {
             }
         } else if check_email_exist(&email).await.0 {
             // generate verification code
-            let verification_code: String = iter::repeat(())
+            let verification_code: String = std::iter::repeat(())
                 .map(|()| thread_rng().sample(Alphanumeric))
                 .map(char::from)
                 .take(repeat_times)

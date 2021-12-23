@@ -1,11 +1,9 @@
+//! Module for email check and send
+
 use check_if_email_exists::syntax::check_syntax;
 use check_if_email_exists::{check_email, CheckEmailInput, Reachable};
 use chrono::Utc;
-use crypto::digest::Digest;
-use crypto::hmac::Hmac;
-use crypto::mac::Mac;
-use crypto::sha2::Sha256;
-use hex;
+use crypto::{digest::Digest, hmac::Hmac, mac::Mac, sha2::Sha256};
 use lazy_static::lazy_static;
 use reqwest::header::HeaderMap;
 use serde::Serialize;
@@ -113,23 +111,23 @@ pub fn check_email_syntax(email_address: &str) -> bool {
 }
 
 #[derive(Serialize)]
-struct Template {
+pub struct Template {
     #[serde(rename = "TemplateID")]
-    template_id: i32,
+    pub template_id: i32,
     #[serde(rename = "TemplateData")]
-    template_data: String,
+    pub template_data: String,
 }
 
 #[derive(Serialize)]
-struct Body {
+pub struct Body {
     #[serde(rename = "FromEmailAddress")]
-    from_email_address: String,
+    pub from_email_address: String,
     #[serde(rename = "Destination")]
-    destination: Vec<String>,
+    pub destination: Vec<String>,
     #[serde(rename = "Template")]
-    template: Template,
+    pub template: Template,
     #[serde(rename = "Subject")]
-    subject: String,
+    pub subject: String,
 }
 
 fn hash(s: String) -> String {
@@ -138,7 +136,7 @@ fn hash(s: String) -> String {
     hasher.result_str()
 }
 
-fn get_payload(param: &Body) -> String {
+pub fn get_payload(param: &Body) -> String {
     let payload_str = serde_json::to_string(param).unwrap();
     let payload_vec: Vec<&str> = payload_str.split(':').collect();
     let payload = payload_vec.join(": ");
@@ -146,7 +144,7 @@ fn get_payload(param: &Body) -> String {
     payload_vec.join(", ")
 }
 
-fn sign<'a>(key: &'a [u8], msg: &'a [u8]) -> Vec<u8> {
+pub fn sign<'a>(key: &'a [u8], msg: &'a [u8]) -> Vec<u8> {
     let mut hmac = Hmac::new(Sha256::new(), key);
     hmac.input(msg);
     let result = hmac.result();
@@ -154,7 +152,7 @@ fn sign<'a>(key: &'a [u8], msg: &'a [u8]) -> Vec<u8> {
     code.to_vec()
 }
 
-fn assemble_headers(timestamp: String) -> HeaderMap {
+pub fn assemble_headers(timestamp: String) -> HeaderMap {
     let mut headers = HeaderMap::new();
     headers.insert("Host", "ses.tencentcloudapi.com".parse().unwrap());
     headers.insert(
@@ -168,7 +166,7 @@ fn assemble_headers(timestamp: String) -> HeaderMap {
     headers
 }
 
-fn signature(param: &Body, timestamp: String, date: String) -> String {
+pub fn signature(param: &Body, timestamp: String, date: String) -> String {
     // define signature parameters
     let secret_id = &*SECRET_ID;
     let secret_key = &*SECRET_KEY;

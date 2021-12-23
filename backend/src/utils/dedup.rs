@@ -1,7 +1,22 @@
-pub fn remove_duplicate<T: Ord + PartialEq>(mut tag: Vec<T>) -> Vec<T> {
-    tag.sort_unstable();
-    tag.dedup();
-    tag
+/// Remove duplicate elements from a vector.
+///
+/// Use sort_unstable and dedup to remove duplicates from a vector.
+///
+/// ## Parameters
+///
+/// - `v`: The vector to dedup.
+///
+/// ## Generic Parameters
+///
+/// - `T`: The type of the elements in the vector. Should be `Ord` and `PartialEq`.
+///
+/// ## Returns
+///
+/// A vector with no duplicate elements.
+pub fn remove_duplicate<T: Ord + PartialEq>(mut v: Vec<T>) -> Vec<T> {
+    v.sort_unstable();
+    v.dedup();
+    v
 }
 
 #[cfg(test)]

@@ -23,15 +23,20 @@ fn test_connected() {
 
 #[test]
 fn test_change_password() {
+    // ---------- Prepare ----------
+    // Init background task executor
     let client = common::get_client().lock();
     let rt = Runtime::new().unwrap();
     let h4 = rt.spawn(pulsar_email());
     std::thread::sleep(std::time::Duration::from_secs(1));
+    // generate a random name
     let name: String = std::iter::repeat(())
         .map(|()| thread_rng().sample(Alphanumeric))
         .map(char::from)
         .take(8)
         .collect();
+    // ---------- Prepare ----------
+
     // set verification code (sign up)
     let response = client
         .post("/users/email")
@@ -98,25 +103,41 @@ fn test_change_password() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     assert_eq!(response.into_string().unwrap(), "Success");
+    // user log out
+    let response = client
+        .get("/users/logout")
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+
+    // ---------- Clean up ----------
     h4.abort();
+    std::thread::sleep(std::time::Duration::from_secs(1));
+    // ---------- Clean up ----------
 }
 
 #[test]
 fn test_reset() {
+    // ---------- Prepare ----------
+    // Init background task executor
     let client = common::get_client().lock();
     let rt = Runtime::new().unwrap();
     let h4 = rt.spawn(pulsar_email());
     std::thread::sleep(std::time::Duration::from_secs(1));
+    // generate a random name
     let name: String = std::iter::repeat(())
         .map(|()| thread_rng().sample(Alphanumeric))
         .map(char::from)
         .take(9)
         .collect();
+    // generate a random name
     let new_name: String = std::iter::repeat(())
         .map(|()| thread_rng().sample(Alphanumeric))
         .map(char::from)
         .take(9)
         .collect();
+    // ---------- Prepare ----------
+
     // email reset: perform a wrong action (invalid email address)
     let response = client
         .post("/users/reset/email")
@@ -326,26 +347,41 @@ fn test_reset() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     assert_eq!(response.into_string().unwrap(), "Success");
+    // user log out
+    let response = client
+        .get("/users/logout")
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+
+    // ---------- Clean up ----------
     h4.abort();
     std::thread::sleep(std::time::Duration::from_secs(1));
+    // ---------- Clean up ----------
 }
 
 #[test]
 fn test_email() {
+    // ---------- Prepare ----------
+    // Init background task executor
     let client = common::get_client().lock();
     let rt = Runtime::new().unwrap();
     let h4 = rt.spawn(pulsar_email());
     std::thread::sleep(std::time::Duration::from_secs(1));
+    // generate a random name
     let name: String = std::iter::repeat(())
         .map(|()| thread_rng().sample(Alphanumeric))
         .map(char::from)
         .take(10)
         .collect();
+    // generate a random name
     let new_name: String = std::iter::repeat(())
         .map(|()| thread_rng().sample(Alphanumeric))
         .map(char::from)
         .take(10)
         .collect();
+    // ---------- Prepare ----------
+
     // set verification code: perform a wrong action (invalid email address)
     let response = client
         .post("/users/email")
@@ -445,29 +481,42 @@ fn test_email() {
             "This Email address is already in use",
         )
     );
+
+    // ---------- Clean up ----------
     h4.abort();
     std::thread::sleep(std::time::Duration::from_secs(1));
+    // ---------- Clean up ----------
 }
 
 #[test]
 fn test_user() {
     let client = common::get_client().lock();
     let rt = Runtime::new().unwrap();
-    let h4 = rt.spawn(pulsar_email());
     std::thread::sleep(std::time::Duration::from_secs(1));
+    // generate a random name
     let name: String = std::iter::repeat(())
         .map(|()| thread_rng().sample(Alphanumeric))
         .map(char::from)
         .take(11)
         .collect();
-    // sign up a user: perform a wrong action (wrong verification code)
+    // generate a random name
     let new_name: String = std::iter::repeat(())
         .map(|()| thread_rng().sample(Alphanumeric))
         .map(char::from)
         .take(11)
         .collect();
+    // ---------- Prepare ----------
 
     // 1. test user_sign_up
+    // create burrow: perform a wrong action (need authentication)
+    let response = client
+        .post("/burrows")
+        .json(&json!({
+            "description": format!("Second burrow of {}", name),
+            "title": "Burrow 2"}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Unauthorized);
     // set verification code
     let response = client
         .post("/users/email")
@@ -592,6 +641,15 @@ fn test_user() {
     );
 
     // 2. test user_log_in
+    // create burrow: perform a wrong action (need authentication)
+    let response = client
+        .post("/burrows")
+        .json(&json!({
+            "description": format!("Second burrow of {}", name),
+            "title": "Burrow 2"}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Unauthorized);
     // user log in
     let response = client
         .post("/users/login")
@@ -638,13 +696,35 @@ fn test_user() {
         response.into_json::<ErrorResponse>().unwrap(),
         ErrorResponse::build(ErrorCode::CredentialInvalid, "Wrong username or password.",)
     );
+
+    // 3. test user_logout
+    // user log out
+    let response = client
+        .get("/users/logout")
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    assert_eq!(response.into_string().unwrap(), "Success");
+    // create burrow: perform a wrong action (user already logout, need authentication)
+    let response = client
+        .post("/burrows")
+        .json(&json!({
+            "description": format!("Second burrow of {}", name),
+            "title": "Burrow 2"}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Unauthorized);
+
+    // ---------- Clean up ----------
     h4.abort();
     std::thread::sleep(std::time::Duration::from_secs(1));
+    // ---------- Clean up ----------
 }
 
 #[test]
 fn test_burrow() {
-    // get the client
+    // ---------- Prepare ----------
+    // Init background task executor
     let client = common::get_client().lock();
     let rt = Runtime::new().unwrap();
     let h1 = rt.spawn(generate_trending());
@@ -658,6 +738,8 @@ fn test_burrow() {
         .map(char::from)
         .take(12)
         .collect();
+    // ---------- Prepare ----------
+
     // set verification code
     client
         .post("/users/email")
@@ -720,7 +802,7 @@ fn test_burrow() {
     //     .dispatch();
     // assert_eq!(response.status(), Status::Forbidden);
     // println!("{}", response.into_string().unwrap());
-    std::thread::sleep(std::time::Duration::from_secs(5));
+    std::thread::sleep(std::time::Duration::from_secs(2));
     // create burrow (2nd)
     let response = client
         .post("/burrows")
@@ -731,7 +813,7 @@ fn test_burrow() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     println!("{}", response.into_string().unwrap());
-    std::thread::sleep(std::time::Duration::from_secs(5));
+    std::thread::sleep(std::time::Duration::from_secs(2));
     // create burrow: perform a wrong action (empty title)
     let response = client
         .post("/burrows")
@@ -746,7 +828,7 @@ fn test_burrow() {
         ErrorResponse::build(ErrorCode::EmptyField, "Burrow title cannot be empty",)
     );
     // create burrow: perform a wrong action (amount up to limit)
-    std::thread::sleep(std::time::Duration::from_secs(5));
+    std::thread::sleep(std::time::Duration::from_secs(2));
     // create burrow (3rd)
     let response = client
         .post("/burrows")
@@ -757,7 +839,7 @@ fn test_burrow() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     println!("{}", response.into_string().unwrap());
-    std::thread::sleep(std::time::Duration::from_secs(5));
+    std::thread::sleep(std::time::Duration::from_secs(2));
     // create burrow (4th)
     let response = client
         .post("/burrows")
@@ -768,7 +850,7 @@ fn test_burrow() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     println!("{}", response.into_string().unwrap());
-    std::thread::sleep(std::time::Duration::from_secs(5));
+    std::thread::sleep(std::time::Duration::from_secs(2));
     // create burrow (5th)
     let response = client
         .post("/burrows")
@@ -779,7 +861,7 @@ fn test_burrow() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     println!("{}", response.into_string().unwrap());
-    std::thread::sleep(std::time::Duration::from_secs(5));
+    std::thread::sleep(std::time::Duration::from_secs(2));
     // create burrow: perform a wrong action (6th)
     let response = client
         .post("/burrows")
@@ -981,16 +1063,26 @@ fn test_burrow() {
         response.into_json::<ErrorResponse>().unwrap(),
         ErrorResponse::build(ErrorCode::EmptyField, "Burrow title cannot be empty",)
     );
+    // user log out
+    let response = client
+        .get("/users/logout")
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+
+    // ---------- Clean up ----------
     h1.abort();
     h2.abort();
     h3.abort();
     h4.abort();
     std::thread::sleep(std::time::Duration::from_secs(1));
+    // ---------- Clean up ----------
 }
 
 #[test]
 fn test_content() {
-    // get the client
+    // ---------- Prepare ----------
+    // Init background task executor
     let client = common::get_client().lock();
     let rt = Runtime::new().unwrap();
     let h1 = rt.spawn(generate_trending());
@@ -1004,6 +1096,8 @@ fn test_content() {
         .map(char::from)
         .take(13)
         .collect();
+    // ---------- Prepare ----------
+
     // set verification code
     client
         .post("/users/email")
@@ -1202,7 +1296,7 @@ fn test_content() {
             format!("Cannot find post {}", post_id + 10000),
         )
     );
-    std::thread::sleep(std::time::Duration::from_secs(5));
+    std::thread::sleep(std::time::Duration::from_secs(2));
     // delete post 3: perform a wrong action (out of time limit)
     let response = client
         .delete(format!("/content/posts/{}", post_id + 2))
@@ -1453,6 +1547,18 @@ fn test_content() {
         .unwrap();
     assert_eq!(res.len(), 1);
 
+    // create post 6 with new_burrow_id for later wrong delete
+    let response = client
+        .post("/content/posts")
+        .json(&json!({
+            "title": format!("Sixth post of {}", name),
+            "burrow_id": new_burrow_id,
+            "section": ["Life"],
+            "tag": ["NoTag"],
+            "content": "This is a test post no.6"}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
     // discard new burrow
     let response = client
         .delete(format!("/burrows/{}", new_burrow_id))
@@ -1460,9 +1566,9 @@ fn test_content() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     assert_eq!(response.into_string().unwrap(), "Success");
-    // delete post no.4: perform a wrong action (invalid burrow)
+    // delete post no.6: perform a wrong action (invalid burrow)
     let response = client
-        .delete(format!("/content/posts/{}", post_id + 3))
+        .delete(format!("/content/posts/{}", post_id + 5))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Forbidden);
@@ -1572,7 +1678,6 @@ fn test_content() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     println!("{}", response.into_string().unwrap());
-    // TODO
     // get post list with section
     let response = client
         .get(format!("/content/posts/list?page=0&section=NSFW"))
@@ -1747,16 +1852,26 @@ fn test_content() {
         res.reply_page[1].content,
         "This is a updated reply no.1 for post no.1".to_string()
     );
+    // user log out
+    let response = client
+        .get("/users/logout")
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+
+    // ---------- Clean up ----------
     h1.abort();
     h2.abort();
     h3.abort();
     h4.abort();
     std::thread::sleep(std::time::Duration::from_secs(1));
+    // ---------- Clean up ----------
 }
 
 #[test]
 fn test_search() {
-    // get the client
+    // ---------- Prepare ----------
+    // Init background task executor
     let client = common::get_client().lock();
     let rt = Runtime::new().unwrap();
     let h2 = rt.spawn(pulsar_relation());
@@ -1769,6 +1884,7 @@ fn test_search() {
         .map(char::from)
         .take(14)
         .collect();
+    // ---------- Prepare ----------
 
     // set verification code
     client
@@ -1805,7 +1921,7 @@ fn test_search() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     // println!("{}", response.into_string().unwrap());
-    std::thread::sleep(std::time::Duration::from_secs(5));
+    std::thread::sleep(std::time::Duration::from_secs(2));
 
     // create burrow
     let response = client
@@ -1845,7 +1961,7 @@ fn test_search() {
 
     // retrieve burrow
     let response = client
-        .post("/search".to_string())
+        .post("/search")
         .json(&json!(SearchRequest::RetrieveBurrow {
             burrow_id: created_burrow_id
         }))
@@ -1858,7 +1974,7 @@ fn test_search() {
 
     // retrieve burrow  (invalid burrow_id)
     let response = client
-        .post("/search".to_string())
+        .post("/search")
         .json(&json!(SearchRequest::RetrieveBurrow { burrow_id: -1 }))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
@@ -1868,7 +1984,7 @@ fn test_search() {
 
     // search burrow by keyword
     let response = client
-        .post("/search".to_string())
+        .post("/search")
         .json(&SearchRequest::SearchBurrowKeyword {
             keywords: vec!["Created".to_string()],
         })
@@ -1890,7 +2006,7 @@ fn test_search() {
 
     // search burrow by keyword  (repeat keyword vector)
     let response = client
-        .post("/search".to_string())
+        .post("/search")
         .json(&SearchRequest::SearchBurrowKeyword {
             keywords: vec![
                 "created".to_string(),
@@ -1914,7 +2030,7 @@ fn test_search() {
 
     // retrieve post
     let response = client
-        .post("/search".to_string())
+        .post("/search")
         .json(&json!(SearchRequest::RetrievePost { post_id: 1 }))
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
@@ -1924,7 +2040,7 @@ fn test_search() {
 
     // search post by keyword
     let response = client
-        .post("/search".to_string())
+        .post("/search")
         .json(&SearchRequest::SearchPostKeyword {
             keywords: vec!["test".to_string()],
         })
@@ -1936,7 +2052,7 @@ fn test_search() {
 
     // search post by keyword   (special characters)
     let response = client
-        .post("/search".to_string())
+        .post("/search")
         .json(&SearchRequest::SearchPostKeyword {
             keywords: vec!["❤❥웃유♋☮✌☏☢☠✔☑♚▲♪✈✞÷↑↓◆◇⊙■□△▽¿─│♥❣♂♀☿Ⓐ✍✉☣☤✘☒♛▼♫⌘☪≈←→◈◎☉★☆⊿※¡━┃♡ღツ☼☁❅♒✎©®™Σ✪✯☭➳卐√↖↗●◐Θ◤◥︻〖〗┄┆℃℉°✿ϟ☃☂✄¢€£∞✫★½✡×↙↘○◑⊕◣◢︼【】┅┇☽☾✚〓▂▃▄▅▆▇█▉▊▋▌▍▎▏↔↕☽☾の•▸◂▴▾┈┊①②③④⑤⑥⑦⑧⑨⑩ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ㍿▓♨♛❖♓☪✙┉┋☹☺☻تヅツッシÜϡﭢ™℠℗©®♥❤❥❣❦❧♡۵웃유ღ♋♂♀☿☼☀☁☂☄☾☽❄☃☈⊙☉℃℉❅✺ϟ☇♤♧♡♢♠♣♥♦☜☞☝✍☚☛☟✌✽✾✿❁❃❋❀⚘☑✓✔√☐☒✗✘ㄨ✕✖✖⋆✢✣✤✥❋✦✧✩✰✪✫✬✭✮✯❂✡★✱✲✳✴✵✶✷✸✹✺✻✼❄❅❆❇❈❉❊†☨✞✝☥☦☓☩☯☧☬☸✡♁✙♆。，、＇：∶；?‘’“”〝〞ˆˇ﹕︰﹔﹖﹑•¨….¸;！´？！～—ˉ｜‖＂〃｀@﹫¡¿﹏﹋﹌︴々﹟#﹩$﹠&﹪%*﹡﹢﹦﹤‐￣¯―﹨ˆ˜﹍﹎+=<＿_-ˇ~﹉﹊（）〈〉‹›﹛﹜『』〖〗［］《》〔〕{}「」【】︵︷︿︹︽_﹁﹃︻︶︸﹀︺︾ˉ﹂﹄︼☩☨☦✞✛✜✝✙✠✚†‡◉○◌◍◎●◐◑◒◓◔◕◖◗❂☢⊗⊙◘◙◍⅟½⅓⅕⅙⅛⅔⅖⅚⅜¾⅗⅝⅞⅘≂≃≄≅≆≇≈≉≊≋≌≍≎≏≐≑≒≓≔≕≖≗≘≙≚≛≜≝≞≟≠≡≢≣≤≥≦≧≨≩⊰⊱⋛⋚∫∬∭∮∯∰∱∲∳%℅‰‱㊣㊎㊍㊌㊋㊏㊐㊊㊚㊛㊤㊥㊦㊧㊨㊒㊞㊑㊒㊓㊔㊕㊖㊗㊘㊜㊝㊟㊠㊡㊢㊩㊪㊫㊬㊭㊮㊯㊰㊙㉿囍♔♕♖♗♘♙♚♛♜♝♞♟ℂℍℕℙℚℝℤℬℰℯℱℊℋℎℐℒℓℳℴ℘ℛℭ℮ℌℑℜℨ♪♫♩♬♭♮♯°øⒶ☮✌☪✡☭✯卐✐✎✏✑✒✍✉✁✂✃✄✆✉☎☏➟➡➢➣➤➥➦➧➨➚➘➙➛➜➝➞➸♐➲➳⏎➴➵➶➷➸➹➺➻➼➽←↑→↓↔↕↖↗↘↙↚↛↜↝↞↟↠↡↢↣↤↥↦↧↨➫➬➩➪➭➮➯➱↩↪↫↬↭↮↯↰↱↲↳↴↵↶↷↸↹↺↻↼↽↾↿⇀⇁⇂⇃⇄⇅⇆⇇⇈⇉⇊⇋⇌⇍⇎⇏⇐⇑⇒⇓⇔⇕⇖⇗⇘⇙⇚⇛⇜⇝⇞⇟⇠⇡⇢⇣⇤⇥⇦⇧⇨⇩⇪➀➁➂➃➄➅➆➇➈➉➊➋➌➍➎➏➐➑➒➓㊀㊁㊂㊃㊄㊅㊆㊇㊈㊉ⒶⒷⒸⒹⒺⒻⒼⒽⒾⒿⓀⓁⓂⓃⓄⓅⓆⓇⓈⓉⓊⓋⓌⓍⓎⓏⓐⓑⓒⓓⓔⓕⓖⓗⓘⓙⓚⓛⓜⓝⓞⓟⓠⓡⓢⓣⓤⓥⓦⓧⓨⓩ⒜⒝⒞⒟⒠⒡⒢⒣⒤⒥⒦⒧⒨⒩⒪⒫⒬⒭⒮⒯⒰⒱⒲⒳⒴⒵ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩⅪⅫⅬⅭⅮⅯⅰⅱⅲⅳⅴⅵⅶⅷⅸⅹⅺⅻⅼⅽⅾⅿ┌┍┎┏┐┑┒┓└┕┖┗┘┙┚┛├┝┞┟┠┡┢┣┤┥┦┧┨┩┪┫┬┭┮┯┰┱┲┳┴┵┶┷┸┹┺┻┼┽┾┿╀╁╂╃╄╅╆╇╈╉╊╋╌╍╎╏═║╒╓╔╕╖╗╘╙╚╛╜╝╞╟╠╡╢╣╤╥╦╧╨╩╪╫╬◤◥◄►▶◀◣◢▲▼◥▸◂▴▾△▽▷◁⊿▻◅▵▿▹◃❏❐❑❒▀▁▂▃▄▅▆▇▉▊▋█▌▍▎▏▐░▒▓▔▕■□▢▣▤▥▦▧▨▩▪▫▬▭▮▯㋀㋁㋂㋃㋄㋅㋆㋇㋈㋉㋊㋋㏠㏡㏢㏣㏤㏥㏦㏧㏨㏩㏪㏫㏬㏭㏮㏯㏰㏱㏲㏳㏴㏵㏶㏷㏸㏹㏺㏻㏼㏽㏾㍙㍚㍛㍜㍝㍞㍟㍠㍡㍢㍣㍤㍥㍦㍧㍨㍩㍪㍫㍬㍭㍮㍯㍰㍘☰☲☱☴☵☶☳☷☯
             ♠♣♧♡♥❤❥❣♂♀✲☀☼☾☽◐◑☺☻☎☏✿❀№↑↓←→√×÷★℃℉°◆◇⊙■□△▽¿½☯✡㍿卍卐♂♀✚〓㎡♪♫♩♬㊚㊛囍㊒㊖Φ♀♂‖$@*&#※卍卐Ψ♫♬♭♩♪♯♮⌒¶∮‖€￡¥$
@@ -1952,7 +2068,7 @@ fn test_search() {
 
     // search post by tag
     let response = client
-        .post("/search".to_string())
+        .post("/search")
         .json(&json!(SearchRequest::SearchPostTag {
             tag: vec!["政治相关".to_string()]
         }))
@@ -1965,7 +2081,7 @@ fn test_search() {
 
     // search post by tag   (empty tag vector)
     let response = client
-        .post("/search".to_string())
+        .post("/search")
         .json(&SearchRequest::SearchPostTag { tag: vec![] })
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
@@ -1987,7 +2103,7 @@ fn test_search() {
 
     //retrieve a discarded burrow
     let response = client
-        .post("/search".to_string())
+        .post("/search")
         .json(&SearchRequest::RetrieveBurrow {
             burrow_id: burrow_id,
         })
@@ -2000,7 +2116,7 @@ fn test_search() {
 
     //retrieve a non-exist post
     let response = client
-        .post("/search".to_string())
+        .post("/search")
         .json(&SearchRequest::RetrievePost { post_id: -1 })
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
@@ -2009,14 +2125,25 @@ fn test_search() {
     // println!("Retrieve result: {}", response.into_string().unwrap());
     assert_eq!(res.error.code, ErrorCode::PostNotExist);
     assert_eq!(res.error.message, "Cannot find post -1".to_string());
+    // user log out
+    let response = client
+        .get("/users/logout")
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+
+    // ---------- Clean up ----------
     h2.abort();
     h3.abort();
     h4.abort();
     std::thread::sleep(std::time::Duration::from_secs(1));
+    // ---------- Clean up ----------
 }
 
 #[test]
 fn test_storage() {
+    // ---------- Prepare ----------
+    // Init background task executor
     let client = common::get_client().lock();
     let rt = Runtime::new().unwrap();
     let h4 = rt.spawn(pulsar_email());
@@ -2027,6 +2154,7 @@ fn test_storage() {
         .map(char::from)
         .take(15)
         .collect();
+    // ---------- Prepare ----------
 
     // set verification code
     client
@@ -2058,8 +2186,6 @@ fn test_storage() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    // println!("{}", response.into_string().unwrap());
-    std::thread::sleep(std::time::Duration::from_secs(5));
 
     //get an jepg from httpbin
     let mut jpeg_buf: Vec<u8> = vec![];
@@ -2157,6 +2283,254 @@ fn test_storage() {
     assert_eq!(response.status(), Status::Ok);
     let res = response.into_bytes().unwrap();
     assert_eq!(res, png_buf);
+    // user log out
+    let response = client
+        .get("/users/logout")
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+
+    // ---------- Clean up ----------
     h4.abort();
     std::thread::sleep(std::time::Duration::from_secs(1));
+    // ---------- Clean up ----------
+}
+
+#[test]
+fn test_admin() {
+    // ---------- Prepare ----------
+    // Init background task executor
+    let client = common::get_client().lock();
+    let rt = Runtime::new().unwrap();
+    let h1 = rt.spawn(generate_trending());
+    let h2 = rt.spawn(pulsar_relation());
+    let h3 = rt.spawn(pulsar_typesense());
+    let h4 = rt.spawn(pulsar_email());
+    std::thread::sleep(std::time::Duration::from_secs(1));
+    // generate a random name
+    let name: String = std::iter::repeat(())
+        .map(|()| thread_rng().sample(Alphanumeric))
+        .map(char::from)
+        .take(16)
+        .collect();
+    // generate a random name
+    let new_name: String = std::iter::repeat(())
+        .map(|()| thread_rng().sample(Alphanumeric))
+        .map(char::from)
+        .take(16)
+        .collect();
+    // ---------- Prepare ----------
+
+    // set verification code
+    client
+        .post("/users/email")
+        .json(&json!({
+            "email": format!("{}@mails.tsinghua.edu.cn", name)
+        }))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    std::thread::sleep(std::time::Duration::from_secs(1));
+    // sign up a user
+    let response = client
+        .post("/users/sign-up")
+        .json(&json!({
+            "username": name,
+            "password": "testpassword",
+            "email": format!("{}@mails.tsinghua.edu.cn", name),
+            "verification_code": "666666"}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    let res = response
+        .into_json::<backend::models::user::UserResponse>()
+        .unwrap();
+    let burrow_id = res.default_burrow;
+    println!("Default Burrow id is {}", burrow_id);
+    // user login
+    let response = client
+        .post("/users/login")
+        .json(&json!({
+        "username": name,
+        "password": "testpassword"}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    assert_eq!(response.into_string().unwrap(), "Success");
+    // create post 1
+    let response = client
+        .post("/content/posts")
+        .json(&json!({
+            "title": format!("First post of {}", name),
+            "burrow_id": burrow_id,
+            "section": ["Learning"],
+            "tag": ["AdminTag"],
+            "content": "This is a test post no.1"}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    let res = response
+        .into_json::<backend::models::content::PostCreateResponse>()
+        .unwrap();
+    let post_id = res.post_id;
+    // user log out
+    let response = client
+        .get("/users/logout")
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+
+    // Set up the admin account
+    // set verification code
+    client
+        .post("/users/email")
+        .json(&json!({
+            "email": format!("{}@mails.tsinghua.edu.cn", new_name)
+        }))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    std::thread::sleep(std::time::Duration::from_secs(1));
+    // sign up a user
+    let response = client
+        .post("/users/sign-up")
+        .json(&json!({
+            "username": new_name,
+            "password": "testpassword",
+            "email": format!("{}@mails.tsinghua.edu.cn", new_name),
+            "verification_code": "666666"}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    // user login
+    let response = client
+        .post("/users/login")
+        .json(&json!({
+            "username": new_name,
+            "password": "testpassword"}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    assert_eq!(response.into_string().unwrap(), "Success");
+    let response = client
+        .get("/admin/test?role=3")
+        .json(&json!({
+            "username": new_name,
+            "password": "testpassword"}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    assert_eq!(response.into_string().unwrap(), "Success");
+    // Get Uid of the burrow
+    let response = client
+        .post("/admin")
+        .json(&json!({ "GetUserId": {"burrow_id": burrow_id} }))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    let uid = response.into_json::<i64>().unwrap();
+    // Ban the user with uid
+    let response = client
+        .post("/admin")
+        .json(&json!({ "BanUser": {"uid": uid} }))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    assert_eq!(response.into_string().unwrap(), "Success");
+    // Reopen the user with uid
+    let response = client
+        .post("/admin")
+        .json(&json!({ "ReopenUser": {"uid": uid} }))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    assert_eq!(response.into_string().unwrap(), "Success");
+    // Ban the burrow with burrow_id
+    let response = client
+        .post("/admin")
+        .json(&json!({ "BanBurrow": {"burrow_id": burrow_id} }))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    assert_eq!(response.into_string().unwrap(), "Success");
+
+    // Reopen the burrow with burrow_id
+    let response = client
+        .post("/admin")
+        .json(&json!({ "ReopenBurrow": {"burrow_id": burrow_id} }))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    assert_eq!(response.into_string().unwrap(), "Success");
+
+    // Ban the post with post_id
+    let response = client
+        .post("/admin")
+        .json(&json!({ "BanPost": {"post_id": post_id} }))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    assert_eq!(response.into_string().unwrap(), "Success");
+    // Reopen the post with post_id
+    let response = client
+        .post("/admin")
+        .json(&json!({ "ReopenPost": {"post_id": post_id} }))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    assert_eq!(response.into_string().unwrap(), "Success");
+    // Ban the reply with post_id and reply_id
+    let response = client
+        .post("/admin")
+        .json(&json!({ "BanReply": {"post_id": post_id, "reply_id": 0} }))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    assert_eq!(response.into_string().unwrap(), "Success");
+
+    // Create Admin
+    let response = client
+        .post("/admin")
+        .json(&json!({ "CreateAdmin": {"uid": uid} }))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    assert_eq!(response.into_string().unwrap(), "Success");
+    // Set Admin Role
+    let response = client
+        .post("/admin")
+        .json(&json!({ "SetAdminRole": {"uid": uid, "role": 2} }))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    assert_eq!(response.into_string().unwrap(), "Success");
+    // Delete Admin
+    let response = client
+        .post("/admin")
+        .json(&json!({ "DeleteAdmin": {"uid": uid} }))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    assert_eq!(response.into_string().unwrap(), "Success");
+
+    // Reopen the reply with post_id and reply_id
+    let response = client
+        .post("/admin")
+        .json(&json!({ "ReopenReply": {"post_id": post_id, "reply_id": 0} }))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    assert_eq!(response.into_string().unwrap(), "Success");
+
+    // user log out
+    let response = client
+        .get("/users/logout")
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    // ---------- Clean up ----------
+    h1.abort();
+    h2.abort();
+    h3.abort();
+    h4.abort();
+    std::thread::sleep(std::time::Duration::from_secs(1));
+    // ---------- Clean up ----------
 }

@@ -1,4 +1,6 @@
-//! Mod for routes
+//! Module for routes
+
+pub mod admin;
 pub mod burrow;
 pub mod content;
 pub mod health;
@@ -19,4 +21,5 @@ pub async fn routes_init(rocket: Rocket<Build>) -> Rocket<Build> {
         .attach(AdHoc::on_ignite("mount_search", search::init))
         .attach(AdHoc::on_ignite("mount_burrow", burrow::init))
         .attach(AdHoc::on_ignite("mount_trending", trending::init))
+        .attach(AdHoc::on_ignite("mount_admin", admin::init))
 }

@@ -1,4 +1,5 @@
-//! Routes for health checks.
+//! Routes for health checks
+
 use rocket::{Build, Rocket};
 
 pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {

@@ -1,3 +1,16 @@
+//! Module to valid burrow
+//!
+//! Split burrow list stored in database to burrow list
+
+/// Split burrow list stored in database as string to burrow_id list
+///
+/// ## Parameters
+///
+/// - `burrow`: The burrow list stored in database as string.
+///
+/// ## Returns
+///
+/// A vector of burrow_id.
 pub fn get_burrow_list(burrows: &str) -> Vec<i64> {
     if burrows.is_empty() {
         return Vec::new();
@@ -8,6 +21,16 @@ pub fn get_burrow_list(burrows: &str) -> Vec<i64> {
         .collect()
 }
 
+/// Check if a given burrow_id is valid
+///
+/// ## Parameters
+///
+/// - `burrow`: The burrow list stored in database as string.
+/// - `burrow_id`: The burrow_id to check.
+///
+/// ## Returns
+///
+/// A boolean value. True if the burrow_id is valid.
 pub fn is_valid_burrow(burrows: &str, burrow_id: &i64) -> bool {
     if burrows.is_empty() {
         return false;
