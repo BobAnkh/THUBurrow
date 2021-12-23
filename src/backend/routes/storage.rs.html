@@ -295,7 +295,7 @@
             <span class="prelude-val">Some</span>(<span class="ident">state</span>) =&gt; {
                 <span class="kw">if</span> <span class="ident">state</span>.<span class="ident">file_num</span> <span class="op">&gt;</span><span class="op">=</span> <span class="kw-2">*</span><span class="ident">MAX_IMAGE_NUM</span> {
                     <span class="kw">return</span> (
-                        <span class="ident">Status::BadRequest</span>,
+                        <span class="ident">Status::TooManyRequests</span>,
                         <span class="prelude-val">Err</span>(<span class="ident">Json</span>(<span class="ident">ErrorResponse::build</span>(
                             <span class="ident">ErrorCode::RateLimit</span>,
                             <span class="string">&quot;Store too many images.&quot;</span>,
