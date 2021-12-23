@@ -1344,10 +1344,10 @@ fn test_burrow() {
         format!(
             "[{},{},{},{},{}]",
             burrow_id,
-            burrow_id + 1,
             burrow_id + 2,
             burrow_id + 3,
-            burrow_id + 4
+            burrow_id + 4,
+            burrow_id + 5
         )
     );
 
