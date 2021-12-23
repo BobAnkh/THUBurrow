@@ -11,7 +11,6 @@ import Searchburrow from '../components/search/search-burrow';
 import Searchpost from '../components/search/search-post';
 import Searchreply from '../components/search/search-reply';
 import router from 'next/router';
-import PostList from '../components/post-list';
 
 axios.defaults.withCredentials = true;
 axios.defaults.headers.post['Content-Type'] = 'application/json';
@@ -39,6 +38,7 @@ const SearchPage: FC = () => {
   const [found_number, setfound_number] = useState(0);
   const [found_number1, setfound_number1] = useState(0);
   const [showreply, setshowreply] = useState(false);
+  const [jump, setjump] = useState(false);
 
   const [webtitle, setwebtitle] = useState('T大地洞-搜索');
 
@@ -108,8 +108,11 @@ const SearchPage: FC = () => {
             headers: { 'Content-Type': 'application/json' },
           }
         );
+        setfound_number(1);
+        setjump(true);
         router.push(`/post/{${id}}`);
       } catch (e) {
+        setjump(false);
         const err = e as AxiosError;
         if (err.response?.status == 404) {
           message.error('找不到该帖');
@@ -125,8 +128,11 @@ const SearchPage: FC = () => {
             headers: { 'Content-Type': 'application/json' },
           }
         );
+        setfound_number(1);
+        setjump(true);
         router.push(`/burrow/{${id}}`);
       } catch (e) {
+        setjump(false);
         const err = e as AxiosError;
         if (err.response?.status == 404) {
           message.error('找不到该洞');
@@ -315,8 +321,14 @@ const SearchPage: FC = () => {
           loadMoreDom={loadMoreDom}
         />
       );
-    } else if (search_text.id == 0) {
-      return <PostList listData={[]} setPage={setpage} totalNum={0} />;
+    } else if (search_text.id != 0 && jump == true) {
+      return (
+        <div>
+          <span>
+            <LoadingOutlined /> 正在跳转……
+          </span>
+        </div>
+      );
     }
   }
 
@@ -358,10 +370,13 @@ const SearchPage: FC = () => {
               <Option value='replies'>查看回复</Option>
             </Select>
           )}
-          <p>
-            找到<mark>{showreply == false ? found_number : found_number1}</mark>
-            个结果
-          </p>
+          {jump == false && (
+            <p>
+              找到
+              <mark>{showreply === false ? found_number : found_number1}</mark>
+              个结果
+            </p>
+          )}
           <Card>
             <div> {Switch()}</div>
           </Card>
