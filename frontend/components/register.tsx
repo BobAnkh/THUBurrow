@@ -61,9 +61,9 @@ export default function Register({ switchform }: Iprops) {
       );
       var json = await res.data;
       if (json.error) {
-        message.success('发送验证码成功');
-      } else {
         message.error('发送验证码失败');
+      } else {
+        message.success('发送验证码成功');
       }
     } catch (e) {
       message.error('发送验证码失败');
@@ -127,7 +127,6 @@ export default function Register({ switchform }: Iprops) {
       verification_code: verCode,
     };
     try {
-      console.log(data);
       const res = await axios.post(
         `${process.env.NEXT_PUBLIC_BASEURL}/users/sign-up`,
         data
@@ -156,7 +155,10 @@ export default function Register({ switchform }: Iprops) {
           <Form name='register' onFinish={onFinish}>
             <Form.Item
               name='username'
-              rules={[{ required: true, message: '请输入用户名!' }]}
+              rules={[
+                { required: true, message: '请输入用户名!' },
+                { pattern: /^[^\s]*$/, message: '用户名不能包含空格' },
+              ]}
               className={styles.formStyle}
             >
               <Row>
@@ -173,20 +175,13 @@ export default function Register({ switchform }: Iprops) {
             </Form.Item>
             <Form.Item
               name='password'
+              hasFeedback
               rules={[
                 { required: true, message: '请输入密码!' },
                 {
                   pattern: validate_password,
                   message: '请输入字母、数字和下划线的8到20位组合',
                 },
-                ({ getFieldValue }) => ({
-                  validator(role, value) {
-                    let password_value = getFieldValue('password_confirm');
-                    if (password_value && value !== password_value)
-                      return Promise.reject('两次输入的密码不一致');
-                    return Promise.resolve();
-                  },
-                }),
               ]}
               className={styles.formStyle}
             >
@@ -204,7 +199,19 @@ export default function Register({ switchform }: Iprops) {
             </Form.Item>
             <Form.Item
               name='password_confirm'
-              rules={[{ required: true, message: '请确认密码!' }]}
+              hasFeedback
+              dependencies={['password']}
+              rules={[
+                { required: true, message: '请确认密码!' },
+                ({ getFieldValue }) => ({
+                  validator(_, value) {
+                    if (!value || value === getFieldValue('password')) {
+                      return Promise.resolve();
+                    }
+                    return Promise.reject(new Error('两次密码不一致'));
+                  },
+                }),
+              ]}
               className={styles.formStyle}
             >
               <Row>

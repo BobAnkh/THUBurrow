@@ -2,19 +2,12 @@ import { List, Tag } from 'antd';
 import styles from '../../styles/search.module.css';
 import { PostListItemDataType } from '../../models/search/data.d';
 import moment from 'moment';
-import Link from 'next/link';
 
 function showtag1(tag: string, index: number) {
   return <Tag key={index}>{tag}</Tag>;
 }
 const showtag = (value: Array<string>) => {
   return value.map(showtag1);
-};
-function showsection1(tag: string) {
-  return <div> {tag} </div>;
-}
-const showsection = (value: Array<string>) => {
-  return value.map(showsection1);
 };
 
 type Iprops = {
@@ -46,7 +39,7 @@ export default function Searchpost({
       renderItem={(item) => (
         <List.Item key={item.post_id}>
           <List.Item.Meta
-            title={<Link href={`post/${item.post_id}`}>{item.title}</Link>}
+            title={<a href={`/contend/posts/${item.post_id}`}>{item.title}</a>}
             description={`#${item.burrow_id} 洞主`}
           />
           {item.tag != null && showtag(item.tag)}

@@ -2,7 +2,6 @@ import { List, Tag } from 'antd';
 import styles from '../../styles/search.module.css';
 import { Reply } from '../../models/search/data.d';
 import moment from 'moment';
-import Link from 'next/link';
 
 type Iprops = {
   replylist: any;
@@ -30,7 +29,9 @@ export default function Searchreply({
       renderItem={(item) => (
         <List.Item key={item.post_id}>
           <List.Item.Meta
-            title={<a href={`post/${item.post_id}`}>帖#{item.post_id}</a>}
+            title={
+              <a href={`/content/posts/${item.post_id}`}>帖#{item.post_id}</a>
+            }
             description={`该帖子的回复`}
           />
           <List
