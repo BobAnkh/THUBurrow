@@ -59,11 +59,13 @@ const Test: NextPage = () => {
     try {
       console.log('size', bytes.length);
       const res = await axios.post(
-        `${process.env.NEXT_PUBLIC_BASEURL}/storage/image`,
+        `${process.env.NEXT_PUBLIC_BASEURL}/storage/images`,
         bytes,
         { headers: { 'Content-Type': type } }
       );
-      setNewURL(`${process.env.NEXT_PUBLIC_BASEURL}/storage/image/${res.data}`);
+      setNewURL(
+        `${process.env.NEXT_PUBLIC_BASEURL}/storage/images/${res.data}`
+      );
     } catch (e) {
       message.error('上传图片失败！');
     }
@@ -84,7 +86,12 @@ const Test: NextPage = () => {
     reader.readAsDataURL(event.target.files[0]);
   };
 
-  return <input type='file' accept='image/*' onChange={uploadImage} />;
+  return (
+    <>
+      <input type='file' accept='image/*' onChange={uploadImage} />
+      <img src={newURL} />
+    </>
+  );
 };
 
 export default Test;
