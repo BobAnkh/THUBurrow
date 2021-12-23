@@ -622,8 +622,7 @@ pub async fn delete_post(
                             "Can only delete post within 2 minutes.",
                         ))),
                     );
-                }
-                else if post_info.post_state != 0 {
+                } else if post_info.post_state != 0 {
                     return (
                         Status::Forbidden,
                         Err(Json(ErrorResponse::build(

@@ -2615,17 +2615,17 @@ fn test_content() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     assert_eq!(response.into_string().unwrap(), "Success");
-//     // TODO
-//     // delete post: perform a wrong action (UserForbidden)
-//     let response = client
-//         .delete(format!("/content/posts/{}", new_name_post_id))
-//         .remote("127.0.0.1:8000".parse().unwrap())
-//         .dispatch();
-//     assert_eq!(response.status(), Status::Forbidden);
-//     assert_eq!(
-//         response.into_json::<ErrorResponse>().unwrap(),
-//         ErrorResponse::build(ErrorCode::UserForbidden, "User not in a valid state",)
-//     );
+    //     // TODO
+    //     // delete post: perform a wrong action (UserForbidden)
+    //     let response = client
+    //         .delete(format!("/content/posts/{}", new_name_post_id))
+    //         .remote("127.0.0.1:8000".parse().unwrap())
+    //         .dispatch();
+    //     assert_eq!(response.status(), Status::Forbidden);
+    //     assert_eq!(
+    //         response.into_json::<ErrorResponse>().unwrap(),
+    //         ErrorResponse::build(ErrorCode::UserForbidden, "User not in a valid state",)
+    //     );
     // Create a post for new user: perform a wrong action (UserForbidden)
     let response = client
         .post("/content/posts")
@@ -2701,17 +2701,17 @@ fn test_content() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     assert_eq!(response.into_string().unwrap(), "Success");
-//     // TODO
-//     // delete post: perform a wrong action (UserForbidden)
-//     let response = client
-//         .delete(format!("/content/posts/{}", post_id))
-//         .remote("127.0.0.1:8000".parse().unwrap())
-//         .dispatch();
-//     assert_eq!(response.status(), Status::Forbidden);
-//     assert_eq!(
-//         response.into_json::<ErrorResponse>().unwrap(),
-//         ErrorResponse::build(ErrorCode::UserForbidden, "Post not in a valid state",)
-//     );
+    //     // TODO
+    //     // delete post: perform a wrong action (UserForbidden)
+    //     let response = client
+    //         .delete(format!("/content/posts/{}", post_id))
+    //         .remote("127.0.0.1:8000".parse().unwrap())
+    //         .dispatch();
+    //     assert_eq!(response.status(), Status::Forbidden);
+    //     assert_eq!(
+    //         response.into_json::<ErrorResponse>().unwrap(),
+    //         ErrorResponse::build(ErrorCode::UserForbidden, "Post not in a valid state",)
+    //     );
     // Read post with post_id
     let response = client
         .get(format!("/content/posts/{}", post_id))
@@ -2722,7 +2722,10 @@ fn test_content() {
         .into_json::<backend::models::content::PostPage>()
         .unwrap();
     assert_eq!(res.post_desc.post_id, post_id);
-    assert_eq!(res.post_desc.title, "Admin has banned this post".to_string());
+    assert_eq!(
+        res.post_desc.title,
+        "Admin has banned this post".to_string()
+    );
     assert_eq!(res.reply_page, Vec::new());
     // Update post with post_id: perform a wrong action (UserForbidden)
     let response = client
@@ -2763,7 +2766,10 @@ fn test_content() {
         .unwrap();
     assert_eq!(res.post_desc.post_id, post_id + 2);
     assert_eq!(res.reply_page[0].reply_id, 0);
-    assert_eq!(res.reply_page[0].content, "Admin has banned this reply".to_string());
+    assert_eq!(
+        res.reply_page[0].content,
+        "Admin has banned this reply".to_string()
+    );
     // Update reply with post_id + 2, 0: perform a wrong action (UserForbidden)
     let response = client
         .patch("/content/replies")
