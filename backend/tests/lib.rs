@@ -2796,7 +2796,7 @@ fn test_search() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     let res = response.into_json::<SearchBurrowResponse>().unwrap();
-    assert!(res.burrows[0].burrow_id != created_burrow_id || res.found == 0);
+    assert!(res.found == 0 || res.burrows[0].burrow_id != created_burrow_id);
 
     // search post by tag
     let response = client
@@ -2808,7 +2808,7 @@ fn test_search() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     let res = response.into_json::<SearchPostResponse>().unwrap();
-    assert!(res.posts[0].post_id != post_id || res.found == 0);
+    assert!(res.found == 0 || res.posts[0].post_id != post_id);
 
     // search post by keyword
     let response = client
@@ -2820,7 +2820,7 @@ fn test_search() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     let res = response.into_json::<SearchMixResponse>().unwrap();
-    assert!(res.replies.replies[0].post_id != post_id || res.replies.found == 0);
+    assert!(res.replies.found == 0 || res.replies.replies[0].post_id != post_id);
 
     // Reopen the burrow with burrow_id
     let response = client
@@ -3053,6 +3053,16 @@ fn test_storage() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::TooManyRequests);
+
+    let empty_image: Vec<u8> = Vec::new();
+    // store a jpeg
+    let response = client
+        .post("/storage/images")
+        .header(ContentType::JPEG)
+        .body(empty_image)
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::BadRequest);
 
     // user log out
     let response = client

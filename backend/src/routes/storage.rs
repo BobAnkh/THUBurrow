@@ -55,6 +55,15 @@ async fn upload_image(
     hash_md5.input(image.content.as_slice());
     let filename = hash_md5.result_str() + "." + image.content_type.to_string().as_str();
     let image_size = image.content.len() as i32;
+    if image_size == 0 {
+        return (
+            Status::BadRequest,
+            Err(Json(ErrorResponse::build(
+                ErrorCode::EmptyField,
+                "Image is empty",
+            ))),
+        );
+    }
     match UserStatus::find_by_id(auth.id).one(&pg_con).await {
         Ok(opt_state) => match opt_state {
             Some(state) => {
