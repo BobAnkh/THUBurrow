@@ -44,7 +44,7 @@ const SearchPage: FC = () => {
 
   async function sendkeyword(Keyword: any, page: number) {
     if (area === 'post') {
-      const SearchPostKeyword = { keyword: Keyword };
+      const SearchPostKeyword = { keywords: Keyword };
       setloading(true);
       axios
         .post(`${process.env.NEXT_PUBLIC_BASEURL}/search?page=${page - 1}`, {
@@ -72,7 +72,7 @@ const SearchPage: FC = () => {
       setloading(false);
       setloadingMore(false);
     } else {
-      const SearchBurrowKeyword = { keyword: Keyword };
+      const SearchBurrowKeyword = { keywords: Keyword };
       setloading(true);
       axios
         .post(`${process.env.NEXT_PUBLIC_BASEURL}/search?page=${page - 1}`, {
@@ -111,7 +111,7 @@ const SearchPage: FC = () => {
         router.push(`/post/{${id}}`);
       } catch (e) {
         const err = e as AxiosError;
-        if (err.response?.status == 400) {
+        if (err.response?.status == 404) {
           message.error('找不到该帖');
         } else {
           message.error('搜索失败');
@@ -128,7 +128,7 @@ const SearchPage: FC = () => {
         router.push(`/burrow/{${id}}`);
       } catch (e) {
         const err = e as AxiosError;
-        if (err.response?.status == 400) {
+        if (err.response?.status == 404) {
           message.error('找不到该洞');
         } else {
           message.error('搜索失败');
