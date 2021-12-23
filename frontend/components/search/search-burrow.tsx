@@ -32,7 +32,7 @@ export default function Searchburrow({
             description={
               item.status == false ? (
                 <span>
-                  {item.title}
+                  <span>{`#${item.burrow_id} 洞主`}</span>
                   <strong>
                     <em> 已废弃</em>
                   </strong>
