@@ -12,7 +12,7 @@ import MdEditor from 'react-markdown-editor-lite';
 import { UploadFunc } from 'react-markdown-editor-lite/cjs/share/var';
 import 'react-markdown-editor-lite/lib/index.css';
 
-import './markdown.module.css';
+import '../../styles/markdown.module.css';
 
 const MarkdownProcessor = unified()
   .use(remarkParse)
