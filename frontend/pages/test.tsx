@@ -1,5 +1,4 @@
 import type { NextPage } from 'next';
-import Image from 'next/image';
 import { message } from 'antd';
 import axios, { AxiosError } from 'axios';
 import { useState } from 'react';
@@ -93,6 +92,7 @@ const Test: NextPage = () => {
       <img src={newURL} />
     </>
   );
+
 };
 
 export default Test;
