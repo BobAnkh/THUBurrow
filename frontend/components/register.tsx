@@ -127,7 +127,6 @@ export default function Register({ switchform }: Iprops) {
       verification_code: verCode,
     };
     try {
-      console.log(data);
       const res = await axios.post(
         `${process.env.NEXT_PUBLIC_BASEURL}/users/sign-up`,
         data

@@ -1,6 +1,5 @@
 import { ColumnsType, ColumnType } from 'antd/es/table';
 import type { NextPage } from 'next';
-import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { FormInstance } from 'antd/lib/form';
 import { UserOutlined } from '@ant-design/icons';
@@ -430,7 +429,7 @@ const UserPage: NextPage = () => {
   };
 
   const site = router.pathname.split('/')[1];
-  type MyColumnsType<T> = (ColumnType<T> & {editable?:boolean})[];
+  type MyColumnsType<T> = (ColumnType<T> & { editable?: boolean })[];
   const myBurrowColumns: MyColumnsType<MyBurrowInfo> = [
     {
       key: 'id',
@@ -511,7 +510,7 @@ const UserPage: NextPage = () => {
     <Layout className='layout'>
       <Header>
         <title> 个人主页 </title>
-        <GlobalHeader/>
+        <GlobalHeader />
       </Header>
       <Content>
         <Card title='我的地洞'>

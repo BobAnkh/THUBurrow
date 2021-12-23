@@ -15,12 +15,14 @@ const Create: NextPage = () => {
   const { Option } = Select;
   const router = useRouter();
   const [bidList, setBidList] = useState([]);
+  const [content, setContent] = useState('');
+  const [mode, setMode] = useState<'view' | 'edit'>('edit');
   const toOption = (bidList: number[]) => {
     const bidOptionList = [];
     for (let i = 0; i < bidList.length; i++) {
       bidOptionList.push(
         <Option key={bidList[i].toString()} value={bidList[i]}>
-          {bidList[i].toString()}
+          {'#' + bidList[i].toString() + ' 洞主'}
         </Option>
       );
     }
@@ -44,6 +46,11 @@ const Create: NextPage = () => {
     };
     fetchBid();
   }, [router]);
+
+  const handleOnChange = (text: string) => {
+    setContent(text);
+  };
+
   const onFinish = async (values: any) => {
     const data = {
       ...values,
@@ -54,22 +61,20 @@ const Create: NextPage = () => {
         { ...data },
         { headers: { 'Content-Type': 'application/json' } }
       );
-      const json = await res.data;
-      if (json.error) {
-        message.error('发帖失败');
-      } else {
-        message.success('发帖成功');
-        window.location.reload();
-      }
+      message.success('发帖成功');
+      window.location.reload();
     } catch (e) {
-      message.error('发帖失败');
-      alert(e);
+      const err = e as AxiosError;
+      if (err.response?.status == 400) {
+        message.error('格式不规范！');
+      } else if (err.response?.status == 403) {
+        message.error('用户被封禁或地洞不存在！');
+      } else if (err.response?.status == 500) {
+        message.error('服务器错误！');
+      } else message.error('未知错误！');
     }
   };
 
-  const onFinishFailed = (errorInfo: any) => {
-    message.error(errorInfo);
-  };
   return (
     <Layout className='layout'>
       <Header>
@@ -83,7 +88,6 @@ const Create: NextPage = () => {
             wrapperCol={{ span: 14 }}
             layout='horizontal'
             onFinish={onFinish}
-            onFinishFailed={onFinishFailed}
           >
             <Form.Item
               label='标题'
@@ -92,17 +96,18 @@ const Create: NextPage = () => {
             >
               <Input placeholder='请输入标题' />
             </Form.Item>
-            <Form.Item label='内容'>
-              <Markdown content='## 1' mode='edit' />
-            </Form.Item>
             <Form.Item
               label='内容'
               name='content'
               rules={[{ required: true, message: '帖子第一层不能为空' }]}
             >
-              <TextArea rows={4} />
+              <Markdown
+                content={content}
+                mode={mode}
+                editorStyle={{ height: '500px' }}
+                onChange={handleOnChange}
+              />
             </Form.Item>
-            {/* <Form.Item> <Markdown/></Form.Item> */}
             <Form.Item label='详情'>
               <Form.Item
                 name='burrow_id'
@@ -113,6 +118,7 @@ const Create: NextPage = () => {
                   display: 'inline-block',
                   width: 'calc(50% - 8px)',
                 }}
+                label='发帖人身份'
               >
                 <Select placeholder='洞号'>{toOption(bidList)}</Select>
               </Form.Item>
@@ -124,6 +130,7 @@ const Create: NextPage = () => {
                   width: 'calc(50% - 8px)',
                   margin: '0 8px',
                 }}
+                label='贴子分区'
               >
                 <Select
                   mode='multiple'

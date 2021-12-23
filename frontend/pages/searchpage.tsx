@@ -24,7 +24,6 @@ import Searchburrowid from '../components/search/search-burrowid';
 import Searchpost from '../components/search/search-post';
 import Searchreply from '../components/search/search-reply';
 import Searchpostid from '../components/search/search-postid';
-import { string } from 'prop-types';
 
 axios.defaults.withCredentials = true;
 axios.defaults.headers.post['Content-Type'] = 'application/json';

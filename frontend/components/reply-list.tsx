@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { Button, Form, List, message, Space } from 'antd';
-import TextArea from 'antd/lib/input/TextArea';
 import axios, { AxiosError } from 'axios';
-import { MarkdownViewer } from './markdown/markdown';
+import Markdown, { MarkdownViewer } from './markdown/markdown';
 
 axios.defaults.withCredentials = true;
 axios.defaults.headers.post['Content-Type'] = 'application/json';
@@ -22,11 +21,18 @@ export default function ReplyList({
 }: Props) {
   const initialEdit = new Array(20).fill(false);
   const [edit, setEdit] = useState(initialEdit);
+  const [content, setContent] = useState('');
+  const [mode, setMode] = useState<'view' | 'edit'>('edit');
 
-  const onEdit = (index: number) => {
+  const onEdit = (initialValue: string, index: number) => {
     let newEdit: boolean[] = edit;
     newEdit[index] = true;
     setEdit([...newEdit]);
+    setContent(initialValue);
+  };
+
+  const handleOnChange = (text: string) => {
+    setContent(text);
   };
 
   const onSave = async (values: any, index: number) => {
@@ -87,10 +93,7 @@ export default function ReplyList({
             description={`#${item.reply_id}`}
           />
           {userBid.indexOf(item.burrow_id) === -1 ? (
-            //item.content
-            MarkdownViewer(
-              '![微信图片_20211201153143](https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fimg.shangdixinxi.com%2Fup%2Finfo%2F201912%2F20191202214508686820.png&refer=http%3A%2F%2Fimg.shangdixinxi.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=jpeg?sec=1642702403&t=46f7fe8a78c46f8dd98b1799cb659c60)'
-            )
+            MarkdownViewer(item.content)
           ) : edit[index] === false ? (
             <>
               <p>{item.content}</p>
@@ -98,7 +101,7 @@ export default function ReplyList({
                 type='link'
                 htmlType='button'
                 onClick={() => {
-                  onEdit(index);
+                  onEdit(item.content, index);
                 }}
                 style={{ float: 'right' }}
               >
@@ -108,13 +111,20 @@ export default function ReplyList({
             </>
           ) : (
             <Form
-              initialValues={{ content: item.content }}
               onFinish={(values) => {
                 onSave(values, index);
               }}
             >
-              <Form.Item name='content'>
-                <TextArea rows={4} bordered={false} />
+              <Form.Item
+                name='content'
+                rules={[{ required: true, message: '回复不能为空！' }]}
+              >
+                <Markdown
+                  content={content}
+                  mode={mode}
+                  editorStyle={{ height: '500px' }}
+                  onChange={handleOnChange}
+                />
               </Form.Item>
               <Form.Item>
                 <Button
