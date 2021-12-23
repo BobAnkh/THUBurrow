@@ -12,18 +12,21 @@ axios.defaults.headers.post['Content-Type'] = 'application/json';
 
 type Iprops = {
   switchform: any;
+  returnmsg: string;
+  switchmsg: string;
 };
 
 const validate_password = /^(?![0-9]+$)(?![a-zA-Z]+$)[0-9A-Za-z-_]{6,20}$/;
 
-export default function FindbackPassword({ switchform }: Iprops) {
+export default function FindbackPassword({
+  switchform,
+  returnmsg,
+  switchmsg,
+}: Iprops) {
   const [btnText, setbtnText] = useState('发送验证码');
   const [btnBool, setbtnBool] = useState(false);
   const [email, setEmail] = useState('');
   const [suffix, setSuffix] = useState('@mails.tsinghua.edu.cn');
-  const toggleForm = () => {
-    switchform('login');
-  };
 
   async function onFinish(values: any) {
     const data = {
@@ -123,9 +126,15 @@ export default function FindbackPassword({ switchform }: Iprops) {
             onFinish={onFinish}
           >
             <Form.Item>
-              <span className={styles.loginformback} onClick={toggleForm}>
+              <span
+                className={styles.loginformback}
+                onClick={() => {
+                  switchform(switchmsg);
+                }}
+              >
                 {' '}
-                返回登陆
+                {/* 返回登陆 */}
+                {returnmsg}
               </span>
             </Form.Item>
             <Form.Item

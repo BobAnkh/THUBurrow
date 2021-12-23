@@ -2,9 +2,8 @@ import { ColumnsType, ColumnType } from 'antd/es/table';
 import type { NextPage } from 'next';
 import { useRouter } from 'next/router';
 import { FormInstance } from 'antd/lib/form';
-import { UserOutlined } from '@ant-design/icons';
 import axios, { AxiosError } from 'axios';
-import PostList from '../components/post-list';
+import { PostColList } from '../components/post-list';
 import { ExclamationCircleOutlined } from '@ant-design/icons';
 import {
   Layout,
@@ -209,7 +208,7 @@ const UserPage: NextPage = () => {
   const [burrowList, setBurrowList] = useState<MyBurrowInfo[]>(burrowListMock);
   const [editingBurrow, setEditingBurrow] = useState<MyBurrowInfo>();
   const [page, setPage] = useState(1);
-  const [postNum, setPostNum] = useState(1);
+  const [totalPageNum, setTotalPageNum] = useState(1);
   const [postList, setPostList] = useState([]);
   const [editableList, setEditableList] = useState<{ [key: string]: boolean }>(
     burrowList.reduce((obj: { [key: string]: boolean }, x) => {
@@ -217,20 +216,24 @@ const UserPage: NextPage = () => {
       return obj;
     }, {})
   );
+  useEffect(() => {
+    if (page > totalPageNum && postList.length == 20) { // 最后一页满则增大totalPageNum
+      setTotalPageNum(page);
+      console.log(`${totalPageNum},${postList.length}`);
+    }}, [page]);
   // 获取关注的帖子
   useEffect(() => {
     const fetchPostList = async () => {
       try {
         const res = await axios.get(
-          `${process.env.NEXT_PUBLIC_BASEURL}/content/list?page=${page - 1}`,
+          `${process.env.NEXT_PUBLIC_BASEURL}/users/collection?page=${page - 1}`,
+          // `http://127.0.0.1:4523/mock/435762/users/collection?page=${page - 1}`,
           {
             headers: { 'Content-Type': 'application/json' },
           }
         );
-        const postlist = res.data.list_page.post_page;
-        const postnum = res.data.list_page.post_num;
+        const postlist = res.data;
         setPostList(postlist); //TODO: each child should have a unique key?
-        setPostNum(postnum);
       } catch (error) {
         const err = error as AxiosError;
         if (err.response?.status == 401) {
@@ -246,7 +249,7 @@ const UserPage: NextPage = () => {
     const fetchBurrowList = async () => {
       try {
         const res = await axios.get(
-          `${process.env.NEXT_PUBLIC_BASEURL}/users/burrow`
+          `${process.env.NEXT_PUBLIC_BASEURL}/users/burrows`
         );
         const burrowlist = res.data;
         setBurrowList(burrowlist);
@@ -505,7 +508,6 @@ const UserPage: NextPage = () => {
       }),
     };
   });
-
   return (
     <Layout className='layout'>
       <Header>
@@ -538,10 +540,11 @@ const UserPage: NextPage = () => {
           />
         </Card>
         <Card title='收藏的帖子'>
-          <PostList
+          <PostColList
             listData={postList}
             setPage={setPage}
-            totalNum={postList.length}
+            totalNum={
+              totalPageNum >= page? (totalPageNum + 1) * 20: postList.length === 20? (page + 1) * 20: page * 20}
           />
         </Card>
       </Content>
