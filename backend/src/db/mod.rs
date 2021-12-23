@@ -12,3 +12,4 @@ pub mod user_collection;
 pub mod user_follow;
 pub mod user_like;
 pub mod user_status;
+pub mod user_storage;

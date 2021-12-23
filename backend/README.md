@@ -1,6 +1,6 @@
 # Backend
 
-API documentation of backend can be found at [docs.thuburrow.com](https://docs/.thburrow.com)
+API documentation of backend can be found at [docs.thuburrow.com](https://docs.thuburrow.com)
 
 ## Convention
 
@@ -13,6 +13,7 @@ API documentation of backend can be found at [docs.thuburrow.com](https://docs/.
 - Run `openssl rand -base64 32` to generate `ROCKET_SECRET_KEY`.
 - Copy `.env.sample` to `.env` and edit the environment variables to what you want.
 - Run `docker-compose -f backend-service up -d` to start all the services needed by running the backend.
+- Run `docker-compose -f backend-lb.yml` to start the load-balancer needed by running the backend.
 - Run `docker-compose up -d` to start the main backend container.
 
 ## Trending formula

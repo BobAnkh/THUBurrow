@@ -3,16 +3,12 @@
 use sea_orm::entity::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
-#[sea_orm(table_name = "image")]
+#[sea_orm(table_name = "user_storage")]
 pub struct Model {
+    #[sea_orm(primary_key, auto_increment = false)]
+    pub uid: i64,
     #[sea_orm(primary_key, auto_increment = false, column_type = "Text")]
     pub filename: String,
-    pub uid: i64,
-    pub size: i32,
-    pub create_time: DateTimeWithTimeZone,
-    pub last_download_time: DateTimeWithTimeZone,
-    pub image_state: i32,
-    pub permission: i32,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter)]

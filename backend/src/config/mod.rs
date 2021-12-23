@@ -4,6 +4,7 @@ pub mod burrow;
 pub mod content;
 pub mod email;
 pub mod mq;
+pub mod storage;
 pub mod user;
 
 lazy_static::lazy_static! {

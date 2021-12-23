@@ -5,7 +5,7 @@ use rocket::http::Status;
 use rocket::serde::json::Json;
 use rocket::{Build, Rocket};
 use rocket_db_pools::Connection;
-use sea_orm::entity::*;
+use sea_orm::{entity::*, ConnectionTrait, DbErr};
 
 use crate::config::BACKEND_TEST_MODE;
 use crate::db::{self, prelude::*};
@@ -15,6 +15,8 @@ use crate::models::pulsar::{
 use crate::models::{admin::*, error::*};
 use crate::pool::{PgDb, PulsarMq};
 use crate::utils::auth::Auth;
+use crate::utils::burrow_valid::get_burrow_list;
+use crate::utils::dedup::remove_duplicate;
 
 pub async fn init(rocket: Rocket<Build>) -> Rocket<Build> {
     #[cfg(debug_assertions)]
@@ -67,12 +69,10 @@ pub async fn admin_operation(
                 AdminOperation::BanUser { uid } => {
                     match UserStatus::find_by_id(uid).one(&pg_con).await {
                         Ok(user) => match user {
-                            None => {
-                                return (
-                                    Status::BadRequest,
-                                    Err(Json(ErrorResponse::build(ErrorCode::UserNotExist, ""))),
-                                )
-                            }
+                            None => (
+                                Status::BadRequest,
+                                Err(Json(ErrorResponse::build(ErrorCode::UserNotExist, ""))),
+                            ),
                             Some(user) => {
                                 if admin.role < user.permission {
                                     (
@@ -101,22 +101,20 @@ pub async fn admin_operation(
                         },
                         Err(e) => {
                             log::error!("[ADMIN]: Database error: {:?}", e);
-                            return (
+                            (
                                 Status::InternalServerError,
                                 Err(Json(ErrorResponse::default())),
-                            );
+                            )
                         }
                     }
                 }
                 AdminOperation::ReopenUser { uid } => {
                     match UserStatus::find_by_id(uid).one(&pg_con).await {
                         Ok(user) => match user {
-                            None => {
-                                return (
-                                    Status::BadRequest,
-                                    Err(Json(ErrorResponse::build(ErrorCode::UserNotExist, ""))),
-                                )
-                            }
+                            None => (
+                                Status::BadRequest,
+                                Err(Json(ErrorResponse::build(ErrorCode::UserNotExist, ""))),
+                            ),
                             Some(user) => {
                                 if admin.role < user.permission {
                                     (
@@ -145,38 +143,76 @@ pub async fn admin_operation(
                         },
                         Err(e) => {
                             log::error!("[ADMIN]: Database error: {:?}", e);
-                            return (
+                            (
                                 Status::InternalServerError,
                                 Err(Json(ErrorResponse::default())),
-                            );
+                            )
                         }
                     }
                 }
                 AdminOperation::BanBurrow { burrow_id } => {
                     match Burrow::find_by_id(burrow_id).one(&pg_con).await {
-                        Ok(burrow) => match burrow {
-                            None => {
-                                return (
+                        Ok(burrow) => {
+                            match burrow {
+                                None => (
                                     Status::BadRequest,
                                     Err(Json(ErrorResponse::build(ErrorCode::BurrowNotExist, ""))),
-                                )
-                            }
-                            Some(burrow) => {
-                                if admin.role < burrow.permission {
-                                    (
-                                        Status::Forbidden,
-                                        Err(Json(ErrorResponse::build(
-                                            ErrorCode::UserForbidden,
-                                            "Permission Denied.",
-                                        ))),
-                                    )
-                                } else {
-                                    let burrow_state = burrow.burrow_state;
-                                    let burrow_id = burrow.burrow_id;
-                                    let mut bst: db::burrow::ActiveModel = burrow.into();
-                                    bst.burrow_state = Set(burrow_state + 1 - burrow_state % 2);
-                                    bst.permission = Set(admin.role);
-                                    match bst.update(&pg_con).await {
+                                ),
+                                Some(burrow) => {
+                                    if admin.role < burrow.permission {
+                                        (
+                                            Status::Forbidden,
+                                            Err(Json(ErrorResponse::build(
+                                                ErrorCode::UserForbidden,
+                                                "Permission Denied.",
+                                            ))),
+                                        )
+                                    } else {
+                                        let burrow_state = burrow.burrow_state;
+                                        let burrow_id = burrow.burrow_id;
+                                        let uid = burrow.uid;
+                                        let mut bst: db::burrow::ActiveModel = burrow.into();
+                                        bst.burrow_state = Set(burrow_state + 1 - burrow_state % 2);
+                                        bst.permission = Set(admin.role);
+                                        match pg_con
+                                            .transaction::<_, (), DbErr>(|txn| {
+                                                Box::pin(async move {
+                                                    bst.update(txn).await?;
+                                                    let ust = UserStatus::find_by_id(uid).one(txn).await?;
+                                                    match ust {
+                                                        None => {
+                                                            log::error!("[ADMIN] User not found");
+                                                            Err(DbErr::RecordNotFound("User not found".to_string()))
+                                                        }
+                                                        Some(ust) => {
+                                                            let mut valid_burrows: Vec<i64> = get_burrow_list(&ust.valid_burrow);
+                                                            let mut banned_burrows: Vec<i64> = get_burrow_list(&ust.banned_burrow);
+                                                            let mut ust: db::user_status::ActiveModel = ust.into();
+                                                            if valid_burrows.contains(&burrow_id) {
+                                                                valid_burrows.remove(valid_burrows.binary_search(&burrow_id).unwrap());
+                                                                banned_burrows.push(burrow_id);
+                                                                banned_burrows = remove_duplicate(banned_burrows);
+                                                                let valid_burrows_str = valid_burrows
+                                                                    .iter()
+                                                                    .map(|x| x.to_string())
+                                                                    .collect::<Vec<String>>()
+                                                                    .join(",");
+                                                                let banned_burrows_str = banned_burrows
+                                                                    .iter()
+                                                                    .map(|x| x.to_string())
+                                                                    .collect::<Vec<String>>()
+                                                                    .join(",");
+                                                                ust.valid_burrow = Set(valid_burrows_str);
+                                                                ust.banned_burrow = Set(banned_burrows_str);
+                                                                ust.update(txn).await?;
+                                                            }
+                                                            Ok(())
+                                                        }
+                                                    }
+                                                })
+                                            })
+                                        .await
+                                    {
                                         Ok(_) => {
                                             let msg = PulsarSearchData::DeleteBurrow(burrow_id);
                                             let _ = producer
@@ -192,42 +228,81 @@ pub async fn admin_operation(
                                             )
                                         }
                                     }
+                                    }
                                 }
                             }
-                        },
+                        }
                         Err(e) => {
                             log::error!("[ADMIN]: Database error: {:?}", e);
-                            return (
+                            (
                                 Status::InternalServerError,
                                 Err(Json(ErrorResponse::default())),
-                            );
+                            )
                         }
                     }
                 }
                 AdminOperation::ReopenBurrow { burrow_id } => {
                     match Burrow::find_by_id(burrow_id).one(&pg_con).await {
-                        Ok(burrow) => match burrow {
-                            None => {
-                                return (
+                        Ok(burrow) => {
+                            match burrow {
+                                None => (
                                     Status::BadRequest,
                                     Err(Json(ErrorResponse::build(ErrorCode::BurrowNotExist, ""))),
-                                )
-                            }
-                            Some(burrow) => {
-                                if admin.role < burrow.permission {
-                                    (
-                                        Status::Forbidden,
-                                        Err(Json(ErrorResponse::build(
-                                            ErrorCode::UserForbidden,
-                                            "Permission Denied.",
-                                        ))),
-                                    )
-                                } else {
-                                    let burrow_state = burrow.burrow_state;
-                                    let mut bst: db::burrow::ActiveModel = burrow.into();
-                                    bst.burrow_state = Set(burrow_state - burrow_state % 2);
-                                    bst.permission = Set(admin.role);
-                                    match bst.update(&pg_con).await {
+                                ),
+                                Some(burrow) => {
+                                    if admin.role < burrow.permission {
+                                        (
+                                            Status::Forbidden,
+                                            Err(Json(ErrorResponse::build(
+                                                ErrorCode::UserForbidden,
+                                                "Permission Denied.",
+                                            ))),
+                                        )
+                                    } else {
+                                        let burrow_state = burrow.burrow_state;
+                                        let uid = burrow.uid;
+                                        let mut bst: db::burrow::ActiveModel = burrow.into();
+                                        bst.burrow_state = Set(burrow_state - burrow_state % 2);
+                                        bst.permission = Set(admin.role);
+                                        match pg_con
+                                            .transaction::<_, db::burrow::ActiveModel, DbErr>(|txn| {
+                                                Box::pin(async move {
+                                                    let bst = bst.update(txn).await?;
+                                                    let ust = UserStatus::find_by_id(uid).one(txn).await?;
+                                                    match ust {
+                                                        None => {
+                                                            log::error!("[ADMIN] User not found");
+                                                            Err(DbErr::RecordNotFound("User not found".to_string()))
+                                                        }
+                                                        Some(ust) => {
+                                                            let mut valid_burrows: Vec<i64> = get_burrow_list(&ust.valid_burrow);
+                                                            let mut banned_burrows: Vec<i64> = get_burrow_list(&ust.banned_burrow);
+                                                            let mut ust: db::user_status::ActiveModel = ust.into();
+                                                            if banned_burrows.contains(&burrow_id) {
+                                                                banned_burrows.remove(banned_burrows.binary_search(&burrow_id).unwrap());
+                                                                valid_burrows.push(burrow_id);
+                                                                valid_burrows = remove_duplicate(valid_burrows);
+                                                                let valid_burrows_str = valid_burrows
+                                                                    .iter()
+                                                                    .map(|x| x.to_string())
+                                                                    .collect::<Vec<String>>()
+                                                                    .join(",");
+                                                                let banned_burrows_str = banned_burrows
+                                                                    .iter()
+                                                                    .map(|x| x.to_string())
+                                                                    .collect::<Vec<String>>()
+                                                                    .join(",");
+                                                                ust.valid_burrow = Set(valid_burrows_str);
+                                                                ust.banned_burrow = Set(banned_burrows_str);
+                                                                ust.update(txn).await?;
+                                                            }
+                                                            Ok(bst)
+                                                        }
+                                                    }
+                                                })
+                                            })
+                                        .await
+                                    {
                                         Ok(res) => {
                                             let pulsar_burrow = PulsarSearchBurrowData {
                                                 burrow_id: res.burrow_id.unwrap(),
@@ -249,27 +324,26 @@ pub async fn admin_operation(
                                             )
                                         }
                                     }
+                                    }
                                 }
                             }
-                        },
+                        }
                         Err(e) => {
                             log::error!("[ADMIN]: Database error: {:?}", e);
-                            return (
+                            (
                                 Status::InternalServerError,
                                 Err(Json(ErrorResponse::default())),
-                            );
+                            )
                         }
                     }
                 }
                 AdminOperation::BanPost { post_id } => {
                     match ContentPost::find_by_id(post_id).one(&pg_con).await {
                         Ok(post) => match post {
-                            None => {
-                                return (
-                                    Status::BadRequest,
-                                    Err(Json(ErrorResponse::build(ErrorCode::PostNotExist, ""))),
-                                )
-                            }
+                            None => (
+                                Status::BadRequest,
+                                Err(Json(ErrorResponse::build(ErrorCode::PostNotExist, ""))),
+                            ),
                             Some(post) => {
                                 if admin.role < post.permission {
                                     (
@@ -304,22 +378,20 @@ pub async fn admin_operation(
                         },
                         Err(e) => {
                             log::error!("[ADMIN]: Database error: {:?}", e);
-                            return (
+                            (
                                 Status::InternalServerError,
                                 Err(Json(ErrorResponse::default())),
-                            );
+                            )
                         }
                     }
                 }
                 AdminOperation::ReopenPost { post_id } => {
                     match ContentPost::find_by_id(post_id).one(&pg_con).await {
                         Ok(post) => match post {
-                            None => {
-                                return (
-                                    Status::BadRequest,
-                                    Err(Json(ErrorResponse::build(ErrorCode::PostNotExist, ""))),
-                                )
-                            }
+                            None => (
+                                Status::BadRequest,
+                                Err(Json(ErrorResponse::build(ErrorCode::PostNotExist, ""))),
+                            ),
                             Some(post) => {
                                 if admin.role < post.permission {
                                     (
@@ -370,10 +442,10 @@ pub async fn admin_operation(
                         },
                         Err(e) => {
                             log::error!("[ADMIN]: Database error: {:?}", e);
-                            return (
+                            (
                                 Status::InternalServerError,
                                 Err(Json(ErrorResponse::default())),
-                            );
+                            )
                         }
                     }
                 }
@@ -383,12 +455,10 @@ pub async fn admin_operation(
                         .await
                     {
                         Ok(reply) => match reply {
-                            None => {
-                                return (
-                                    Status::BadRequest,
-                                    Err(Json(ErrorResponse::build(ErrorCode::ReplyNotExist, ""))),
-                                )
-                            }
+                            None => (
+                                Status::BadRequest,
+                                Err(Json(ErrorResponse::build(ErrorCode::ReplyNotExist, ""))),
+                            ),
                             Some(reply) => {
                                 if admin.role < reply.permission {
                                     (
@@ -424,10 +494,10 @@ pub async fn admin_operation(
                         },
                         Err(e) => {
                             log::error!("[ADMIN]: Database error: {:?}", e);
-                            return (
+                            (
                                 Status::InternalServerError,
                                 Err(Json(ErrorResponse::default())),
-                            );
+                            )
                         }
                     }
                 }
@@ -437,12 +507,10 @@ pub async fn admin_operation(
                         .await
                     {
                         Ok(reply) => match reply {
-                            None => {
-                                return (
-                                    Status::BadRequest,
-                                    Err(Json(ErrorResponse::build(ErrorCode::ReplyNotExist, ""))),
-                                )
-                            }
+                            None => (
+                                Status::BadRequest,
+                                Err(Json(ErrorResponse::build(ErrorCode::ReplyNotExist, ""))),
+                            ),
                             Some(reply) => {
                                 if admin.role < reply.permission {
                                     (
@@ -484,10 +552,10 @@ pub async fn admin_operation(
                         },
                         Err(e) => {
                             log::error!("[ADMIN]: Database error: {:?}", e);
-                            return (
+                            (
                                 Status::InternalServerError,
                                 Err(Json(ErrorResponse::default())),
-                            );
+                            )
                         }
                     }
                 }
@@ -603,22 +671,18 @@ pub async fn admin_operation(
                 AdminOperation::GetUserId { burrow_id } => {
                     match Burrow::find_by_id(burrow_id).one(&pg_con).await {
                         Ok(burrow) => match burrow {
-                            None => {
-                                return (
-                                    Status::BadRequest,
-                                    Err(Json(ErrorResponse::build(ErrorCode::BurrowNotExist, ""))),
-                                )
-                            }
-                            Some(burrow) => {
-                                (Status::Ok, Ok(burrow.uid.to_string()))
-                            }
+                            None => (
+                                Status::BadRequest,
+                                Err(Json(ErrorResponse::build(ErrorCode::BurrowNotExist, ""))),
+                            ),
+                            Some(burrow) => (Status::Ok, Ok(burrow.uid.to_string())),
                         },
                         Err(e) => {
                             log::error!("[ADMIN]: Database error: {:?}", e);
-                            return (
+                            (
                                 Status::InternalServerError,
                                 Err(Json(ErrorResponse::default())),
-                            );
+                            )
                         }
                     }
                 }
