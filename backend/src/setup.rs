@@ -65,6 +65,7 @@ pub mod postgres {
         let _ = create_burrow_table(conn).await;
         let _ = create_user_follow_table(conn).await;
         let _ = create_admin_table(conn).await;
+        let _ = create_user_storage_table(conn).await;
         // match t {
         //     Ok(_) => {}
         //     Err(e) => {
@@ -139,7 +140,7 @@ pub mod postgres {
                     .primary_key(),
             )
             .col(
-                ColumnDef::new(db::image::Column::UserId)
+                ColumnDef::new(db::image::Column::Uid)
                     .big_integer()
                     .not_null(),
             )
@@ -153,6 +154,18 @@ pub mod postgres {
                 ColumnDef::new(db::image::Column::LastDownloadTime)
                     .timestamp_with_time_zone()
                     .not_null(),
+            )
+            .col(
+                ColumnDef::new(db::image::Column::ImageState)
+                    .integer()
+                    .not_null()
+                    .default(0),
+            )
+            .col(
+                ColumnDef::new(db::image::Column::Permission)
+                    .integer()
+                    .not_null()
+                    .default(0),
             )
             .to_owned();
         // println!("image table: {}", stmt.to_string(PostgresQueryBuilder));
@@ -194,6 +207,18 @@ pub mod postgres {
             )
             .col(
                 ColumnDef::new(db::user_status::Column::Permission)
+                    .integer()
+                    .not_null()
+                    .default(0),
+            )
+            .col(
+                ColumnDef::new(db::user_status::Column::FileCapacity)
+                    .big_integer()
+                    .not_null()
+                    .default(0),
+            )
+            .col(
+                ColumnDef::new(db::user_status::Column::FileNum)
                     .integer()
                     .not_null()
                     .default(0),
@@ -511,6 +536,29 @@ pub mod postgres {
                 ColumnDef::new(db::admin::Column::CreateTime)
                     .timestamp_with_time_zone()
                     .not_null(),
+            )
+            .to_owned();
+        build_statement(db, &stmt).await
+    }
+
+    async fn create_user_storage_table(db: &DbConn) -> Result<ExecResult, DbErr> {
+        let stmt = sea_query::Table::create()
+            .table(db::user_storage::Entity)
+            .if_not_exists()
+            .col(
+                ColumnDef::new(db::user_storage::Column::Uid)
+                    .big_integer()
+                    .not_null(),
+            )
+            .col(
+                ColumnDef::new(db::user_storage::Column::Filename)
+                    .big_integer()
+                    .not_null(),
+            )
+            .primary_key(
+                Index::create()
+                    .col(db::user_storage::Column::Uid)
+                    .col(db::user_storage::Column::Filename),
             )
             .to_owned();
         build_statement(db, &stmt).await

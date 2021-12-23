@@ -9,7 +9,8 @@ use rocket::{Build, Rocket};
 use rocket_db_pools::Connection;
 use sea_orm::{entity::*, ActiveModelTrait};
 
-use crate::db::image;
+use crate::config::storage::*;
+use crate::db::{self, image, prelude::*};
 use crate::models::error::*;
 use crate::models::storage::{ReferrerCheck, SaveImage};
 use crate::pool::{MinioImageStorage, PgDb};
@@ -48,56 +49,73 @@ async fn upload_image(
     image: SaveImage,
 ) -> (Status, Result<String, Json<ErrorResponse>>) {
     info!("[IMAGE] User {} id uploading image.", auth.id);
+    let pg_con = db.into_inner();
     // put a file
-    // check content type
-    match image.content_type.as_str() {
-        "jpg" | "jpeg" | "png" | "gif" => {}
-        _ => {
-            return (
-                Status::UnsupportedMediaType,
-                Err(Json(ErrorResponse::build(
-                    ErrorCode::UnsupportedMediaType,
-                    "",
-                ))),
-            );
-        }
-    }
     let mut hash_md5 = Md5::new();
     hash_md5.input(image.content.as_slice());
-    let filename = hash_md5.result_str() + "." + &image.content_type;
+    let filename = hash_md5.result_str() + "." + image.content_type.to_string().as_str();
     let image_size = image.content.len() as i32;
-    match bucket
-        .put_object(filename.as_str(), image.content.as_slice())
-        .await
-    {
-        Ok((_, 200)) => {
-            let now = Utc::now().with_timezone(&FixedOffset::east(8 * 3600));
-            let record = image::ActiveModel {
-                filename: Set(filename.to_owned()),
-                user_id: Set(auth.id),
-                size: Set(image_size),
-                create_time: Set(now.to_owned()),
-                last_download_time: Set(now),
-            };
-            match record.insert(&db.into_inner()).await {
-                Ok(_) => {
-                    log::info!("[Image-Storage] Add image");
+    match UserStatus::find_by_id(auth.id).one(&pg_con).await {
+        Ok(opt_state) => match opt_state {
+            Some(state) => {
+                if state.file_num >= *MAX_IMAGE_NUM {
+                    return (
+                        Status::BadRequest,
+                        Err(Json(ErrorResponse::build(
+                            ErrorCode::RateLimit,
+                            "Store too many images.",
+                        ))),
+                    );
                 }
-                Err(e) => {
-                    log::warn!("[Image-Storage] Same image: {}", e);
+                match bucket
+                    .put_object(filename.as_str(), image.content.as_slice())
+                    .await
+                {
+                    Ok((_, 200)) => {
+                        let now = Utc::now().with_timezone(&FixedOffset::east(8 * 3600));
+                        let record = image::ActiveModel {
+                            filename: Set(filename.to_owned()),
+                            uid: Set(auth.id),
+                            size: Set(image_size),
+                            create_time: Set(now.to_owned()),
+                            last_download_time: Set(now),
+                            ..Default::default()
+                        };
+                        let file_num = state.file_num;
+                        let file_capacity = state.file_capacity;
+                        let mut ust: db::user_status::ActiveModel = state.into();
+                        ust.file_num = Set(file_num + 1);
+                        ust.file_capacity = Set(file_capacity + image_size as i64);
+                        let _ = record.insert(&pg_con).await;
+                        let _ = ust.update(&pg_con).await;
+                        (Status::Ok, Ok(filename))
+                    }
+                    Ok((_, code)) => (
+                        Status::InternalServerError,
+                        Err(Json(ErrorResponse::build(
+                            ErrorCode::Unknown,
+                            format!("code: {}", code),
+                        ))),
+                    ),
+                    Err(e) => {
+                        log::error!("[Image-Storage] Database Error {:?}", e);
+                        (
+                            Status::InternalServerError,
+                            Err(Json(ErrorResponse::default())),
+                        )
+                    }
                 }
             }
-            (Status::Ok, Ok(filename))
-        }
-        Ok((_, code)) => (
-            Status::InternalServerError,
-            Err(Json(ErrorResponse::build(
-                ErrorCode::Unknown,
-                format!("code: {}", code),
-            ))),
-        ),
+            None => {
+                info!("[Image-Storage] Cannot find user_status by uid.");
+                (
+                    Status::BadRequest,
+                    Err(Json(ErrorResponse::build(ErrorCode::UserNotExist, ""))),
+                )
+            }
+        },
         Err(e) => {
-            log::error!("[Image-Storage] Database Error {:?}", e);
+            error!("[Image-Storage] Database Error: {:?}", e);
             (
                 Status::InternalServerError,
                 Err(Json(ErrorResponse::default())),
@@ -149,7 +167,7 @@ async fn download_image(
             let _ = record.update(&pg_con).await;
             match filename.split('.').last().unwrap() {
                 "png" => (Status::Ok, (ContentType::PNG, Ok(data))),
-                "git" => (Status::Ok, (ContentType::GIF, Ok(data))),
+                "gif" => (Status::Ok, (ContentType::GIF, Ok(data))),
                 _ => (Status::Ok, (ContentType::JPEG, Ok(data))),
             }
         }

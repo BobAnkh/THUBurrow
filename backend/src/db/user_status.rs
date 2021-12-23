@@ -14,6 +14,8 @@ pub struct Model {
     #[sea_orm(column_type = "Text")]
     pub banned_burrow: String,
     pub permission: i32,
+    pub file_capacity: i64,
+    pub file_num: i32,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter)]

@@ -112,10 +112,7 @@ pub async fn create_burrow(
 ) {
     let pg_con = db.into_inner();
     // check if user has too many burrows, return corresponding error if so
-    match UserStatus::find_by_id(auth.id)
-        .one(&pg_con)
-        .await
-    {
+    match UserStatus::find_by_id(auth.id).one(&pg_con).await {
         Ok(opt_state) => match opt_state {
             Some(state) => {
                 if state.user_state != 0 {
@@ -273,10 +270,7 @@ pub async fn discard_burrow(
     auth: Auth,
 ) -> (Status, Result<String, Json<ErrorResponse>>) {
     let pg_con = db.into_inner();
-    match UserStatus::find_by_id(auth.id)
-        .one(&pg_con)
-        .await
-    {
+    match UserStatus::find_by_id(auth.id).one(&pg_con).await {
         Ok(opt_ust) => match opt_ust {
             Some(state) => {
                 let mut valid_burrows: Vec<i64> = get_burrow_list(&state.valid_burrow);
@@ -506,10 +500,7 @@ pub async fn update_burrow(
             ))),
         );
     }
-    match UserStatus::find_by_id(auth.id)
-        .one(&pg_con)
-        .await
-    {
+    match UserStatus::find_by_id(auth.id).one(&pg_con).await {
         Ok(opt_ust) => match opt_ust {
             Some(state) => {
                 if state.user_state != 0 {

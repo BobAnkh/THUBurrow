@@ -4,7 +4,7 @@ use rocket::data::{self, Data, FromData, ToByteUnit};
 use rocket::http::{ContentType, Status};
 use rocket::outcome::Outcome::*;
 use rocket::request::{self, FromRequest, Request};
-use rocket::serde::Deserialize;
+use rocket::serde::{Deserialize, Serialize};
 
 use lazy_static::lazy_static;
 use regex::Regex;
@@ -17,8 +17,28 @@ use regex::Regex;
 /// - `content`: Vec<u8>, the content of the image
 #[derive(Deserialize)]
 pub struct SaveImage {
-    pub content_type: String,
+    pub content_type: ImageContentType,
     pub content: Vec<u8>,
+}
+
+/// Allowed types of image
+#[derive(Serialize, Deserialize)]
+pub enum ImageContentType {
+    JPEG,
+    PNG,
+    GIF,
+    JPG,
+}
+
+impl std::fmt::Display for ImageContentType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ImageContentType::JPEG => write!(f, "jpeg"),
+            ImageContentType::PNG => write!(f, "png"),
+            ImageContentType::GIF => write!(f, "gif"),
+            ImageContentType::JPG => write!(f, "jpg"),
+        }
+    }
 }
 
 /// Error type of saving image
@@ -63,13 +83,13 @@ impl<'r> FromData<'r> for SaveImage {
         let content_type = match req.content_type() {
             Some(req_ct) => {
                 if req_ct == &jpeg_ct {
-                    "jpeg".to_string()
+                    ImageContentType::JPEG
                 } else if req_ct == &jpg_ct {
-                    "jpg".to_string()
+                    ImageContentType::JPG
                 } else if req_ct == &png_ct {
-                    "png".to_string()
+                    ImageContentType::PNG
                 } else if req_ct == &gif_ct {
-                    "gif".to_string()
+                    ImageContentType::GIF
                 } else {
                     return Failure((Status::UnsupportedMediaType, ImageError::InvalidType));
                 }
@@ -120,5 +140,18 @@ impl<'r> FromRequest<'r> for ReferrerCheck {
         } else {
             Failure((Status::Forbidden, ReferrerError::Empty))
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_content_type() {
+        assert_eq!(ImageContentType::JPEG.to_string(), "jpeg");
+        assert_eq!(ImageContentType::PNG.to_string(), "png");
+        assert_eq!(ImageContentType::GIF.to_string(), "gif");
+        assert_eq!(ImageContentType::JPG.to_string(), "jpg");
     }
 }
