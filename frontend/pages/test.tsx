@@ -92,7 +92,6 @@ const Test: NextPage = () => {
       <img src={newURL} />
     </>
   );
-
 };
 
 export default Test;
