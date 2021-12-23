@@ -609,9 +609,7 @@ pub async fn admin_operation(
                                     Err(Json(ErrorResponse::build(ErrorCode::BurrowNotExist, ""))),
                                 )
                             }
-                            Some(burrow) => {
-                                (Status::Ok, Ok(burrow.uid.to_string()))
-                            }
+                            Some(burrow) => (Status::Ok, Ok(burrow.uid.to_string())),
                         },
                         Err(e) => {
                             log::error!("[ADMIN]: Database error: {:?}", e);
