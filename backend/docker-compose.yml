@@ -22,6 +22,8 @@ services:
       ROCKET_SECRET_KEY: ${ROCKET_SECRET_KEY}
       ROCKET_ADDRESS: "0.0.0.0"
       VIRTUAL_HOST: ${BACKEND_HOST}
+      SECRET_ID: ${SECRET_ID}
+      SECRET_KEY: ${SECRET_KEY}
     networks:
       innerdb:
       proxy:

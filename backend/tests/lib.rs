@@ -2865,6 +2865,24 @@ fn test_storage() {
     assert_eq!(response.status(), Status::Ok);
     let res = response.into_bytes().unwrap();
     assert_eq!(res, png_buf);
+
+    // store a jpeg
+    let response = client
+        .post("/storage/images")
+        .header(ContentType::JPEG)
+        .body(jpeg_buf.clone())
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    // store a jpeg
+    let response = client
+        .post("/storage/images")
+        .header(ContentType::JPEG)
+        .body(jpeg_buf.clone())
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::TooManyRequests);
+
     // user log out
     let response = client
         .get("/users/logout")

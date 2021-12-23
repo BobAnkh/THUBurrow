@@ -60,7 +60,7 @@ async fn upload_image(
             Some(state) => {
                 if state.file_num >= *MAX_IMAGE_NUM {
                     return (
-                        Status::BadRequest,
+                        Status::TooManyRequests,
                         Err(Json(ErrorResponse::build(
                             ErrorCode::RateLimit,
                             "Store too many images.",
