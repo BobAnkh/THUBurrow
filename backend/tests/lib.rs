@@ -1240,6 +1240,16 @@ fn test_burrow() {
             "Burrow doesn't belong to current user or already be discarded",
         )
     );
+    // check banned burrow title
+    let response = client
+        .get("/users/burrows")
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    let res = response
+        .into_json::<Vec<backend::models::burrow::BurrowMetadata>>()
+        .unwrap();
+    assert_eq!(res[4].title, "Admin has banned this burrow");
     // user log out
     let response = client
         .get("/users/logout")
@@ -1352,6 +1362,44 @@ fn test_burrow() {
     );
 
     // 10. test discard_burrow
+    // ---------- admin ----------
+    // admin user login
+    let response = client
+        .post("/users/login")
+        .json(&json!({
+            "username": admin_name,
+            "password": "testpassword"}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    assert_eq!(response.into_string().unwrap(), "Success");
+    // Ban the burrow with burrow_id
+    let response = client
+        .post("/admin")
+        .json(&json!({ "BanBurrow": {"burrow_id": burrow_id} }))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    assert_eq!(response.into_string().unwrap(), "Success");
+    // admin user log out
+    let response = client
+        .get("/users/logout")
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    assert_eq!(response.into_string().unwrap(), "Success");
+    // ---------- admin ----------
+
+    // user login
+    let response = client
+        .post("/users/login")
+        .json(&json!({
+            "username": name,
+            "password": "testpassword"}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    assert_eq!(response.into_string().unwrap(), "Success");
     // discard burrow
     let response = client
         .delete(format!("/burrows/{}", burrow_id))
