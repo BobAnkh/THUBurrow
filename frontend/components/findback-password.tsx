@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import 'antd/dist/antd.css';
+import { useRouter } from 'next/router';
 import styles from '../styles/register.module.css';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { Form, Input, Row, Col, Button, message, Select } from 'antd';
@@ -23,6 +24,7 @@ export default function FindbackPassword({
   returnmsg,
   switchmsg,
 }: Iprops) {
+  const router = useRouter();
   const [btnText, setbtnText] = useState('发送验证码');
   const [btnBool, setbtnBool] = useState(false);
   const [email, setEmail] = useState('');
@@ -44,6 +46,10 @@ export default function FindbackPassword({
         const err = e as AxiosError;
         if (err.response?.status == 400) {
           message.error(err.response.data.code);
+        }
+        if (err.response?.status == 401) {
+          message.error('请先登录！');
+          router.push('/login');
         }
         if (err.response?.status == 429) {
           message.error('请求过于频繁');
