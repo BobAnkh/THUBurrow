@@ -469,6 +469,15 @@ pub async fn update_post(
                 ))),
             ),
             Some(post_info) => {
+                if post_info.post_state != 0 {
+                    return (
+                        Status::Forbidden,
+                        Err(Json(ErrorResponse::build(
+                            ErrorCode::UserForbidden,
+                            "Post not in a valid state",
+                        ))),
+                    );
+                }
                 match UserStatus::find_by_id(auth.id).one(&pg_con).await {
                     Ok(opt_state) => match opt_state {
                         Some(state) => {
@@ -611,6 +620,15 @@ pub async fn delete_post(
                         Err(Json(ErrorResponse::build(
                             ErrorCode::UserForbidden,
                             "Can only delete post within 2 minutes.",
+                        ))),
+                    );
+                }
+                else if post_info.post_state != 0 {
+                    return (
+                        Status::Forbidden,
+                        Err(Json(ErrorResponse::build(
+                            ErrorCode::UserForbidden,
+                            "Post not in a valid state",
                         ))),
                     );
                 }
@@ -941,6 +959,15 @@ pub async fn create_reply(
                                 ))),
                             ),
                             Some(post_info) => {
+                                if post_info.post_state != 0 {
+                                    return (
+                                        Status::Forbidden,
+                                        Err(Json(ErrorResponse::build(
+                                            ErrorCode::UserForbidden,
+                                            "Post not in a valid state",
+                                        ))),
+                                    );
+                                }
                                 let post_id = post_info.post_id;
                                 match pg_con
                                     .transaction::<_, i32, DbErr>(|txn| {
@@ -1109,6 +1136,15 @@ pub async fn update_reply(
                                 ))),
                             ),
                             Some(reply_info) => {
+                                if reply_info.reply_state != 0 {
+                                    return (
+                                        Status::Forbidden,
+                                        Err(Json(ErrorResponse::build(
+                                            ErrorCode::UserForbidden,
+                                            "Reply not in a valid state",
+                                        ))),
+                                    );
+                                }
                                 if is_valid_burrow(
                                     &user_state_info.valid_burrow,
                                     &reply_info.burrow_id,
