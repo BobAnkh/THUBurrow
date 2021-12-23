@@ -97,7 +97,7 @@ export default function PostList({ listData, setPage, totalNum }: Props) {
         setLikeNum([...newLikeNum]);
         const res = await axios.post(
           `${process.env.NEXT_PUBLIC_BASEURL}/users/relation`,
-          { deactivateLike: pid },
+          { DeactivateLike: pid },
           { headers: { 'Content-Type': 'application/json' } }
         );
       }
