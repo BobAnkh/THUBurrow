@@ -2443,6 +2443,348 @@ fn test_content() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
 
+    // Set up a new user
+    let new_name: String = std::iter::repeat(())
+        .map(|()| thread_rng().sample(Alphanumeric))
+        .map(char::from)
+        .take(13)
+        .collect();
+    // set verification code
+    client
+        .post("/users/email")
+        .json(&json!({
+            "email": format!("{}@mails.tsinghua.edu.cn", new_name)
+        }))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    std::thread::sleep(std::time::Duration::from_secs(1));
+    // sign up a user
+    let response = client
+        .post("/users/sign-up")
+        .json(&json!({
+            "username": new_name,
+            "password": "testpassword",
+            "email": format!("{}@mails.tsinghua.edu.cn", new_name),
+            "verification_code": "666666"}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    let res = response
+        .into_json::<backend::models::user::UserResponse>()
+        .unwrap();
+    let new_name_burrow_id = res.default_burrow;
+    println!("Default Burrow id for New User is {}", new_name_burrow_id);
+    // user login (New User)
+    let response = client
+        .post("/users/login")
+        .json(&json!({
+            "username": new_name,
+            "password": "testpassword"}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    assert_eq!(response.into_string().unwrap(), "Success");
+    // Create 1st post for new user
+    let response = client
+        .post("/content/posts")
+        .json(&json!({
+            "title": format!("First post of {}", new_name),
+            "burrow_id": new_name_burrow_id,
+            "section": ["Learning"],
+            "tag": ["NoTag"],
+            "content": "This is a test post no.1 for admin tests"}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    let res = response
+        .into_json::<backend::models::content::PostCreateResponse>()
+        .unwrap();
+    let new_name_post_id = res.post_id;
+    println!("New User's Post Id: {}", new_name_post_id);
+    // Create a reply for post post no.1: perform a wrong action (UserForbidden)
+    let response = client
+        .post("/content/replies")
+        .json(&json!({
+            "post_id": post_id,
+            "burrow_id": new_name_burrow_id,
+            "content": "This is a test new user's reply no.1 for post no.1 for admin tests"}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    let res = response
+        .into_json::<backend::models::content::ReplyCreateResponse>()
+        .unwrap();
+    let new_name_reply_id = res.reply_id;
+    println!("New User's Reply Id: {}", new_name_reply_id);
+    // user log out
+    let response = client
+        .get("/users/logout")
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+
+    // Set up the admin account
+    // generate a random name for admin
+    let admin_name: String = std::iter::repeat(())
+        .map(|()| thread_rng().sample(Alphanumeric))
+        .map(char::from)
+        .take(13)
+        .collect();
+    // set verification code
+    client
+        .post("/users/email")
+        .json(&json!({
+            "email": format!("{}@mails.tsinghua.edu.cn", admin_name)
+        }))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    std::thread::sleep(std::time::Duration::from_secs(1));
+    // sign up a user
+    let response = client
+        .post("/users/sign-up")
+        .json(&json!({
+            "username": admin_name,
+            "password": "testpassword",
+            "email": format!("{}@mails.tsinghua.edu.cn", admin_name),
+            "verification_code": "666666"}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    // user login
+    let response = client
+        .post("/users/login")
+        .json(&json!({
+            "username": admin_name,
+            "password": "testpassword"}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    assert_eq!(response.into_string().unwrap(), "Success");
+    let response = client
+        .get("/admin/test?role=3")
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    assert_eq!(response.into_string().unwrap(), "Success");
+    // Get Uid of the burrow
+    let response = client
+        .post("/admin")
+        .json(&json!({ "GetUserId": {"burrow_id": new_name_burrow_id} }))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    let uid = response.into_json::<i64>().unwrap();
+    // Ban the user with uid (Ban New User)
+    let response = client
+        .post("/admin")
+        .json(&json!({ "BanUser": {"uid": uid} }))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    assert_eq!(response.into_string().unwrap(), "Success");
+    // Ban the post with post_id (post_id)
+    let response = client
+        .post("/admin")
+        .json(&json!({ "BanPost": {"post_id": post_id} }))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    assert_eq!(response.into_string().unwrap(), "Success");
+    // Ban the reply with post_id and reply_id (post_id + 2, 0)
+    let response = client
+        .post("/admin")
+        .json(&json!({ "BanReply": {"post_id": post_id + 2, "reply_id": 0} }))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    assert_eq!(response.into_string().unwrap(), "Success");
+    // user log out
+    let response = client
+        .get("/users/logout")
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+
+    // user login (New User)
+    let response = client
+        .post("/users/login")
+        .json(&json!({
+            "username": new_name,
+            "password": "testpassword"}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    assert_eq!(response.into_string().unwrap(), "Success");
+    //     // TODO
+    //     // delete post: perform a wrong action (UserForbidden)
+    //     let response = client
+    //         .delete(format!("/content/posts/{}", new_name_post_id))
+    //         .remote("127.0.0.1:8000".parse().unwrap())
+    //         .dispatch();
+    //     assert_eq!(response.status(), Status::Forbidden);
+    //     assert_eq!(
+    //         response.into_json::<ErrorResponse>().unwrap(),
+    //         ErrorResponse::build(ErrorCode::UserForbidden, "User not in a valid state",)
+    //     );
+    // Create a post for new user: perform a wrong action (UserForbidden)
+    let response = client
+        .post("/content/posts")
+        .json(&json!({
+            "title": format!("Second post of {}", new_name),
+            "burrow_id": new_name_burrow_id,
+            "section": ["Learning"],
+            "tag": ["NoTag"],
+            "content": "This is a test post no.2 for admin tests"}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Forbidden);
+    assert_eq!(
+        response.into_json::<ErrorResponse>().unwrap(),
+        ErrorResponse::build(ErrorCode::UserForbidden, "User not in a valid state",)
+    );
+    // Update 1st post of new user: perform a wrong action (UserForbidden)
+    let response = client
+        .patch(format!("/content/posts/{}", new_name_post_id))
+        .json(&json!({
+            "title": format!("New First post of {}", new_name),
+            "section": ["Life"],
+            "tag": ["TestTag", "TestTag"]}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Forbidden);
+    assert_eq!(
+        response.into_json::<ErrorResponse>().unwrap(),
+        ErrorResponse::build(ErrorCode::UserForbidden, "User not in a valid state",)
+    );
+    // Create a reply for post post no.1: perform a wrong action (UserForbidden)
+    let response = client
+        .post("/content/replies")
+        .json(&json!({
+            "post_id": post_id,
+            "burrow_id": new_name_burrow_id,
+            "content": "This is a test reply no.1 for post no.1"}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Forbidden);
+    assert_eq!(
+        response.into_json::<ErrorResponse>().unwrap(),
+        ErrorResponse::build(ErrorCode::UserForbidden, "User not in a valid state",)
+    );
+    // Update new user's reply for post no.1: perform a wrong action (UserForbidden)
+    let response = client
+        .patch("/content/replies")
+        .json(&json!({
+            "post_id": post_id,
+            "reply_id": new_name_reply_id,
+            "content": "This is a updated new user's reply no.1 for post no.1"}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Forbidden);
+    assert_eq!(
+        response.into_json::<ErrorResponse>().unwrap(),
+        ErrorResponse::build(ErrorCode::UserForbidden, "User not in a valid state",)
+    );
+    // user log out
+    let response = client
+        .get("/users/logout")
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+
+    // user login
+    let response = client
+        .post("/users/login")
+        .json(&json!({
+            "username": name,
+            "password": "testpassword"}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    assert_eq!(response.into_string().unwrap(), "Success");
+    //     // TODO
+    //     // delete post: perform a wrong action (UserForbidden)
+    //     let response = client
+    //         .delete(format!("/content/posts/{}", post_id))
+    //         .remote("127.0.0.1:8000".parse().unwrap())
+    //         .dispatch();
+    //     assert_eq!(response.status(), Status::Forbidden);
+    //     assert_eq!(
+    //         response.into_json::<ErrorResponse>().unwrap(),
+    //         ErrorResponse::build(ErrorCode::UserForbidden, "Post not in a valid state",)
+    //     );
+    // Read post with post_id
+    let response = client
+        .get(format!("/content/posts/{}", post_id))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    let res = response
+        .into_json::<backend::models::content::PostPage>()
+        .unwrap();
+    assert_eq!(res.post_desc.post_id, post_id);
+    assert_eq!(
+        res.post_desc.title,
+        "Admin has banned this post".to_string()
+    );
+    assert_eq!(res.reply_page, Vec::new());
+    // Update post with post_id: perform a wrong action (UserForbidden)
+    let response = client
+        .patch(format!("/content/posts/{}", post_id))
+        .json(&json!({
+            "title": format!("New First post of {}", name),
+            "section": ["Life"],
+            "tag": ["TestTag", "TestTag"]}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Forbidden);
+    assert_eq!(
+        response.into_json::<ErrorResponse>().unwrap(),
+        ErrorResponse::build(ErrorCode::UserForbidden, "Post not in a valid state",)
+    );
+    // Create reply for post (post_id): perform a wrong action (UserForbidden)
+    let response = client
+        .post("/content/replies")
+        .json(&json!({
+            "post_id": post_id,
+            "burrow_id": burrow_id,
+            "content": "This is a test reply for post no.1"}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Forbidden);
+    assert_eq!(
+        response.into_json::<ErrorResponse>().unwrap(),
+        ErrorResponse::build(ErrorCode::UserForbidden, "Post not in a valid state",)
+    );
+    // Read post_id + 2, to check reply 0: perform a wrong action (UserForbidden)
+    let response = client
+        .get(format!("/content/posts/{}", post_id + 2))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    let res = response
+        .into_json::<backend::models::content::PostPage>()
+        .unwrap();
+    assert_eq!(res.post_desc.post_id, post_id + 2);
+    assert_eq!(res.reply_page[0].reply_id, 0);
+    assert_eq!(
+        res.reply_page[0].content,
+        "Admin has banned this reply".to_string()
+    );
+    // Update reply with post_id + 2, 0: perform a wrong action (UserForbidden)
+    let response = client
+        .patch("/content/replies")
+        .json(&json!({
+            "post_id": post_id + 2,
+            "reply_id": 0,
+            "content": "This is a updated reply no.1 for post no.1"}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Forbidden);
+    assert_eq!(
+        response.into_json::<ErrorResponse>().unwrap(),
+        ErrorResponse::build(ErrorCode::UserForbidden, "Reply not in a valid state",)
+    );
+
     // ---------- Clean up ----------
     h1.abort();
     h2.abort();
