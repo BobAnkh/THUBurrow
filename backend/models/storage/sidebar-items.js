@@ -1,1 +1,1 @@
-initSidebarItems({"enum":[["ImageError","Error type of saving image"],["ReferrerError","Error type for referer check"]],"struct":[["ReferrerCheck","Request guard for referer check"],["SaveImage","Request guard for save image"]]});
+initSidebarItems({"enum":[["ImageContentType","Allowed types of image"],["ImageError","Error type of saving image"],["ReferrerError","Error type for referer check"]],"struct":[["ReferrerCheck","Request guard for referer check"],["SaveImage","Request guard for save image"]]});

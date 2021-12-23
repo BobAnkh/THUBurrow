@@ -122,13 +122,46 @@
 <span id="122">122</span>
 <span id="123">123</span>
 <span id="124">124</span>
+<span id="125">125</span>
+<span id="126">126</span>
+<span id="127">127</span>
+<span id="128">128</span>
+<span id="129">129</span>
+<span id="130">130</span>
+<span id="131">131</span>
+<span id="132">132</span>
+<span id="133">133</span>
+<span id="134">134</span>
+<span id="135">135</span>
+<span id="136">136</span>
+<span id="137">137</span>
+<span id="138">138</span>
+<span id="139">139</span>
+<span id="140">140</span>
+<span id="141">141</span>
+<span id="142">142</span>
+<span id="143">143</span>
+<span id="144">144</span>
+<span id="145">145</span>
+<span id="146">146</span>
+<span id="147">147</span>
+<span id="148">148</span>
+<span id="149">149</span>
+<span id="150">150</span>
+<span id="151">151</span>
+<span id="152">152</span>
+<span id="153">153</span>
+<span id="154">154</span>
+<span id="155">155</span>
+<span id="156">156</span>
+<span id="157">157</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Models of storage</span>
 
 <span class="kw">use</span> <span class="ident">rocket::data</span>::{<span class="self">self</span>, <span class="ident">Data</span>, <span class="ident">FromData</span>, <span class="ident">ToByteUnit</span>};
 <span class="kw">use</span> <span class="ident">rocket::http</span>::{<span class="ident">ContentType</span>, <span class="ident">Status</span>};
 <span class="kw">use</span> <span class="ident">rocket::outcome::Outcome</span>::<span class="kw-2">*</span>;
 <span class="kw">use</span> <span class="ident">rocket::request</span>::{<span class="self">self</span>, <span class="ident">FromRequest</span>, <span class="ident">Request</span>};
-<span class="kw">use</span> <span class="ident">rocket::serde::Deserialize</span>;
+<span class="kw">use</span> <span class="ident">rocket::serde</span>::{<span class="ident">Deserialize</span>, <span class="ident">Serialize</span>};
 
 <span class="kw">use</span> <span class="ident">lazy_static::lazy_static</span>;
 <span class="kw">use</span> <span class="ident">regex::Regex</span>;
@@ -141,8 +174,28 @@
 <span class="doccomment">/// - `content`: Vec&lt;u8&gt;, the content of the image</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Deserialize</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">SaveImage</span> {
-    <span class="kw">pub</span> <span class="ident">content_type</span>: <span class="ident">String</span>,
+    <span class="kw">pub</span> <span class="ident">content_type</span>: <span class="ident">ImageContentType</span>,
     <span class="kw">pub</span> <span class="ident">content</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>,
+}
+
+<span class="doccomment">/// Allowed types of image</span>
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Serialize</span>, <span class="ident">Deserialize</span>)]</span>
+<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">ImageContentType</span> {
+    <span class="ident">JPEG</span>,
+    <span class="ident">PNG</span>,
+    <span class="ident">GIF</span>,
+    <span class="ident">JPG</span>,
+}
+
+<span class="kw">impl</span> <span class="ident">std::fmt::Display</span> <span class="kw">for</span> <span class="ident">ImageContentType</span> {
+    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;mut</span> <span class="ident">std::fmt::Formatter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) -&gt; <span class="ident">std::fmt::Result</span> {
+        <span class="kw">match</span> <span class="self">self</span> {
+            <span class="ident">ImageContentType::JPEG</span> =&gt; <span class="macro">write!</span>(<span class="ident">f</span>, <span class="string">&quot;jpeg&quot;</span>),
+            <span class="ident">ImageContentType::PNG</span> =&gt; <span class="macro">write!</span>(<span class="ident">f</span>, <span class="string">&quot;png&quot;</span>),
+            <span class="ident">ImageContentType::GIF</span> =&gt; <span class="macro">write!</span>(<span class="ident">f</span>, <span class="string">&quot;gif&quot;</span>),
+            <span class="ident">ImageContentType::JPG</span> =&gt; <span class="macro">write!</span>(<span class="ident">f</span>, <span class="string">&quot;jpg&quot;</span>),
+        }
+    }
 }
 
 <span class="doccomment">/// Error type of saving image</span>
@@ -187,13 +240,13 @@
         <span class="kw">let</span> <span class="ident">content_type</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">req</span>.<span class="ident">content_type</span>() {
             <span class="prelude-val">Some</span>(<span class="ident">req_ct</span>) =&gt; {
                 <span class="kw">if</span> <span class="ident">req_ct</span> <span class="op">==</span> <span class="kw-2">&amp;</span><span class="ident">jpeg_ct</span> {
-                    <span class="string">&quot;jpeg&quot;</span>.<span class="ident">to_string</span>()
+                    <span class="ident">ImageContentType::JPEG</span>
                 } <span class="kw">else</span> <span class="kw">if</span> <span class="ident">req_ct</span> <span class="op">==</span> <span class="kw-2">&amp;</span><span class="ident">jpg_ct</span> {
-                    <span class="string">&quot;jpg&quot;</span>.<span class="ident">to_string</span>()
+                    <span class="ident">ImageContentType::JPG</span>
                 } <span class="kw">else</span> <span class="kw">if</span> <span class="ident">req_ct</span> <span class="op">==</span> <span class="kw-2">&amp;</span><span class="ident">png_ct</span> {
-                    <span class="string">&quot;png&quot;</span>.<span class="ident">to_string</span>()
+                    <span class="ident">ImageContentType::PNG</span>
                 } <span class="kw">else</span> <span class="kw">if</span> <span class="ident">req_ct</span> <span class="op">==</span> <span class="kw-2">&amp;</span><span class="ident">gif_ct</span> {
-                    <span class="string">&quot;gif&quot;</span>.<span class="ident">to_string</span>()
+                    <span class="ident">ImageContentType::GIF</span>
                 } <span class="kw">else</span> {
                     <span class="kw">return</span> <span class="ident">Failure</span>((<span class="ident">Status::UnsupportedMediaType</span>, <span class="ident">ImageError::InvalidType</span>));
                 }
@@ -244,6 +297,19 @@
         } <span class="kw">else</span> {
             <span class="ident">Failure</span>((<span class="ident">Status::Forbidden</span>, <span class="ident">ReferrerError::Empty</span>))
         }
+    }
+}
+
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
+<span class="kw">mod</span> <span class="ident">tests</span> {
+    <span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
+
+    <span class="attribute">#[<span class="ident">test</span>]</span>
+    <span class="kw">fn</span> <span class="ident">test_content_type</span>() {
+        <span class="macro">assert_eq!</span>(<span class="ident">ImageContentType::JPEG</span>.<span class="ident">to_string</span>(), <span class="string">&quot;jpeg&quot;</span>);
+        <span class="macro">assert_eq!</span>(<span class="ident">ImageContentType::PNG</span>.<span class="ident">to_string</span>(), <span class="string">&quot;png&quot;</span>);
+        <span class="macro">assert_eq!</span>(<span class="ident">ImageContentType::GIF</span>.<span class="ident">to_string</span>(), <span class="string">&quot;gif&quot;</span>);
+        <span class="macro">assert_eq!</span>(<span class="ident">ImageContentType::JPG</span>.<span class="ident">to_string</span>(), <span class="string">&quot;jpg&quot;</span>);
     }
 }
 </code></pre></div>
