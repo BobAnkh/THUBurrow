@@ -115,6 +115,8 @@ export default function FindbackPassword({
       className={styles.select_after}
     >
       <Option value='@pku.edu.cn'>@pku.edu.cn</Option>
+      <Option value='@mail.tsinghua.edu.cn'>@mail.tsinghua.edu.cn</Option>
+      <Option value='@tsinghua.edu.cn'>@tsinghua.edu.cn</Option>
       <Option value='@mails.tsinghua.edu.cn'>@mails.tsinghua.edu.cn</Option>
     </Select>
   );

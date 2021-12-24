@@ -189,7 +189,7 @@ const PostDetial: NextPage = () => {
       } else {
         const res = await axios.post(
           `${process.env.NEXT_PUBLIC_BASEURL}/users/relation`,
-          { deactivateLike: pid },
+          { DeactivateLike: pid },
           { headers: { 'Content-Type': 'application/json' } }
         );
       }
