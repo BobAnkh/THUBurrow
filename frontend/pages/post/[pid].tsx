@@ -255,7 +255,7 @@ const PostDetial: NextPage = () => {
     try {
       const res = await axios.post(
         `${process.env.NEXT_PUBLIC_BASEURL}/content/replies`,
-        { ...data, post_id: pid },
+        { ...data, post_id: pid_ },
         { headers: { 'Content-Type': 'application/json' } }
       );
       const json = await res.data;
