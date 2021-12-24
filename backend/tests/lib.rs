@@ -1098,7 +1098,7 @@ fn test_burrow() {
     assert_eq!(response.status(), Status::Ok);
     assert_eq!(
         response.into_string().unwrap(),
-        format!("{{\"title\":\"Default\",\"description\":\"\",\"posts\":[]}}")
+        "{\"title\":\"Default\",\"description\":\"\",\"posts\":[]}".to_string()
     );
     // show burrow: perform a wrong action (burrow not exist)
     let response = client
@@ -2264,7 +2264,7 @@ fn test_content() {
     println!("{}", response.into_string().unwrap());
     // get post list with section
     let response = client
-        .get(format!("/content/posts/list?page=0&section=NSFW"))
+        .get("/content/posts/list?page=0&section=NSFW".to_string())
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
@@ -2278,7 +2278,7 @@ fn test_content() {
     );
     // get post list with section
     let response = client
-        .get(format!("/content/posts/list?section=Learning"))
+        .get("/content/posts/list?section=Learning".to_string())
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
@@ -3015,7 +3015,7 @@ fn test_search() {
     let res = response.into_json::<ErrorResponse>().unwrap();
 
     assert_eq!(res.error.code, ErrorCode::EmptyField);
-    assert_eq!(res.error.message, format!("Tags should not be empty"));
+    assert_eq!(res.error.message, "Tags should not be empty".to_string());
     // ErrorResponse::build(ErrorCode::EmptyField,format!("Tags should not be empty")));
 
     // discard burrow
@@ -3025,7 +3025,7 @@ fn test_search() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     let res = response.into_string().unwrap();
-    assert_eq!(res, format!("Success"));
+    assert_eq!(res, "Success".to_string());
 
     //retrieve a discarded burrow
     let response = client
@@ -3249,7 +3249,7 @@ fn test_storage() {
         .map(char::from)
         .take(15)
         .collect();
-        let admin_name: String = std::iter::repeat(())
+    let admin_name: String = std::iter::repeat(())
         .map(|()| thread_rng().sample(Alphanumeric))
         .map(char::from)
         .take(15)
