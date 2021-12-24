@@ -3,10 +3,7 @@ import type { NextPage } from 'next';
 import { StarTwoTone, LikeTwoTone } from '@ant-design/icons';
 import styles from './burrow.module.css';
 import {
-  Alert,
   Layout,
-  Menu,
-  Breadcrumb,
   List,
   Space,
   message,
@@ -21,7 +18,6 @@ import { MessageOutlined, LikeOutlined, StarOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/router';
 import 'antd/dist/antd.css';
 import axios, { AxiosError } from 'axios';
-import { createRouteLoader } from 'next/dist/client/route-loader';
 import GlobalHeader from '../../components/header/header';
 
 axios.defaults.withCredentials = true;
@@ -37,12 +33,21 @@ const IconText = (props: any) => (
   </Space>
 );
 
-function showtag1(tag: string, index: number) {
+function showtag(tag: string, index: number) {
   return <Tag key={index}>{tag}</Tag>;
 }
-const showtag = (value: Array<string>) => {
-  return value.map(showtag1);
+const show = (value: Array<string>, content: string) => {
+  if (content === 'tag') return value.map(showtag);
+  else if (content === 'section') return value.map(showsection);
 };
+
+function showsection(tag: string, index: number) {
+  return (
+    <Tag key={index} color={'yellow'}>
+      {tag}
+    </Tag>
+  );
+}
 
 const Burrow: NextPage = () => {
   const initialchange1 = new Array(10).fill(false);
@@ -220,7 +225,7 @@ const Burrow: NextPage = () => {
   return (
     <Layout id='main'>
       <Header style={{ position: 'fixed', zIndex: 1, width: '100%' }}>
-        <title>{`# ${bid} 地洞`}</title>
+        <title className={styles.Title}>{`# ${bid} 地洞`}</title>
         <GlobalHeader />
       </Header>
       <Content
@@ -238,7 +243,7 @@ const Burrow: NextPage = () => {
                   <tbody>
                     <tr>
                       <td style={{ width: '100%' }}>
-                        <div style={{ color: 'black' }}>
+                        <div className={styles.Title}>
                           # {bid}&emsp;{burrowTitle}
                         </div>
                       </td>
@@ -297,6 +302,8 @@ const Burrow: NextPage = () => {
                     autoSize={{ minRows: 2, maxRows: 6 }}
                     className={styles.EditText}
                     onChange={(event) => UpdateIntro(event)}
+                    showCount
+                    bordered={false}
                   />
                   <Button
                     className={styles.Cancel}
@@ -396,13 +403,16 @@ const Burrow: NextPage = () => {
                 >
                   <List.Item.Meta
                     title={
-                      <a href={`../post/${item.post_id}`}>
+                      <a
+                        href={`../post/${item.post_id}`}
+                        className={styles.Title}
+                      >
                         {item.title}&emsp;
-                        <Tag color='yellow'>{item.section}</Tag>
+                        {show(item.section, 'section')}
                       </a>
                     }
                   />
-                  {showtag(item.tag)}
+                  {show(item.tag, 'tag')}
                 </List.Item>
               )}
             />
