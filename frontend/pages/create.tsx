@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Button, Card, Form, Input, Layout, message, Select } from 'antd';
-import TextArea from 'antd/lib/input/TextArea';
 import axios, { AxiosError } from 'axios';
 import { NextPage } from 'next';
 import GlobalHeader from '../components/header/header';

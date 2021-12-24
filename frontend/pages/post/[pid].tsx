@@ -23,7 +23,6 @@ import {
 } from '@ant-design/icons';
 import ReplyList from '../../components/reply-list';
 import '../../node_modules/antd/dist/antd.css';
-import '../../styles/post.module.css';
 import axios, { AxiosError } from 'axios';
 import GlobalHeader from '../../components/header/header';
 import Title from 'antd/lib/typography/Title';
@@ -56,7 +55,6 @@ const PostDetial: NextPage = () => {
   const [changeLike, setChangeLike] = useState(initialchange1);
   const [changeCol, setChangeCol] = useState(initialchange2);
   const [replyContent, setReplyContent] = useState('');
-  const [editContent, setEditContent] = useState('');
   const [mode, setMode] = useState<'view' | 'edit'>('edit');
 
   useEffect(() => {
