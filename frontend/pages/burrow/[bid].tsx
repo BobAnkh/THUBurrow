@@ -84,7 +84,7 @@ const Burrow: NextPage = () => {
   const clickattention = async (bid: number, activate: Boolean) => {
     setattention(!attention);
     try {
-      if (activate) {
+      if (!activate) {
         const res = await axios.post(
           `${process.env.NEXT_PUBLIC_BASEURL}/users/relation`,
           { ActivateFollow: bid },
