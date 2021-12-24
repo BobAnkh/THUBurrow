@@ -72,7 +72,6 @@ const Create: NextPage = () => {
       ...values,
     };
     if (data.tag === undefined) data.tag = [];
-    console.log(data);
     try {
       const res = await axios.post(
         `${process.env.NEXT_PUBLIC_BASEURL}/content/posts`,
@@ -102,6 +101,7 @@ const Create: NextPage = () => {
   };
 
   const chooseTag = (rule: any, value: any, callback: any) => {
+    if (value === undefined) callback();
     if (value.length > 10) {
       callback('wrong');
     } else {
