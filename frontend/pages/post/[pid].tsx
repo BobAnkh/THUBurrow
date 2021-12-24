@@ -55,7 +55,6 @@ const PostDetial: NextPage = () => {
   const [changeLike, setChangeLike] = useState(initialchange1);
   const [changeCol, setChangeCol] = useState(initialchange2);
   const [replyContent, setReplyContent] = useState('');
-  const [editContent, setEditContent] = useState('');
   const [mode, setMode] = useState<'view' | 'edit'>('edit');
 
   useEffect(() => {
