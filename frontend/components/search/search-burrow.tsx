@@ -29,7 +29,7 @@ export default function Searchburrow({
         <List.Item key={item.burrow_id}>
           <List.Item.Meta
             title={
-              <a href={`/burrow/{${item.burrow_id}}`}>
+              <a href={`/burrow/${item.burrow_id}`}>
                 <div dangerouslySetInnerHTML={{ __html: item.title }}></div>
               </a>
             }
