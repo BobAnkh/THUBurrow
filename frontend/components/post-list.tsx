@@ -32,10 +32,11 @@ const IconText = ({ icon, text }: IconProps) => (
   </Space>
 );
 function showtag1(tag: string, index: number) {
-  return <Tag key={index}>{tag}</Tag>;
+  if (tag === '') return null;
+  else return <Tag key={index}>{tag}</Tag>;
 }
 const showtag = (value: Array<string>) => {
-  return value.map(showtag1);
+  return (value || []).map(showtag1);
 };
 export default function PostList({ listData, setPage, totalNum }: Props) {
   const initialchange1 = new Array(20).fill(false);
@@ -184,7 +185,7 @@ export default function PostList({ listData, setPage, totalNum }: Props) {
           <List.Item.Meta
             title={
               <a href={`/post/${item.post.post_id}`} className={styles.Title}>
-                {item.post.title}
+                # {item.post.post_id}&emsp;{item.post.title}
               </a>
             }
             description={`#${item.post.burrow_id} 洞主`}
@@ -240,7 +241,9 @@ export function PostColList({ listData, setPage, totalNum }: Props) {
         >
           <List.Item.Meta
             title={
-              <Link href={`post/${item.post.post_id}`}>{item.post.title}</Link>
+              <Link href={`post/${item.post.post_id}`}>
+                # {item.post.post_id}&emsp;{item.post.title}
+              </Link>
             }
             description={`#${item.post.burrow_id} 洞主`}
           />
