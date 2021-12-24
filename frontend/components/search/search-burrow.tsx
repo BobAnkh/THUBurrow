@@ -28,7 +28,11 @@ export default function Searchburrow({
       renderItem={(item) => (
         <List.Item key={item.burrow_id}>
           <List.Item.Meta
-            title={<a href={`/burrows/{${item.burrow_id}}`}>{item.title}</a>}
+            title={
+              <a href={`/burrow/{${item.burrow_id}}`}>
+                <div dangerouslySetInnerHTML={{ __html: item.title }}></div>
+              </a>
+            }
             description={
               item.status == false ? (
                 <span>

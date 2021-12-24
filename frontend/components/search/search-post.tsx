@@ -39,7 +39,11 @@ export default function Searchpost({
       renderItem={(item) => (
         <List.Item key={item.post_id}>
           <List.Item.Meta
-            title={<a href={`/contend/posts/${item.post_id}`}>{item.title}</a>}
+            title={
+              <a href={`/post/{${item.post_id}}`}>
+                <div dangerouslySetInnerHTML={{ __html: item.title }}></div>
+              </a>
+            }
             description={`#${item.burrow_id} 洞主`}
           />
           {item.tag != null && showtag(item.tag)}

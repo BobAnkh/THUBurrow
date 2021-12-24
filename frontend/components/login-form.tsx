@@ -8,7 +8,7 @@ import axios, { AxiosError } from 'axios';
 
 axios.defaults.withCredentials = true;
 axios.defaults.headers.post['Content-Type'] = 'application/json';
-//加密
+
 type Iprops = {
   switchform: any;
 };
