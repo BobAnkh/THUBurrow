@@ -110,7 +110,7 @@ const SearchPage: FC = () => {
         );
         setfound_number(1);
         setjump(true);
-        router.push(`/post/{${id}}`);
+        router.push(`/post/${id}`);
       } catch (e) {
         setjump(false);
         const err = e as AxiosError;
@@ -130,7 +130,7 @@ const SearchPage: FC = () => {
         );
         setfound_number(1);
         setjump(true);
-        router.push(`/burrow/{${id}}`);
+        router.push(`/burrow/${id}`);
       } catch (e) {
         setjump(false);
         const err = e as AxiosError;
