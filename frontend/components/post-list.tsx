@@ -131,8 +131,8 @@ export default function PostList({ listData, setPage, totalNum }: Props) {
             <Button
               type='text'
               icon={
-                (changeLike[index] && item.like) ||
-                (!changeLike[index] && !item.like) ? (
+                (changeLike[index] && !item.like) ||
+                (!changeLike[index] && item.like) ? (
                   <LikeTwoTone twoToneColor='#8A2BE2' />
                 ) : (
                   <LikeOutlined />
@@ -142,8 +142,8 @@ export default function PostList({ listData, setPage, totalNum }: Props) {
               onClick={() => {
                 clickLike(
                   item.post.post_id,
-                  (!changeLike[index] && item.like) ||
-                    (changeLike[index] && !item.like),
+                  (!changeLike[index] && !item.like) ||
+                    (changeLike[index] && item.like),
                   index
                 );
               }}
@@ -164,9 +164,9 @@ export default function PostList({ listData, setPage, totalNum }: Props) {
               key='list-vertical-star-o'
               onClick={() => {
                 clickCol(
-                  item.post_id,
-                  (changeCol[index] && item.collection) ||
-                    (!changeCol[index] && !item.collection),
+                  item.post.post_id,
+                  (!changeCol[index] && !item.collection) ||
+                    (changeCol[index] && item.collection),
                   index
                 );
               }}
@@ -183,10 +183,7 @@ export default function PostList({ listData, setPage, totalNum }: Props) {
         >
           <List.Item.Meta
             title={
-              <a
-                href={`../pages/post/${item.post.post_id}`}
-                className={styles.Title}
-              >
+              <a href={`/post/${item.post.post_id}`} className={styles.Title}>
                 {item.post.title}
               </a>
             }
