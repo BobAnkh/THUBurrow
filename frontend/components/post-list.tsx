@@ -141,8 +141,8 @@ export default function PostList({ listData, setPage, totalNum }: Props) {
               onClick={() => {
                 clickLike(
                   item.post.post_id,
-                  (!changeLike[index] && item.like) ||
-                    (changeLike[index] && !item.like),
+                  (!changeLike[index] && !item.like) ||
+                    (changeLike[index] && item.like),
                   index
                 );
               }}
@@ -163,9 +163,9 @@ export default function PostList({ listData, setPage, totalNum }: Props) {
               key='list-vertical-star-o'
               onClick={() => {
                 clickCol(
-                  item.post_id,
-                  (changeCol[index] && !item.collection) ||
-                    (!changeCol[index] && item.collection),
+                  item.post.post_id,
+                  (!changeCol[index] && !item.collection) ||
+                    (changeCol[index] && item.collection),
                   index
                 );
               }}
