@@ -14,7 +14,12 @@ import {
   Tag,
   Popconfirm,
 } from 'antd';
-import { MessageOutlined, LikeOutlined, StarOutlined } from '@ant-design/icons';
+import {
+  MessageOutlined,
+  LikeOutlined,
+  StarOutlined,
+  PlusOutlined,
+} from '@ant-design/icons';
 import { useRouter } from 'next/router';
 import 'antd/dist/antd.css';
 import axios, { AxiosError } from 'axios';
@@ -296,20 +301,17 @@ const Burrow: NextPage = () => {
                         {yourself == false && (
                           <Button
                             icon={
-                              attention ? (
-                                <div style={{ color: '#FFD700' }}>已关注</div>
-                              ) : (
-                                <div>关注</div>
+                              !attention && (
+                                <PlusOutlined twoToneColor='#FFD700' />
                               )
                             }
                             onClick={() => {
                               clickattention(Number(bid), attention);
                             }}
-                            style={{
-                              float: 'right',
-                              width: '50px',
-                            }}
-                          ></Button>
+                            style={{ float: 'right', margin: '10px' }}
+                          >
+                            {attention == true ? '已关注' : '关注'}
+                          </Button>
                         )}
                       </td>
                       <td>
