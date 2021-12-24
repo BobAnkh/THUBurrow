@@ -23,6 +23,7 @@ import {
 } from '@ant-design/icons';
 import ReplyList from '../../components/reply-list';
 import '../../node_modules/antd/dist/antd.css';
+import '../../styles/post.module.css';
 import axios, { AxiosError } from 'axios';
 import GlobalHeader from '../../components/header/header';
 import Title from 'antd/lib/typography/Title';
@@ -411,7 +412,7 @@ const PostDetial: NextPage = () => {
                 {' ' + '收藏' + ' '}
               </Button>
               <Title level={3} style={{ float: 'left', margin: '10px' }}>
-                {title}
+                # {pid}&emsp;{title}
               </Title>
             </>
           }

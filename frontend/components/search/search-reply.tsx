@@ -42,7 +42,7 @@ export default function Searchreply({
                   title={item.reply_id}
                   description={`#${item.burrow_id} 洞`}
                 />
-                {item.content}
+                <div dangerouslySetInnerHTML={{ __html: item.content }}></div>
                 <div className={styles.extra}>
                   {item.update_time !== undefined && (
                     <em>
