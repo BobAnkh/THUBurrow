@@ -1,0 +1,81 @@
+.background{
+    position:absolute;
+    height: 120%;
+    width: 800px;
+    top: 0px;
+    padding: 0;
+    border: 0;
+    background-color: rgb(220, 245, 243);
+}@media only screen and (min-width: 800px) {.background{width: 100%;}}
+
+.container{
+    border-top-style: solid;
+    border-color: rgb(66, 151, 230);
+    position: static;
+    padding: 25px;
+    width: 500px;
+    height: 520px;
+    margin-top: 160px;
+    margin-left: auto;
+    margin-right: auto;
+    background-color: white;
+    text-align: center;
+}
+.containerlogin{
+  border-top-style: solid;
+  border-color: rgb(66, 151, 230);
+  position: static;
+  padding: 25px;
+  width: 500px;
+  height: 350px;
+  margin-top: 160px;
+  margin-left: auto;
+  margin-right: auto;
+  background-color: white;
+  text-align: center;
+}
+
+.column{
+    margin-left: 4%;
+    color: rgb(90, 129, 238);
+}
+
+.content{
+    margin-right: 4%;
+    margin-left: 4%;
+    padding-top: 40px;
+
+}
+
+.inputBox{
+    width: 310px;
+}
+
+.select_after{
+    width: 120px;
+}
+.loginform {
+    width: 500px;
+    max-width: 500px;
+  }
+  .loginformremeber {
+    float: left;
+  }
+  .loginformforgot {
+    float: right;
+    cursor: pointer;
+  }
+  .loginformback{
+    float: right;
+    cursor: pointer;
+  }
+  .loginformbutton{
+    width: 100%;
+  }
+  .left{
+    float:left;
+  }
+
+.tailer{
+    text-align: center;
+}
