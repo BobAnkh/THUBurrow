@@ -3449,6 +3449,13 @@ fn test_storage() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
 
+    let response = client
+        .get("/admin/test?role=3")
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    assert_eq!(response.into_string().unwrap(), "Success");
+
     //list image
     let response = client
         .get("/storage/images")
