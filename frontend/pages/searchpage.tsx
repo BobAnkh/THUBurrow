@@ -43,7 +43,6 @@ const SearchPage: FC = () => {
   const [webtitle, setwebtitle] = useState('T大地洞-搜索');
 
   async function sendkeyword(Keyword: any, page: number) {
-    console.log(Keyword);
     if (area === 'post') {
       const SearchPostKeyword = { keywords: Keyword };
       setloading(true);
