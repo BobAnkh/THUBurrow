@@ -34,10 +34,11 @@ const IconText = (props: any) => (
 );
 
 function showtag(tag: string, index: number) {
-  return <Tag key={index}>{tag}</Tag>;
+  if (tag === '') return null;
+  else return <Tag key={index}>{tag}</Tag>;
 }
 const show = (value: Array<string>, content: string) => {
-  if (content === 'tag') return value.map(showtag);
+  if (content === 'tag') return (value || []).map(showtag);
   else if (content === 'section') return value.map(showsection);
 };
 
@@ -77,7 +78,8 @@ const Burrow: NextPage = () => {
     try {
       const fetchListData = async () => {
         const res = await axios.get(
-          `${process.env.NEXT_PUBLIC_BASEURL}/burrows/${bid}?page=${page - 1}`
+          // `${process.env.NEXT_PUBLIC_BASEURL}/burrows/${bid}?page=${page - 1}`
+          'http://127.0.0.1:4523/mock/435762/burrows/1'
         );
         const postlist = await res.data;
         setListData(postlist.posts);
