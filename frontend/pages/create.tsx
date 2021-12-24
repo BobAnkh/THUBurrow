@@ -6,6 +6,7 @@ import { NextPage } from 'next';
 import GlobalHeader from '../components/header/header';
 import { useRouter } from 'next/router';
 import { Markdown } from '../components';
+import UploadImage from '../components/storage/image-upload';
 
 axios.defaults.withCredentials = true;
 axios.defaults.headers.post['Content-Type'] = 'application/json';
@@ -17,6 +18,7 @@ const Create: NextPage = () => {
   const [bidList, setBidList] = useState([]);
   const [content, setContent] = useState('');
   const [mode, setMode] = useState<'view' | 'edit'>('edit');
+  const [newURL, setNewURL] = useState('');
   const toOption = (bidList: number[]) => {
     const bidOptionList = [];
     for (let i = 0; i < bidList.length; i++) {
@@ -46,6 +48,15 @@ const Create: NextPage = () => {
     };
     fetchBid();
   }, [router]);
+
+  useEffect(() => {
+    const newContent =
+      content +
+      `![${newURL.slice(0, -5)}](${
+        process.env.NEXT_PUBLIC_BASEURL
+      }/storage/images/${newURL})`;
+    setContent(newContent);
+  }, [newURL]);
 
   const handleOnChange = (text: string) => {
     setContent(text);
@@ -125,6 +136,9 @@ const Create: NextPage = () => {
                 editorStyle={{ height: '500px' }}
                 onChange={handleOnChange}
               />
+            </Form.Item>
+            <Form.Item label='上传图片'>
+              <UploadImage setNewURL={setNewURL} />
             </Form.Item>
             <Form.Item label='详情'>
               <Form.Item
