@@ -56,6 +56,7 @@ const PostDetial: NextPage = () => {
   const [changeCol, setChangeCol] = useState(initialchange2);
   const [replyContent, setReplyContent] = useState('');
   const [editContent, setEditContent] = useState('');
+  const [postid, setPostid] = useState('');
   const [mode, setMode] = useState<'view' | 'edit'>('edit');
 
   useEffect(() => {
@@ -70,6 +71,7 @@ const PostDetial: NextPage = () => {
           }
         );
         setReplyList(res.data.reply_page);
+        setPostid(res.data.post_desc.post_id);
         setBid(res.data.post_desc.burrow_id);
         setTitle(res.data.post_desc.title);
         setLike(res.data.like);
@@ -412,7 +414,7 @@ const PostDetial: NextPage = () => {
                 {' ' + '收藏' + ' '}
               </Button>
               <Title level={3} style={{ float: 'left', margin: '10px' }}>
-                {title}
+                # {postid}&emsp;{title}
               </Title>
             </>
           }
