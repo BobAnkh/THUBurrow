@@ -170,7 +170,9 @@ export default function FindbackPassword({
 
             <Form.Item
               name='code'
-              rules={[{ required: true, message: '请输入6位验证码!', len: 6 }]}
+              rules={[
+                { required: true, message: '请输入10位验证码!', len: 10 },
+              ]}
             >
               <Row gutter={13}>
                 <Col span={16}>
