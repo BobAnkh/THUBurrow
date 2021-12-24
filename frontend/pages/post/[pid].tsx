@@ -138,10 +138,6 @@ const PostDetial: NextPage = () => {
     return value.map(showsection1);
   };
 
-  const handleOnEditChange = (text: string) => {
-    setEditContent(text);
-  };
-
   const handleOnReplyChange = (text: string) => {
     setReplyContent(text);
   };
