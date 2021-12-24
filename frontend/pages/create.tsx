@@ -56,9 +56,9 @@ const Create: NextPage = () => {
     if (newURL != '') {
       const newContent =
         content +
-        `![${newURL.slice(0, -5)}](${
+        `<img src='${newURL.slice(0, -5)}](${
           process.env.NEXT_PUBLIC_BASEURL
-        }/storage/images/${newURL})`;
+        }/storage/images/${newURL}' style='width : 60%'/>`;
       setContent(newContent);
     }
   }, [newURL]);
@@ -80,7 +80,7 @@ const Create: NextPage = () => {
         { headers: { 'Content-Type': 'application/json' } }
       );
       message.success('发帖成功');
-      window.location.reload();
+      router.push('/home');
     } catch (e) {
       const err = e as AxiosError;
       if (err.response?.status == 400) {
