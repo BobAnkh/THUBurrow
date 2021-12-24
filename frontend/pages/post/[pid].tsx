@@ -71,7 +71,10 @@ const PostDetial: NextPage = () => {
           }
         );
         setReplyList(res.data.reply_page);
+<<<<<<< HEAD
         setPostid(res.data.post_desc.post_id);
+=======
+>>>>>>> 8ec92db173c52e8d29afe912c23178e98d429b52
         setBid(res.data.post_desc.burrow_id);
         setTitle(res.data.post_desc.title);
         setLike(res.data.like);
@@ -108,12 +111,26 @@ const PostDetial: NextPage = () => {
 
   function showtag1(tag: string, index: number) {
     if (tag === '') return null;
-    return <Tag key={index}>{tag}</Tag>;
+    return <Tag key={index + 3}>{tag}</Tag>;
   }
   function showsection1(tag: string, index: number) {
+    let sec;
+    switch (tag) {
+      case 'Learning':
+        sec = '学习科研';
+      case 'Life':
+        sec = '日常生活';
+        break;
+      case 'Entertainment':
+        sec = '休闲娱乐';
+        break;
+      case 'NSFW':
+        sec = 'NSFW';
+        break;
+    }
     return (
       <Tag key={index} color='blue'>
-        {tag}
+        {sec}
       </Tag>
     );
   }
@@ -230,8 +247,8 @@ const PostDetial: NextPage = () => {
     };
     try {
       const res = await axios.patch(
-        `${process.env.NEXT_PUBLIC_BASEURL}/content/posts`,
-        { ...data, burrow_id: bid },
+        `${process.env.NEXT_PUBLIC_BASEURL}/content/posts/${pid}`,
+        { ...data },
         { headers: { 'Content-Type': 'application/json' } }
       );
 
@@ -258,7 +275,7 @@ const PostDetial: NextPage = () => {
     try {
       const res = await axios.post(
         `${process.env.NEXT_PUBLIC_BASEURL}/content/replies`,
-        { ...data, post_id: pid },
+        { ...data, post_id: pid_ },
         { headers: { 'Content-Type': 'application/json' } }
       );
       const json = await res.data;
@@ -327,21 +344,7 @@ const PostDetial: NextPage = () => {
                         name='title'
                         rules={[{ required: true, message: '标题不能为空' }]}
                       >
-                        <Input placeholder='请输入标题' />
-                      </Form.Item>
-                      <Form.Item
-                        label='内容'
-                        name='content'
-                        rules={[
-                          { required: true, message: '帖子第一层不能为空' },
-                        ]}
-                      >
-                        <Markdown
-                          content={editContent}
-                          mode={mode}
-                          editorStyle={{ height: '500px' }}
-                          onChange={handleOnEditChange}
-                        />
+                        <Input placeholder='请输入新标题' />
                       </Form.Item>
                       <Form.Item
                         name='section'
