@@ -1,0 +1,41 @@
+.Descript{
+    box-shadow:2px 2px 10px rgb(178, 213, 216);
+    padding: 25px 25px 60px 25px;
+    margin-top: 0.5cm;
+    margin-bottom: 1cm;
+    background-color: rgb(209, 245, 252);
+}
+
+.BriefIntro{
+    font-weight: bold;
+}
+
+.Cancel{
+    margin-top: 10px;
+    float: right;
+    margin-left: 50px;
+}
+
+.Confirm{
+    margin-top: 10px;
+    float: right;
+    margin-left: 50px;
+}
+
+.EditText{
+    border-radius: 15px;
+    width: 100%;
+    border: 2px solid rgb(109, 162, 231);
+    background-color: white;
+}
+
+.ButtonLayout{
+    width: 100px;
+}
+
+
+.Title{
+  font-family: 'Microsoft YaHei', serif;
+  font-weight: bold;
+  font-size: 1.28pc
+}
