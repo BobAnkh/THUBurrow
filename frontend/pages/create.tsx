@@ -110,7 +110,6 @@ const Create: NextPage = () => {
   };
 
   const compress = (base64: any, quality: number, mimeType: string) => {
-    console.log(base64);
     let canvas = document.createElement('canvas');
     let img = document.createElement('img');
     img.crossOrigin = 'anonymous';
@@ -158,7 +157,7 @@ const Create: NextPage = () => {
 
   const upLoadToServer = async (bytes: Uint8Array, type: string) => {
     try {
-      console.log('size', bytes.length);
+      console.log('压缩后图片大小', 'size', bytes.length);
       const res = await axios.post(
         `${process.env.NEXT_PUBLIC_BASEURL}/storage/images`,
         bytes,
@@ -172,7 +171,6 @@ const Create: NextPage = () => {
 
   const uploadImage = (event: any) => {
     const reader = new FileReader();
-    console.log('step0 done!');
     reader.onload = async function (event) {
       let compressedDataURL = await compress(
         event.target?.result,
