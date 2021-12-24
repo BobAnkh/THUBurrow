@@ -56,9 +56,7 @@ const Create: NextPage = () => {
     if (newURL != '') {
       const newContent =
         content +
-        `<img src='${newURL.slice(0, -5)}](${
-          process.env.NEXT_PUBLIC_BASEURL
-        }/storage/images/${newURL}' style='width : 60%'/>`;
+        `![${newURL}.slice(0,-5)](${process.env.NEXT_PUBLIC_BASEURL}/storage/images/${newURL})`;
       setContent(newContent);
     }
   }, [newURL]);
