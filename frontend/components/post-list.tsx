@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 import axios from 'axios';
 import styles from '../pages/burrow/burrow.module.css';
 import { Button, List, message, Space, Tag } from 'antd';
 import {
+  MessageFilled,
   MessageOutlined,
   LikeOutlined,
   LikeTwoTone,
@@ -47,7 +49,7 @@ export default function PostList({ listData, setPage, totalNum }: Props) {
   const [changeCol, setChangeCol] = useState(initialchange2);
   const [likeNum, setLikeNum] = useState(initialnum1);
   const [colNum, setColNum] = useState(initialnum2);
-
+  const router = useRouter();
   const clickCol = async (pid: number, activate: Boolean, index: number) => {
     let newChangeCol: boolean[] = changeCol;
     newChangeCol[index] = !changeCol[index];
@@ -175,17 +177,25 @@ export default function PostList({ listData, setPage, totalNum }: Props) {
               {' '}
               {item.post.collection_num + colNum[index]}
             </Button>,
-            <IconText
-              icon={MessageOutlined}
-              text={item.post.post_len}
+            <Button
+              type='text'
+              icon={
+                item.post.post_len > 0 ? <MessageFilled /> : <MessageOutlined />
+              }
               key='list-vertical-message'
-            />,
+              onClick={() => {
+                router.push(`/post/${item.post.post_id}`);
+              }}
+            >
+              {' '}
+              {item.post.post_len}
+            </Button>,
           ]}
         >
           <List.Item.Meta
             title={
               <a href={`/post/${item.post.post_id}`} className={styles.Title}>
-                # {item.post.post_id}&emsp;{item.post.title}
+                #{item.post.post_id}&emsp;{item.post.title}
               </a>
             }
             description={`#${item.post.burrow_id} 洞主`}
@@ -241,11 +251,13 @@ export function PostColList({ listData, setPage, totalNum }: Props) {
         >
           <List.Item.Meta
             title={
-              <Link href={`post/${item.post.post_id}`}>
-                # {item.post.post_id}&emsp;{item.post.title}
+              <Link href={`post/${item.post_id}`}>
+                <a className={styles.Title}>
+                  #{item.post_id}&emsp;{item.title}
+                </a>
               </Link>
             }
-            description={`#${item.post.burrow_id} 洞主`}
+            description={`#${item.burrow_id} 洞主`}
           />
           {item.content}
           {showtag(item.tag)}
