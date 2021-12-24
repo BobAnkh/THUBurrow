@@ -113,6 +113,7 @@ const PostDetial: NextPage = () => {
     switch (tag) {
       case 'Learning':
         sec = '学习科研';
+        break;
       case 'Life':
         sec = '日常生活';
         break;
@@ -215,7 +216,9 @@ const PostDetial: NextPage = () => {
 
   const onDelete = async () => {
     try {
-      axios.delete(`${process.env.NEXT_PUBLIC_BASEURL}/content/posts/${pid}`);
+      await axios.delete(
+        `${process.env.NEXT_PUBLIC_BASEURL}/content/posts/${pid}`
+      );
       message.success('删除成功！');
       window.location.reload();
     } catch (e) {
@@ -408,7 +411,7 @@ const PostDetial: NextPage = () => {
                 {' ' + '收藏' + ' '}
               </Button>
               <Title level={3} style={{ float: 'left', margin: '10px' }}>
-                {title}
+                # {pid}&emsp;{title}
               </Title>
             </>
           }
