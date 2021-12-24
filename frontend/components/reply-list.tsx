@@ -41,7 +41,7 @@ export default function ReplyList({
         `${process.env.NEXT_PUBLIC_BASEURL}/content/replies`,
         {
           post_id: listData[0].post_id,
-          reply_id: listData[0].reply_id,
+          reply_id: listData[index].reply_id,
           ...values,
         }
       );
