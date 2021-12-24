@@ -78,8 +78,7 @@ const Burrow: NextPage = () => {
     try {
       const fetchListData = async () => {
         const res = await axios.get(
-          // `${process.env.NEXT_PUBLIC_BASEURL}/burrows/${bid}?page=${page - 1}`
-          'http://127.0.0.1:4523/mock/435762/burrows/1'
+          `${process.env.NEXT_PUBLIC_BASEURL}/burrows/${bid}?page=${page - 1}`
         );
         const postlist = await res.data;
         setListData(postlist.posts);
