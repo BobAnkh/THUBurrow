@@ -66,7 +66,7 @@ export default function UploadImage(setNewURL: any) {
         bytes,
         { headers: { 'Content-Type': type } }
       );
-      setNewURL(`${res.data}`);
+      setNewURL(res.data);
     } catch (e) {
       message.error('上传图片失败！');
     }
