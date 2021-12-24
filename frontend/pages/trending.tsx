@@ -21,12 +21,11 @@ const Trending: NextPage = () => {
       try {
         const res = await axios.get(
           `${process.env.NEXT_PUBLIC_BASEURL}/trending`,
-          // 'http://127.0.0.1:4523/mock/435762/trending',
           {
             headers: { 'Content-Type': 'application/json' },
           }
         );
-        const postlist = res.data;
+        const postlist = JSON.parse(res.data);
         setPostList(postlist);
       } catch (error) {
         const err = error as AxiosError;
