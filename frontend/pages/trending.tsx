@@ -1,8 +1,8 @@
 import type { NextPage } from 'next';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { Layout, Breadcrumb, message, Card } from 'antd';
-import PostList from '../components/post-list';
+import { Layout, message, Card } from 'antd';
+import { PostColList } from '../components/post-list';
 import '../node_modules/antd/dist/antd.css';
 import axios, { AxiosError } from 'axios';
 import GlobalHeader from '../components/header/header';
@@ -21,11 +21,12 @@ const Trending: NextPage = () => {
       try {
         const res = await axios.get(
           `${process.env.NEXT_PUBLIC_BASEURL}/trending`,
+          // 'http://127.0.0.1:4523/mock/435762/trending',
           {
             headers: { 'Content-Type': 'application/json' },
           }
         );
-        const postlist = res.data.post_page;
+        const postlist = res.data;
         setPostList(postlist);
       } catch (error) {
         const err = error as AxiosError;
@@ -46,7 +47,7 @@ const Trending: NextPage = () => {
       </Header>
       <Content style={{ padding: '0 50px' }}>
         <Card>
-          <PostList listData={postList} setPage={setPage} totalNum={50} />
+          <PostColList listData={postList} setPage={setPage} totalNum={50} />
         </Card>
       </Content>
       <Footer style={{ textAlign: 'center' }}>THUBurrow © 2021</Footer>

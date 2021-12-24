@@ -24,14 +24,9 @@ import '../styles/profile.module.css';
 axios.defaults.withCredentials = true;
 axios.defaults.headers.post['Content-Type'] = 'application/json';
 const { Header, Content, Footer } = Layout;
-interface User {
-  key: number;
-  name: string;
-  description?: string;
-}
 
 interface BurrowInfo {
-  id: string;
+  burrow_id: string;
   description: string;
   title: string;
   post_num: number;
@@ -55,12 +50,16 @@ interface MyBurrowInfo extends BurrowInfo {
 }
 
 interface FollowedBurrowInfo extends BurrowInfo {
-  update: boolean;
+  is_update: boolean;
 }
 
+interface FollowedBurrowInfoRecv {
+  is_update: boolean;
+  burrow: BurrowInfo;
+}
 const burrowListMock: MyBurrowInfo[] = [
   {
-    id: '',
+    burrow_id: '',
     description: '',
     title: '',
     post_num: 0,
@@ -69,12 +68,16 @@ const burrowListMock: MyBurrowInfo[] = [
 
 const followedBurrowColumns: ColumnsType<FollowedBurrowInfo> = [
   {
-    key: 'id',
+    key: 'burrow_id',
     title: '洞号',
-    dataIndex: 'id',
+    dataIndex: 'burrow_id',
     width: '10%',
     render: (text, record, index) => {
-      return record.update ? <Badge dot>{text}</Badge> : <Badge>{text}</Badge>;
+      return record.is_update ? (
+        <Badge dot>{text}</Badge>
+      ) : (
+        <Badge>{text}</Badge>
+      );
     },
   },
   {
@@ -208,7 +211,7 @@ const UserPage: NextPage = () => {
   const [postList, setPostList] = useState([]);
   const [editableList, setEditableList] = useState<{ [key: string]: boolean }>(
     burrowList.reduce((obj: { [key: string]: boolean }, x) => {
-      obj[x.id] = false;
+      obj[x.burrow_id] = false;
       return obj;
     }, {})
   );
@@ -232,7 +235,9 @@ const UserPage: NextPage = () => {
             headers: { 'Content-Type': 'application/json' },
           }
         );
-        const postlist = res.data;
+        const postlist = res.data.map(
+          (obj: { post: any; is_update: boolean }) => obj.post
+        );
         setPostList(postlist); //TODO: each child should have a unique key?
       } catch (error) {
         const err = error as AxiosError;
@@ -271,7 +276,18 @@ const UserPage: NextPage = () => {
           `${process.env.NEXT_PUBLIC_BASEURL}/users/follow`
           // 'http://127.0.0.1:4523/mock2/435762/6973421'
         );
-        const followedlist = res.data;
+        const followedlist = res.data.map((obj: FollowedBurrowInfoRecv) => {
+          return {
+            is_update: obj.is_update,
+            burrow_id: obj.burrow.burrow_id,
+            title: obj.burrow.title,
+            description: obj.burrow.description,
+            post_num: obj.burrow.post_num,
+          };
+        });
+        console.log('followedlist!');
+        console.log(res.data);
+        console.log(followedlist);
         setFollowedList(followedlist);
       } catch (error) {
         const err = error as AxiosError;
@@ -294,7 +310,7 @@ const UserPage: NextPage = () => {
     } else {
       newEditableList['待分配'] = true;
       const newRow: MyBurrowInfo = {
-        id: '待分配',
+        burrow_id: '待分配',
         description: '',
         title: '',
         post_num: 0,
@@ -309,7 +325,7 @@ const UserPage: NextPage = () => {
   const handleSaveCell = (row: MyBurrowInfo) => {
     //在button层面也handleSave
     const newData = [...burrowList!];
-    const index = newData.findIndex((item) => row.id === item.id);
+    const index = newData.findIndex((item) => row.burrow_id === item.burrow_id);
     const item = newData[index];
     newData.splice(index, 1, {
       ...item,
@@ -327,14 +343,17 @@ const UserPage: NextPage = () => {
       };
       try {
         const res = await axios.post(
-          `${process.env.NEXT_PUBLIC_BASEURL}/burrows/create`,
+          `${process.env.NEXT_PUBLIC_BASEURL}/burrows`,
+          // 'http://127.0.0.1:4523/mock/435762/burrows/',
           { ...data },
           { headers: { 'Content-Type': 'application/json' } }
         );
         const json = await res.data;
-        newData[index].id = json.burrow_id;
+        console.log(json.burrow_id);
+        newData[index].burrow_id = json.burrow_id;
+        console.log(newData[index].burrow_id);
         delete newEditableList['待分配'];
-        newEditableList[row.id] = false;
+        newEditableList[row.burrow_id] = false;
         setBurrowList(newData);
         setEditableList(newEditableList); //调用api保存树洞，获取新的洞号
         message.success('新建地洞成功!');
@@ -358,13 +377,13 @@ const UserPage: NextPage = () => {
         description: row.description,
       };
       try {
-        const res = await axios.post(
-          `${process.env.NEXT_PUBLIC_BASEURL}/${row.id}`,
+        const res = await axios.patch(
+          `${process.env.NEXT_PUBLIC_BASEURL}/burrows/${row.burrow_id}`,
           { ...data },
           { headers: { 'Content-Type': 'application/json' } }
         );
         const json = await res.data;
-        newEditableList[row.id] = false;
+        newEditableList[row.burrow_id] = false;
         setEditableList(newEditableList);
         message.success('更新地洞信息成功!');
       } catch (error) {
@@ -377,9 +396,11 @@ const UserPage: NextPage = () => {
       }
     };
     const newEditableList = { ...editableList };
-    newEditableList[row.id] = false;
+    newEditableList[row.burrow_id] = false;
     const newData = [...burrowList!];
-    const index = burrowList!.findIndex((item) => row.id === item.id);
+    const index = burrowList!.findIndex(
+      (item) => row.burrow_id === item.burrow_id
+    );
     if (!(burrowList![index].title && burrowList![index].description)) {
       Modal.info({
         title: '请完善地洞信息!',
@@ -394,7 +415,7 @@ const UserPage: NextPage = () => {
   };
   const handleCancel = (row: MyBurrowInfo) => {
     const newEditableList = { ...editableList };
-    newEditableList[row.id] = !newEditableList[row.id]; // 设置当前行为不可编辑
+    newEditableList[row.burrow_id] = !newEditableList[row.burrow_id]; // 设置当前行为不可编辑
     Modal.confirm({
       title: 'Confirm',
       icon: <ExclamationCircleOutlined />,
@@ -403,10 +424,12 @@ const UserPage: NextPage = () => {
       cancelText: '取消',
       onOk: () => {
         const newData = [...burrowList];
-        const index = burrowList.findIndex((item) => row.id === item.id);
+        const index = burrowList.findIndex(
+          (item) => row.burrow_id === item.burrow_id
+        );
         if (row.added) {
           // 删除新增的行
-          delete newEditableList[row.id];
+          delete newEditableList[row.burrow_id];
           newData.splice(index, 1);
         } else {
           newData[index] = editingBurrow!;
@@ -424,9 +447,11 @@ const UserPage: NextPage = () => {
         title: '请先保存或取消当前编辑的洞!',
       });
     } else {
-      const index = burrowList.findIndex((item) => row.id === item.id);
+      const index = burrowList.findIndex(
+        (item) => row.burrow_id === item.burrow_id
+      );
       setEditingBurrow(burrowList[index]); // TODO: I don't want to trigger re-render when change this, how should I do it?
-      newEditableList[row.id] = !newEditableList[row.id]; // 设置当前行为可编辑
+      newEditableList[row.burrow_id] = !newEditableList[row.burrow_id]; // 设置当前行为可编辑
       setEditableList(newEditableList);
     }
   };
@@ -435,9 +460,9 @@ const UserPage: NextPage = () => {
   type MyColumnsType<T> = (ColumnType<T> & { editable?: boolean })[];
   const myBurrowColumns: MyColumnsType<MyBurrowInfo> = [
     {
-      key: 'id',
+      key: 'burrow_id',
       title: '洞号',
-      dataIndex: 'id',
+      dataIndex: 'burrow_id',
       width: '10%',
     },
     {
@@ -466,7 +491,7 @@ const UserPage: NextPage = () => {
       dataIndex: 'operation',
       width: '20%',
       render: (_, row: MyBurrowInfo) =>
-        editableList[row.id] ? (
+        editableList[row.burrow_id] ? (
           <span>
             <a onClick={() => handleSave(row)} style={{ marginRight: 8 }}>
               保存
@@ -501,7 +526,7 @@ const UserPage: NextPage = () => {
       ...col,
       onCell: (record: BurrowInfo) => ({
         record,
-        editable: col.editable && editableList[record.id],
+        editable: col.editable && editableList[record.burrow_id],
         dataIndex: col.dataIndex,
         title: col.title,
         handleSave: handleSaveCell,

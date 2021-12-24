@@ -96,7 +96,7 @@ export default function ReplyList({
             MarkdownViewer(item.content)
           ) : edit[index] === false ? (
             <>
-              <p>{item.content}</p>
+              {MarkdownViewer(item.content)}
               <Button
                 type='link'
                 htmlType='button'

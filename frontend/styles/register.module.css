@@ -1,13 +1,12 @@
 .background{
     position:absolute;
-    width: 100%;
-    height: 100%;
+    height: 120%;
+    width: 800px;
     top: 0px;
     padding: 0;
     border: 0;
     background-color: rgb(220, 245, 243);
-}
-
+}@media only screen and (min-width: 800px) {.background{width: 100%;}}
 
 .container{
     border-top-style: solid;
