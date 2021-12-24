@@ -981,7 +981,7 @@
         };
         <span class="kw">let</span> <span class="ident">post_banned_info</span> <span class="op">=</span> <span class="ident">content_post::Model</span> {
             <span class="ident">post_id</span>,
-            <span class="ident">title</span>: <span class="ident">title</span>.<span class="ident">clone</span>(),
+            <span class="ident">title</span>,
             <span class="ident">burrow_id</span>,
             <span class="ident">create_time</span>: <span class="ident">now</span>,
             <span class="ident">update_time</span>: <span class="ident">now</span>,
@@ -1046,7 +1046,7 @@
             <span class="ident">burrow_id</span>,
             <span class="ident">create_time</span>: <span class="ident">now</span>,
             <span class="ident">update_time</span>: <span class="ident">now</span>,
-            <span class="ident">content</span>: <span class="ident">content</span>.<span class="ident">clone</span>(),
+            <span class="ident">content</span>,
             <span class="ident">reply_state</span>: <span class="ident">reply_banned_state</span>,
             <span class="ident">permission</span>: <span class="number">0</span>,
         };
