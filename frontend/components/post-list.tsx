@@ -220,21 +220,21 @@ export function PostColList({ listData, setPage, totalNum }: Props) {
       dataSource={listData}
       renderItem={(item: any, index: number) => (
         <List.Item
-          key={item.post.title}
+          key={item.title}
           actions={[
             <IconText
-              text={item.post.like_num + likeNum[index]}
+              text={item.like_num + likeNum[index]}
               icon={LikeOutlined}
               key='list-vertical-like-o'
             />,
             <IconText
-              text={item.post.collection_num + colNum[index]}
+              text={item.collection_num + colNum[index]}
               icon={StarOutlined}
               key='list-vertical-star-o'
             />,
             <IconText
               icon={MessageOutlined}
-              text={item.post.post_len}
+              text={item.post_len}
               key='list-vertical-message'
             />,
           ]}
@@ -247,8 +247,8 @@ export function PostColList({ listData, setPage, totalNum }: Props) {
             }
             description={`#${item.post.burrow_id} 洞主`}
           />
-          {item.post.content}
-          {showtag(item.post.tag)}
+          {item.content}
+          {showtag(item.tag)}
         </List.Item>
       )}
     />

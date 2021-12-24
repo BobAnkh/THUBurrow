@@ -235,7 +235,9 @@ const UserPage: NextPage = () => {
             headers: { 'Content-Type': 'application/json' },
           }
         );
-        const postlist = res.data;
+        const postlist = res.data.map(
+          (obj: { post: any; is_update: boolean }) => obj.post
+        );
         setPostList(postlist); //TODO: each child should have a unique key?
       } catch (error) {
         const err = error as AxiosError;
