@@ -413,8 +413,8 @@ const Burrow: NextPage = () => {
                     <Button
                       type='text'
                       icon={
-                        (changeLike[index] && item.like) ||
-                        (!changeLike[index] && !item.like) ? (
+                        (changeLike[index] && !item.like) ||
+                        (!changeLike[index] && item.like) ? (
                           <LikeTwoTone twoToneColor='#8A2BE2' />
                         ) : (
                           <LikeOutlined />
@@ -424,8 +424,8 @@ const Burrow: NextPage = () => {
                       onClick={() => {
                         clickLike(
                           item.post_id,
-                          (!changeLike[index] && item.like) ||
-                            (changeLike[index] && !item.like),
+                          (!changeLike[index] && !item.like) ||
+                            (changeLike[index] && item.like),
                           index
                         );
                       }}
