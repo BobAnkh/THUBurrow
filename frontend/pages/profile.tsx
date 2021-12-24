@@ -268,8 +268,8 @@ const UserPage: NextPage = () => {
     const fetchFollowedList = async () => {
       try {
         const res = await axios.get(
-          // `${process.env.NEXT_PUBLIC_BASEURL}/users/follow`
-          'http://127.0.0.1:4523/mock2/435762/6973421'
+          `${process.env.NEXT_PUBLIC_BASEURL}/users/follow`
+          // 'http://127.0.0.1:4523/mock2/435762/6973421'
         );
         const followedlist = res.data;
         setFollowedList(followedlist);
