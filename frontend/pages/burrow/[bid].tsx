@@ -14,7 +14,12 @@ import {
   Tag,
   Popconfirm,
 } from 'antd';
-import { MessageOutlined, LikeOutlined, StarOutlined } from '@ant-design/icons';
+import {
+  MessageOutlined,
+  LikeOutlined,
+  StarOutlined,
+  PlusOutlined,
+} from '@ant-design/icons';
 import { useRouter } from 'next/router';
 import 'antd/dist/antd.css';
 import axios, { AxiosError } from 'axios';
@@ -74,6 +79,34 @@ const Burrow: NextPage = () => {
   const { bid } = router.query;
   const site = router.pathname.split('/')[1];
 
+  const [attention, setattention] = useState(false);
+  const [yourself, setyourself] = useState(false);
+
+  const clickattention = async (bid: number, activate: Boolean) => {
+    setattention(!attention);
+    try {
+      if (activate) {
+        const res = await axios.post(
+          `${process.env.NEXT_PUBLIC_BASEURL}/users/relation`,
+          { ActivateFollow: bid },
+          { headers: { 'Content-Type': 'application/json' } }
+        );
+      } else {
+        const res = await axios.post(
+          `${process.env.NEXT_PUBLIC_BASEURL}/users/relation`,
+          { DeactivateFollow: bid },
+          { headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+    } catch (e) {
+      if (activate) {
+        message.error('收藏失败');
+      } else {
+        message.error('取消收藏失败');
+      }
+    }
+  };
+
   useEffect(() => {
     try {
       const fetchListData = async () => {
@@ -97,6 +130,24 @@ const Burrow: NextPage = () => {
         window.location.reload();
       }
     }
+    axios
+      .get(`${process.env.NEXT_PUBLIC_BASEURL}/users/valid-burrows`)
+      .then(function (res) {
+        res.data.indexOf(Number(bid)) == -1
+          ? setyourself(false)
+          : setyourself(true);
+      });
+    axios
+      .get(`${process.env.NEXT_PUBLIC_BASEURL}/users/follow`)
+      .then(function (res) {
+        var j;
+        for (j = 0; j < res.data.length; j++) {
+          if (Number(bid) == res.data.burrow.burrow_id) {
+            setattention(true);
+            break;
+          }
+        }
+      });
   }, [router, page]);
 
   const EditIntro = () => {
@@ -247,6 +298,21 @@ const Burrow: NextPage = () => {
                         <div className={styles.Title}>
                           # {bid}&emsp;{burrowTitle}
                         </div>
+                        {yourself == false && (
+                          <Button
+                            icon={
+                              !attention && (
+                                <PlusOutlined twoToneColor='#FFD700' />
+                              )
+                            }
+                            onClick={() => {
+                              clickattention(Number(bid), attention);
+                            }}
+                            style={{ float: 'right', margin: '10px' }}
+                          >
+                            {attention == true ? '已关注' : '关注'}
+                          </Button>
+                        )}
                       </td>
                       <td>
                         <Popconfirm
