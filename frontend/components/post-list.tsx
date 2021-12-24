@@ -130,8 +130,8 @@ export default function PostList({ listData, setPage, totalNum }: Props) {
             <Button
               type='text'
               icon={
-                (changeLike[index] && item.like) ||
-                (!changeLike[index] && !item.like) ? (
+                (changeLike[index] && !item.like) ||
+                (!changeLike[index] && item.like) ? (
                   <LikeTwoTone twoToneColor='#8A2BE2' />
                 ) : (
                   <LikeOutlined />
@@ -164,8 +164,8 @@ export default function PostList({ listData, setPage, totalNum }: Props) {
               onClick={() => {
                 clickCol(
                   item.post_id,
-                  (changeCol[index] && item.collection) ||
-                    (!changeCol[index] && !item.collection),
+                  (changeCol[index] && !item.collection) ||
+                    (!changeCol[index] && item.collection),
                   index
                 );
               }}
@@ -182,7 +182,7 @@ export default function PostList({ listData, setPage, totalNum }: Props) {
         >
           <List.Item.Meta
             title={
-              <Link href={`post/${item.post.post_id}`}>{item.post.title}</Link>
+              <Link href={`/post/${item.post.post_id}`}>{item.post.title}</Link>
             }
             description={`#${item.post.burrow_id} 洞主`}
           />
