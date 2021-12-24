@@ -532,7 +532,7 @@ const UserPage: NextPage = () => {
             )}
           />
         </Card>
-        <Card title='收藏的洞'>
+        <Card title='关注的洞'>
           <Table<FollowedBurrowInfo>
             columns={followedBurrowColumns}
             dataSource={followedList}
