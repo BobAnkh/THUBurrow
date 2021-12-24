@@ -69,14 +69,14 @@ const PostDetial: NextPage = () => {
             headers: { 'Content-Type': 'application/json' },
           }
         );
-        setReplyList(res.data.post_page.reply_page);
-        setBid(res.data.post_page.post_desc.burrow_id);
-        setTitle(res.data.post_page.post_desc.title);
-        setLike(res.data.post_page.like);
-        setCollection(res.data.post_page.collection);
-        setPostLen(res.data.post_page.post_desc.post_len);
-        setSection(res.data.post_page.post_desc.section);
-        setTag(res.data.post_page.post_desc.tag);
+        setReplyList(res.data.reply_page);
+        setBid(res.data.post_desc.burrow_id);
+        setTitle(res.data.post_desc.title);
+        setLike(res.data.like);
+        setCollection(res.data.collection);
+        setPostLen(res.data.post_desc.post_len);
+        setSection(res.data.post_desc.section);
+        setTag(res.data.post_desc.tag);
       } catch (error) {
         const err = error as AxiosError;
         if (err.response?.status == 401) {
@@ -105,6 +105,7 @@ const PostDetial: NextPage = () => {
   }, [page, router]);
 
   function showtag1(tag: string, index: number) {
+    if (tag === '') return null;
     return <Tag key={index}>{tag}</Tag>;
   }
   function showsection1(tag: string, index: number) {
@@ -116,7 +117,7 @@ const PostDetial: NextPage = () => {
   }
 
   const showtag = (value: Array<string>) => {
-    return value.map(showtag1);
+    return (value || []).map(showtag1);
   };
 
   const showsection = (value: Array<string>) => {
