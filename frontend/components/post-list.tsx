@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import axios from 'axios';
+import styles from '../pages/burrow/burrow.module.css';
 import { Button, List, message, Space, Tag } from 'antd';
 import {
   MessageOutlined,
@@ -182,7 +183,12 @@ export default function PostList({ listData, setPage, totalNum }: Props) {
         >
           <List.Item.Meta
             title={
-              <Link href={`/post/${item.post.post_id}`}>{item.post.title}</Link>
+              <a
+                href={`/post/${item.post.post_id}`}
+                className={styles.Title}
+              >
+                {item.post.title}
+              </a>
             }
             description={`#${item.post.burrow_id} 洞主`}
           />
