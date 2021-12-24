@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import 'antd/dist/antd.css';
+import { useRouter } from 'next/router';
 import styles from '../styles/register.module.css';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { Form, Input, Row, Col, Button, message, Select } from 'antd';
@@ -12,18 +13,22 @@ axios.defaults.headers.post['Content-Type'] = 'application/json';
 
 type Iprops = {
   switchform: any;
+  returnmsg: string;
+  switchmsg: string;
 };
 
 const validate_password = /^(?![0-9]+$)(?![a-zA-Z]+$)[0-9A-Za-z-_]{6,20}$/;
 
-export default function FindbackPassword({ switchform }: Iprops) {
+export default function FindbackPassword({
+  switchform,
+  returnmsg,
+  switchmsg,
+}: Iprops) {
+  const router = useRouter();
   const [btnText, setbtnText] = useState('发送验证码');
   const [btnBool, setbtnBool] = useState(false);
   const [email, setEmail] = useState('');
   const [suffix, setSuffix] = useState('@mails.tsinghua.edu.cn');
-  const toggleForm = () => {
-    switchform('login');
-  };
 
   async function onFinish(values: any) {
     const data = {
@@ -41,6 +46,10 @@ export default function FindbackPassword({ switchform }: Iprops) {
         const err = e as AxiosError;
         if (err.response?.status == 400) {
           message.error(err.response.data.code);
+        }
+        if (err.response?.status == 401) {
+          message.error('请先登录！');
+          router.push('/login');
         }
         if (err.response?.status == 429) {
           message.error('请求过于频繁');
@@ -106,6 +115,8 @@ export default function FindbackPassword({ switchform }: Iprops) {
       className={styles.select_after}
     >
       <Option value='@pku.edu.cn'>@pku.edu.cn</Option>
+      <Option value='@mail.tsinghua.edu.cn'>@mail.tsinghua.edu.cn</Option>
+      <Option value='@tsinghua.edu.cn'>@tsinghua.edu.cn</Option>
       <Option value='@mails.tsinghua.edu.cn'>@mails.tsinghua.edu.cn</Option>
     </Select>
   );
@@ -123,9 +134,15 @@ export default function FindbackPassword({ switchform }: Iprops) {
             onFinish={onFinish}
           >
             <Form.Item>
-              <span className={styles.loginformback} onClick={toggleForm}>
+              <span
+                className={styles.loginformback}
+                onClick={() => {
+                  switchform(switchmsg);
+                }}
+              >
                 {' '}
-                返回登陆
+                {/* 返回登陆 */}
+                {returnmsg}
               </span>
             </Form.Item>
             <Form.Item
