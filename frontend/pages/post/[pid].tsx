@@ -102,7 +102,7 @@ const PostDetial: NextPage = () => {
     };
     fetchReplyList();
     fetchBid();
-  }, [page, pid, router]);
+  }, [page, router]);
 
   function showtag1(tag: string, index: number) {
     return <Tag key={index}>{tag}</Tag>;
