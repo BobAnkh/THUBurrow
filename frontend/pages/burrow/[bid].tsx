@@ -34,10 +34,11 @@ const IconText = (props: any) => (
 );
 
 function showtag(tag: string, index: number) {
-  return <Tag key={index}>{tag}</Tag>;
+  if (tag === '') return null;
+  else return <Tag key={index}>{tag}</Tag>;
 }
 const show = (value: Array<string>, content: string) => {
-  if (content === 'tag') return value.map(showtag);
+  if (content === 'tag') return (value || []).map(showtag);
   else if (content === 'section') return value.map(showsection);
 };
 

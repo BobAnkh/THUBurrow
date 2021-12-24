@@ -40,7 +40,7 @@ export default function Searchpost({
         <List.Item key={item.post_id}>
           <List.Item.Meta
             title={
-              <a href={`/post/{${item.post_id}}`}>
+              <a href={`/post/${item.post_id}`}>
                 <div dangerouslySetInnerHTML={{ __html: item.title }}></div>
               </a>
             }

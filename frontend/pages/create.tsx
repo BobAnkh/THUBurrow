@@ -6,6 +6,7 @@ import { NextPage } from 'next';
 import GlobalHeader from '../components/header/header';
 import { useRouter } from 'next/router';
 import { Markdown } from '../components';
+import UploadImage from '../components/storage/image-upload';
 
 axios.defaults.withCredentials = true;
 axios.defaults.headers.post['Content-Type'] = 'application/json';
@@ -17,6 +18,7 @@ const Create: NextPage = () => {
   const [bidList, setBidList] = useState([]);
   const [content, setContent] = useState('');
   const [mode, setMode] = useState<'view' | 'edit'>('edit');
+  const [newURL, setNewURL] = useState('');
   const toOption = (bidList: number[]) => {
     const bidOptionList = [];
     for (let i = 0; i < bidList.length; i++) {
@@ -47,6 +49,15 @@ const Create: NextPage = () => {
     fetchBid();
   }, [router]);
 
+  useEffect(() => {
+    const newContent =
+      content +
+      `![${newURL.slice(0, -5)}](${
+        process.env.NEXT_PUBLIC_BASEURL
+      }/storage/images/${newURL})`;
+    setContent(newContent);
+  }, [newURL]);
+
   const handleOnChange = (text: string) => {
     setContent(text);
   };
@@ -55,6 +66,8 @@ const Create: NextPage = () => {
     const data = {
       ...values,
     };
+    if (data.tag === undefined) data.tag = [];
+    console.log(data);
     try {
       const res = await axios.post(
         `${process.env.NEXT_PUBLIC_BASEURL}/content/posts`,
@@ -72,6 +85,22 @@ const Create: NextPage = () => {
       } else if (err.response?.status == 500) {
         message.error('服务器错误！');
       } else message.error('未知错误！');
+    }
+  };
+
+  const selectSection = (rule: any, value: any, callback: any) => {
+    if (value.length > 3) {
+      callback('wrong');
+    } else {
+      callback();
+    }
+  };
+
+  const chooseTag = (rule: any, value: any, callback: any) => {
+    if (value.length > 10) {
+      callback('wrong');
+    } else {
+      callback();
     }
   };
 
@@ -108,6 +137,9 @@ const Create: NextPage = () => {
                 onChange={handleOnChange}
               />
             </Form.Item>
+            <Form.Item label='上传图片'>
+              <UploadImage setNewURL={setNewURL} />
+            </Form.Item>
             <Form.Item label='详情'>
               <Form.Item
                 name='burrow_id'
@@ -124,7 +156,13 @@ const Create: NextPage = () => {
               </Form.Item>
               <Form.Item
                 name='section'
-                rules={[{ required: true, message: '请选择分区' }]}
+                rules={[
+                  {
+                    required: true,
+                    message: '请选择分区',
+                  },
+                  { message: '至多选择3个分区', validator: selectSection },
+                ]}
                 style={{
                   display: 'inline-block',
                   width: 'calc(50% - 8px)',
@@ -146,7 +184,11 @@ const Create: NextPage = () => {
                 </Select>
               </Form.Item>
             </Form.Item>
-            <Form.Item label='Tag' name='tag'>
+            <Form.Item
+              label='Tag'
+              name='tag'
+              rules={[{ validator: chooseTag, message: '至多选择10个tag' }]}
+            >
               <Select
                 mode='tags'
                 allowClear
