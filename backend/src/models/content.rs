@@ -446,7 +446,7 @@ mod tests {
         };
         let post_banned_info = content_post::Model {
             post_id,
-            title: title.clone(),
+            title,
             burrow_id,
             create_time: now,
             update_time: now,
@@ -511,7 +511,7 @@ mod tests {
             burrow_id,
             create_time: now,
             update_time: now,
-            content: content.clone(),
+            content,
             reply_state: reply_banned_state,
             permission: 0,
         };

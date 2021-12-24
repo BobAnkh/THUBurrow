@@ -53,7 +53,7 @@ fn check_email_syntax(c: &mut Criterion) {
 fn id_generator(c: &mut Criterion) {
     backend::setup::id_generator::init(10);
     let mut group = c.benchmark_group("id_generator");
-    group.bench_function("id", |b| b.iter(|| idgenerator::IdHelper::next_id()));
+    group.bench_function("id", |b| b.iter(idgenerator::IdHelper::next_id));
     group.finish();
 }
 

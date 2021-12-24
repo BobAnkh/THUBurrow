@@ -55,12 +55,21 @@ async fn upload_image(
     hash_md5.input(image.content.as_slice());
     let filename = hash_md5.result_str() + "." + image.content_type.to_string().as_str();
     let image_size = image.content.len() as i32;
+    if image_size == 0 {
+        return (
+            Status::BadRequest,
+            Err(Json(ErrorResponse::build(
+                ErrorCode::EmptyField,
+                "Image is empty",
+            ))),
+        );
+    }
     match UserStatus::find_by_id(auth.id).one(&pg_con).await {
         Ok(opt_state) => match opt_state {
             Some(state) => {
                 if state.file_num >= *MAX_IMAGE_NUM {
                     return (
-                        Status::BadRequest,
+                        Status::TooManyRequests,
                         Err(Json(ErrorResponse::build(
                             ErrorCode::RateLimit,
                             "Store too many images.",
@@ -201,31 +210,53 @@ async fn download_image(
 #[get("/images")]
 async fn get_images(
     auth: Auth,
+    db: Connection<PgDb>,
     bucket: Connection<MinioImageStorage>,
 ) -> (
     Status,
     Result<Json<Vec<Vec<(String, u64)>>>, Json<ErrorResponse>>,
 ) {
-    // list files
-    info!("[IMAGE] User {} id fetching image list.", auth.id);
-    let bucket_list = bucket.list("/".to_owned(), Some("/".to_owned())).await;
-    match bucket_list {
-        Ok(list) => {
-            let results: Vec<Vec<(String, u64)>> = list
-                .iter()
-                .map(|item| {
-                    let r: Vec<(String, u64)> = item
-                        .contents
-                        .iter()
-                        .map(|c| (c.key.to_owned(), c.size))
-                        .collect();
-                    r
-                })
-                .collect();
-            (Status::Ok, Ok(Json(results)))
-        }
+    let pg_con = db.into_inner();
+    match Admin::find_by_id(auth.id).one(&pg_con).await {
+        Ok(admin) => match admin {
+            Some(_) => {
+                // list files
+                info!("[IMAGE] User {} id fetching image list.", auth.id);
+                let bucket_list = bucket.list("/".to_owned(), Some("/".to_owned())).await;
+                match bucket_list {
+                    Ok(list) => {
+                        let results: Vec<Vec<(String, u64)>> = list
+                            .iter()
+                            .map(|item| {
+                                let r: Vec<(String, u64)> = item
+                                    .contents
+                                    .iter()
+                                    .map(|c| (c.key.to_owned(), c.size))
+                                    .collect();
+                                r
+                            })
+                            .collect();
+                        (Status::Ok, Ok(Json(results)))
+                    }
+                    Err(e) => {
+                        log::error!("[Image-Storage] Database Error {:?}", e);
+                        (
+                            Status::InternalServerError,
+                            Err(Json(ErrorResponse::default())),
+                        )
+                    }
+                }
+            }
+            None => (
+                Status::Forbidden,
+                Err(Json(ErrorResponse::build(
+                    ErrorCode::UserForbidden,
+                    "Permission denied.",
+                ))),
+            ),
+        },
         Err(e) => {
-            log::error!("[Image-Storage] Database Error {:?}", e);
+            log::error!("[ADMIN] Database Error: {:?}", e);
             (
                 Status::InternalServerError,
                 Err(Json(ErrorResponse::default())),

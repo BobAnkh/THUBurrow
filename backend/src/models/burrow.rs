@@ -177,7 +177,7 @@ mod tests {
         let burrow_data = BurrowMetadata {
             burrow_id,
             title,
-            description: description.clone(),
+            description,
             post_num,
         };
         let burrow_banned_data = BurrowMetadata {

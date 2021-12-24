@@ -2,7 +2,7 @@
 address = "0.0.0.0"
 
 [global.limits]
-"minio-image" = "1 MiB"
+"minio-image" = "0.5 MiB"
 
 [debug.databases.pgdb]
 # postgres://username:password@host:port/dbname
