@@ -184,10 +184,10 @@ export default function PostList({ listData, setPage, totalNum }: Props) {
           <List.Item.Meta
             title={
               <a
-                href={`../pages/post/${item.post_id}`}
+                href={`../pages/post/${item.post.post_id}`}
                 className={styles.Title}
               >
-                {item.title}
+                {item.post.title}
               </a>
             }
             description={`#${item.post.burrow_id} 洞主`}
