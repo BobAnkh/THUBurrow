@@ -58,15 +58,11 @@ const GlobalHeader: NextPage = () => {
       <Menu.Item>
         <Link href='/profile'>个人信息</Link>
       </Menu.Item>
-      <Menu.Divider />
-      <Menu.Item
-        onClick={() => {
-          localStorage.removeItem('token');
-          window.location.reload();
-        }}
-      >
-        退出
+      <Menu.Item>
+        <Link href='/change-password'>修改密码</Link>
       </Menu.Item>
+      <Menu.Divider />
+      <Menu.Item onClick={onClick}>退出</Menu.Item>
     </Menu>
   );
   const CreateMenu = (
