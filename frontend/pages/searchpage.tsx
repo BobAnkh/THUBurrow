@@ -43,6 +43,7 @@ const SearchPage: FC = () => {
   const [webtitle, setwebtitle] = useState('T大地洞-搜索');
 
   async function sendkeyword(Keyword: any, page: number) {
+    console.log(Keyword);
     if (area === 'post') {
       const SearchPostKeyword = { keywords: Keyword };
       setloading(true);
@@ -256,7 +257,7 @@ const SearchPage: FC = () => {
           message.error('搜洞号请输入数字');
         }
       } else {
-        var str = value.split(/ ,/);
+        var str = value.split(' ');
         if (str.length <= 6) settext({ keyword: str, id: 0, tag: [] });
         else settext({ keyword: str.slice(0, 6), id: 0, tag: [] });
         setwebtitle('T大地洞-搜索_' + str[0]);
@@ -351,7 +352,7 @@ const SearchPage: FC = () => {
             onSearch={handleFormSubmit}
           />
           <p style={{ fontSize: '9px', opacity: 0.5 }}>
-            可根据关键词可以搜洞或帖，#tag搜对应标签帖子，#帖号进入帖,$洞号进入洞
+            可根据关键词可以搜洞或帖，#tag搜对应标签帖子，#帖号进入帖,$洞号进入洞,可用空格分割关键词、tag搜索多个关键词、tag。
           </p>
         </div>
 
