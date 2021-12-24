@@ -29,7 +29,7 @@ export function Changepassword({ switchform }: Iprops) {
   async function onFinish(values: any) {
     const data = {
       password: CryptoJS.MD5(values.password).toString(),
-      newpassword: CryptoJS.MD5(values.newpassword).toString(),
+      new_password: CryptoJS.MD5(values.newpassword).toString(),
     };
     console.log(data, values.password, values.newpassword);
     axios
