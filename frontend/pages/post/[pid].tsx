@@ -411,7 +411,7 @@ const PostDetial: NextPage = () => {
                 {' ' + '收藏' + ' '}
               </Button>
               <Title level={3} style={{ float: 'left', margin: '10px' }}>
-                {title}
+                # {pid}&emsp;{title}
               </Title>
             </>
           }

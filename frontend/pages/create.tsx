@@ -102,10 +102,12 @@ const Create: NextPage = () => {
 
   const chooseTag = (rule: any, value: any, callback: any) => {
     if (value === undefined) callback();
-    if (value.length > 10) {
-      callback('wrong');
-    } else {
-      callback();
+    else {
+      if (value.length > 10) {
+        callback('wrong');
+      } else {
+        callback();
+      }
     }
   };
 
