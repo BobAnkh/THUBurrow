@@ -3249,6 +3249,11 @@ fn test_storage() {
         .map(char::from)
         .take(15)
         .collect();
+        let admin_name: String = std::iter::repeat(())
+        .map(|()| thread_rng().sample(Alphanumeric))
+        .map(char::from)
+        .take(15)
+        .collect();
     // ---------- Prepare ----------
 
     // set verification code
@@ -3355,7 +3360,7 @@ fn test_storage() {
         .get("/storage/images")
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
-    assert_eq!(response.status(), Status::Ok);
+    assert_eq!(response.status(), Status::Forbidden);
     let res = response.into_string().unwrap();
     println!("{}", res);
 
@@ -3405,6 +3410,53 @@ fn test_storage() {
         .remote("127.0.0.1:8000".parse().unwrap())
         .dispatch();
     assert_eq!(response.status(), Status::BadRequest);
+
+    // user log out
+    let response = client
+        .get("/users/logout")
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+
+    // set verification code
+    client
+        .post("/users/email")
+        .json(&json!({
+            "email": format!("{}@mails.tsinghua.edu.cn", admin_name)
+        }))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    std::thread::sleep(std::time::Duration::from_secs(1));
+    // sign up a user
+    let response = client
+        .post("/users/sign-up")
+        .json(&json!({
+            "username": admin_name,
+            "password": "testpassword",
+            "email": format!("{}@mails.tsinghua.edu.cn", admin_name),
+            "verification_code": "666666"}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+
+    // user login
+    let response = client
+        .post("/users/login")
+        .json(&json!({
+            "username": admin_name,
+            "password": "testpassword"}))
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+
+    //list image
+    let response = client
+        .get("/storage/images")
+        .remote("127.0.0.1:8000".parse().unwrap())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    let res = response.into_string().unwrap();
+    println!("{}", res);
 
     // user log out
     let response = client
