@@ -327,7 +327,7 @@ const UserPage: NextPage = () => {
       };
       try {
         const res = await axios.post(
-          `${process.env.NEXT_PUBLIC_BASEURL}/burrows/create`,
+          `${process.env.NEXT_PUBLIC_BASEURL}/burrows`,
           { ...data },
           { headers: { 'Content-Type': 'application/json' } }
         );
