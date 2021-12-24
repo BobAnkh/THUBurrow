@@ -224,22 +224,16 @@ export function PostColList({ listData, setPage, totalNum }: Props) {
         <List.Item
           key={item.post.title}
           actions={[
-            <Button
-              type='text'
-              icon={<LikeOutlined />}
+            <IconText
+              text={item.post.like_num + likeNum[index]}
+              icon={LikeOutlined}
               key='list-vertical-like-o'
-            >
-              {' '}
-              {item.post.like_num + likeNum[index]}
-            </Button>,
-            <Button
-              type='text'
-              icon={<StarOutlined />}
+            />,
+            <IconText
+              text={item.post.collection_num + colNum[index]}
+              icon={StarOutlined}
               key='list-vertical-star-o'
-            >
-              {' '}
-              {item.post.collection_num + colNum[index]}
-            </Button>,
+            />,
             <IconText
               icon={MessageOutlined}
               text={item.post.post_len}

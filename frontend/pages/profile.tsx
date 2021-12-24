@@ -8,15 +8,11 @@ import { ExclamationCircleOutlined } from '@ant-design/icons';
 import {
   Layout,
   Table,
-  Menu,
   Badge,
   Divider,
   Modal,
   Form,
   Button,
-  Row,
-  Col,
-  Dropdown,
   Input,
   message,
   Card,
@@ -217,16 +213,20 @@ const UserPage: NextPage = () => {
     }, {})
   );
   useEffect(() => {
-    if (page > totalPageNum && postList.length == 20) { // 最后一页满则增大totalPageNum
+    if (page > totalPageNum && postList.length == 20) {
+      // 最后一页满则增大totalPageNum
       setTotalPageNum(page);
       console.log(`${totalPageNum},${postList.length}`);
-    }}, [page]);
+    }
+  }, [page]);
   // 获取关注的帖子
   useEffect(() => {
     const fetchPostList = async () => {
       try {
         const res = await axios.get(
-          `${process.env.NEXT_PUBLIC_BASEURL}/users/collection?page=${page - 1}`,
+          `${process.env.NEXT_PUBLIC_BASEURL}/users/collection?page=${
+            page - 1
+          }`,
           // `http://127.0.0.1:4523/mock/435762/users/collection?page=${page - 1}`,
           {
             headers: { 'Content-Type': 'application/json' },
@@ -268,8 +268,8 @@ const UserPage: NextPage = () => {
     const fetchFollowedList = async () => {
       try {
         const res = await axios.get(
-          `${process.env.NEXT_PUBLIC_BASEURL}/users/follow`
-          // 'http://127.0.0.1:4523/mock2/435762/6973421'
+          // `${process.env.NEXT_PUBLIC_BASEURL}/users/follow`
+          'http://127.0.0.1:4523/mock2/435762/6973421'
         );
         const followedlist = res.data;
         setFollowedList(followedlist);
@@ -544,7 +544,12 @@ const UserPage: NextPage = () => {
             listData={postList}
             setPage={setPage}
             totalNum={
-              totalPageNum >= page? (totalPageNum + 1) * 20: postList.length === 20? (page + 1) * 20: page * 20}
+              totalPageNum >= page
+                ? (totalPageNum + 1) * 20
+                : postList.length === 20
+                ? (page + 1) * 20
+                : page * 20
+            }
           />
         </Card>
       </Content>
