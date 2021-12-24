@@ -1,0 +1,103 @@
+version: '3'
+
+services:
+
+  db:
+    image: postgres
+    container_name: postgres_container
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: pgdb
+    volumes:
+      - ./data/pg-data:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+
+  # pgadmin:
+  #   container_name: pgadmin_container
+  #   image: dpage/pgadmin4
+  #   restart: unless-stopped
+  #   environment:
+  #     PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-pgadmin4@pgadmin.org}
+  #     PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
+  #     PGADMIN_CONFIG_SERVER_MODE: 'False'
+  #   depends_on:
+  #     - db
+  #   volumes:
+  #       - ./data/pgadmin:/var/lib/pgadmin
+  #   links:
+  #     - "db:database"
+  #   ports:
+  #     - "${PGADMIN_PORT:-8080}:80"
+
+  minio:
+    image: quay.io/minio/minio
+    restart: unless-stopped
+    container_name: minio_container
+    ports:
+      - "9000:9000"
+      # - "9001:9001"
+    volumes:
+      - ./data/minio-data:/data
+    environment:
+      MINIO_ROOT_USER: ${MINIO_USER:-minio}
+      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD:-miniopassword}
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  redis:
+    image: eqalpha/keydb:latest
+    restart: unless-stopped
+    container_name: redis_container
+    ports:
+      - "6300:6379"
+    volumes:
+      - ./conf/keydb_conf/keydb.conf:/etc/keydb/keydb.conf
+      - ./data/keydb-data:/data
+    command: keydb-server --requirepass keypassword
+    privileged: true
+
+  pulsar:
+    image: apachepulsar/pulsar:2.8.1
+    container_name: pulsar_container
+    command: bin/pulsar standalone
+    ports:
+      # - "8080:8080"
+      - "6650:6650"
+    restart: unless-stopped
+    volumes:
+      - ./data/pulsardata:/pulsar/data
+      # - ./conf/pulsarconf:/pulsar/conf
+
+  # pulsar-manager:
+  #   image: apachepulsar/pulsar-manager:v0.2.0
+  #   container_name: pulsar_manager_container
+  #   ports:
+  #     - "9527:9527"
+  #     - "7750:7750"
+  #   depends_on:
+  #     - pulsar
+  #   environment:
+  #     SPRING_CONFIGURATION_FILE: /pulsar-manager/pulsar-manager/application.properties
+
+  typesense:
+    image: typesense/typesense:0.22.1
+    container_name: typesense_container
+    restart: unless-stopped
+    environment:
+      TYPESENSE_API_KEY: ${TYPESENSE_API_KEY:-8Dz4jRrsBjYgdCD/VGP1bleph7oBThJr5IcF43l0U24=}
+      TYPESENSE_DATA_DIR: "/data"
+    ports:
+      - "8108:8108"
+    volumes:
+      - ./data/typesense-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8108/health"]
+      interval: 30s
+      timeout: 20s
+      retries: 3

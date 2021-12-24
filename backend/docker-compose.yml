@@ -1,0 +1,51 @@
+version: '3'
+
+services:
+
+  backend:
+    build: .
+    image: bobankh/thuburrow:${BG_VERSION:-latest}
+    container_name: backend-container-${BG_VERSION:-latest}
+    restart: unless-stopped
+    # depends_on:
+    #   - pgdb
+    #   - keydb
+    #   - minio
+    #   - typesense
+    expose:
+      - "8000"
+    volumes:
+      - ./conf/log4rs.yml:/etc/backend/conf/log4rs.yml:ro
+      - ./log:/log
+    environment:
+      ROCKET_DATABASES: '{pgdb={url="postgres://postgres:${PG_PASSWORD:-postgres}@pgdb:5432/${PG_DB:-pgdb}"},redis={url="redis://:${KEYDB_PASSWORD:-keypassword}@keydb:6379"},minio={url="minio://${MINIO_USER:-minio}:${MINIO_PASSWORD:-miniopassword}@minio:9000"},pulsar-mq={url="pulsar://pulsar:6650"},search={url="http://typesense:8108@${TYPESENSE_API_KEY:-8Dz4jRrsBjYgdCD/VGP1bleph7oBThJr5IcF43l0U24=}"}}'
+      ROCKET_SECRET_KEY: ${ROCKET_SECRET_KEY}
+      ROCKET_ADDRESS: "0.0.0.0"
+      VIRTUAL_HOST: ${BACKEND_HOST}
+      SECRET_ID: ${SECRET_ID}
+      SECRET_KEY: ${SECRET_KEY}
+    networks:
+      innerdb:
+      proxy:
+      messagequeue:
+      miniostorage:
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 60s
+      timeout: 20s
+      retries: 3
+      start_period: 60s
+
+networks:
+  innerdb:
+    name: innerdb
+    external: true
+  messagequeue:
+    name: messagequeue
+    external: true
+  miniostorage:
+    name: miniostorage
+    external: true
+  proxy:
+    name: proxy
+    external: true
