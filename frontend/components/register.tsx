@@ -27,7 +27,7 @@ type Iprops = {
   switchform: any;
 };
 
-const validate_password = /^(\w){8,20}$/;
+const validate_password = /^(?![0-9]+$)(?![a-zA-Z]+$)[0-9A-Za-z-_]{6,20}$/;
 
 export default function Register({ switchform }: Iprops) {
   const [userName, setUserName] = useState('');
