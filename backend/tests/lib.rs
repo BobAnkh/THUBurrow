@@ -3035,7 +3035,7 @@ fn test_search() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     let res = response.into_json::<BurrowShowResponse>().unwrap();
-    assert_eq!(res.title, "Default".to_string());
+    assert_eq!(res.title, "默认洞".to_string());
     // println!("Retrieve result: {}", response.into_string().unwrap());
 
     //retrieve a non-exist post
