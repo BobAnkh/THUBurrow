@@ -1,14 +1,14 @@
-import type { NextPage } from 'next';
+import '../../node_modules/antd/dist/antd.css';
 import { message } from 'antd';
-import axios, { AxiosError } from 'axios';
-import { useState } from 'react';
+import axios from 'axios';
 
 axios.defaults.withCredentials = true;
 
-const Test: NextPage = () => {
+export default function UploadImage(setNewURL: any) {
   const LIMIT_SIZE = 500 * 1000; //图片最大500kb
-  const MAX_WIDTH = 1500;
-  const [newURL, setNewURL] = useState('');
+  const MAX_WIDTH = 2000;
+  const MAX_HEIGHT = 2000;
+  //const [newURL, setNewURL] = useState('');
   let compressCount = 0;
 
   function compress(base64: any, quality: number, mimeType: string) {
@@ -20,12 +20,15 @@ const Test: NextPage = () => {
       img.src = base64;
       img.onload = () => {
         let targetWidth, targetHeight;
+        targetWidth = img.width;
+        targetHeight = img.height;
         if (img.width > MAX_WIDTH) {
           targetWidth = MAX_WIDTH;
           targetHeight = (img.height * MAX_WIDTH) / img.width;
-        } else {
-          targetWidth = img.width;
-          targetHeight = img.height;
+        }
+        if (img.height > MAX_HEIGHT) {
+          targetWidth = (img.width * MAX_HEIGHT) / img.height;
+          targetHeight = MAX_HEIGHT;
         }
         canvas.width = targetWidth;
         canvas.height = targetHeight;
@@ -63,9 +66,7 @@ const Test: NextPage = () => {
         bytes,
         { headers: { 'Content-Type': type } }
       );
-      setNewURL(
-        `${process.env.NEXT_PUBLIC_BASEURL}/storage/images/${res.data}`
-      );
+      setNewURL(`${res.data}`);
     } catch (e) {
       message.error('上传图片失败！');
     }
@@ -86,12 +87,5 @@ const Test: NextPage = () => {
     reader.readAsDataURL(event.target.files[0]);
   };
 
-  return (
-    <>
-      <input type='file' accept='image/*' onChange={uploadImage} />
-      <img src={newURL} />
-    </>
-  );
-};
-
-export default Test;
+  return <input type='file' accept='image/*' onChange={uploadImage} />;
+}
