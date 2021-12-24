@@ -1098,7 +1098,7 @@ fn test_burrow() {
     assert_eq!(response.status(), Status::Ok);
     assert_eq!(
         response.into_string().unwrap(),
-        "{{\"title\":\"默认洞\",\"description\":\"Hello World!\",\"posts\":[]}}".to_string()
+        "{\"title\":\"默认洞\",\"description\":\"Hello World!\",\"posts\":[]}".to_string()
     );
     // show burrow: perform a wrong action (burrow not exist)
     let response = client
