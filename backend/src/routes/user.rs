@@ -511,8 +511,8 @@ pub async fn user_sign_up(
 
         let burrows = db::burrow::ActiveModel {
             uid: Set(uid),
-            title: Set("Default".to_owned()),
-            description: Set("".to_owned()),
+            title: Set("默认洞".to_owned()),
+            description: Set("Hello World!".to_owned()),
             create_time: Set(now.to_owned()),
             update_time: Set(now.to_owned()),
             ..Default::default()
