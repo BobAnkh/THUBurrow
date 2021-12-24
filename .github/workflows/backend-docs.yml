@@ -1,0 +1,47 @@
+name: Build API documentation
+
+on:
+  push:
+    branches:
+      - backend
+
+jobs:
+  cargo-doc:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Install latest nightly
+        uses: actions-rs/toolchain@v1
+        with:
+            toolchain: nightly-2021-11-18
+            override: true
+            components: rustfmt, clippy
+
+      # `cargo check` command here will use installed `nightly`
+      # as it is set as an "override" for current directory
+      - name: deal with rust cache
+        uses: Swatinem/rust-cache@v1
+        with:
+          working-directory: backend
+    
+      - name: cargo doc
+        run: |
+            cargo doc --no-deps
+            echo "<meta http-equiv=\"refresh\" content=\"0; url=backend\">" > target/doc/index.html
+
+      - name: Deploy to GitHub Pages
+        uses: Cecilapp/GitHub-Pages-deploy@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          email: 41898282+github-actions[bot]@users.noreply.github.com>
+          build_dir: backend/target/doc
+          branch: gh-page
+          cname: docs.thuburrow.com
+          commit_message: "docs(backend): update api documentations"
