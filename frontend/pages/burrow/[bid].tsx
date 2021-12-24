@@ -65,7 +65,6 @@ const Burrow: NextPage = () => {
   const [description, setDescription] = useState('Welcome!');
   const [burrowTitle, setBurrowTitle] = useState(0);
   const [page, setPage] = useState(1);
-  const [isHost, setIsHost] = useState(false);
 
   const [editing, setEditing] = useState(false);
   const [descriptionTemp, setDescriptionTemp] = useState('');
@@ -100,9 +99,9 @@ const Burrow: NextPage = () => {
       }
     } catch (e) {
       if (activate) {
-        message.error('收藏失败');
+        message.error('关注失败');
       } else {
-        message.error('取消收藏失败');
+        message.error('取消关注失败');
       }
     }
   };
@@ -117,7 +116,6 @@ const Burrow: NextPage = () => {
         setListData(postlist.posts);
         setDescription(postlist.description);
         setBurrowTitle(postlist.title);
-        setIsHost(postlist.isHost);
       };
       fetchListData();
     } catch (e) {
@@ -298,6 +296,26 @@ const Burrow: NextPage = () => {
                         <div className={styles.Title}>
                           # {bid}&emsp;{burrowTitle}
                         </div>
+                      </td>
+                      <td>
+                        <Popconfirm
+                          placement='topRight'
+                          title='确认废弃此洞?（此操作不可逆）'
+                          onConfirm={onConfirm}
+                          okText='Yes'
+                          cancelText='No'
+                        >
+                          <Button
+                            type='primary'
+                            danger
+                            shape='round'
+                            style={{
+                              display: yourself && !editing ? 'block' : 'none',
+                            }}
+                          >
+                            废弃此洞
+                          </Button>
+                        </Popconfirm>
                         {yourself == false && (
                           <Button
                             icon={
@@ -314,26 +332,6 @@ const Burrow: NextPage = () => {
                           </Button>
                         )}
                       </td>
-                      <td>
-                        <Popconfirm
-                          placement='topRight'
-                          title='确认废弃此洞?（此操作不可逆）'
-                          onConfirm={onConfirm}
-                          okText='Yes'
-                          cancelText='No'
-                        >
-                          <Button
-                            type='primary'
-                            danger
-                            shape='round'
-                            style={{
-                              display: isHost && !editing ? 'block' : 'none',
-                            }}
-                          >
-                            废弃此洞
-                          </Button>
-                        </Popconfirm>
-                      </td>
                     </tr>
                   </tbody>
                 </table>
@@ -346,7 +344,7 @@ const Burrow: NextPage = () => {
                   onClick={EditIntro}
                   style={{
                     float: 'right',
-                    display: isHost && !editing ? 'block' : 'none',
+                    display: yourself && !editing ? 'block' : 'none',
                   }}
                 >
                   编辑
@@ -415,8 +413,8 @@ const Burrow: NextPage = () => {
                     <Button
                       type='text'
                       icon={
-                        (changeLike[index] && item.like) ||
-                        (!changeLike[index] && !item.like) ? (
+                        (changeLike[index] && !item.like) ||
+                        (!changeLike[index] && item.like) ? (
                           <LikeTwoTone twoToneColor='#8A2BE2' />
                         ) : (
                           <LikeOutlined />
@@ -426,8 +424,8 @@ const Burrow: NextPage = () => {
                       onClick={() => {
                         clickLike(
                           item.post_id,
-                          (!changeLike[index] && item.like) ||
-                            (changeLike[index] && !item.like),
+                          (!changeLike[index] && !item.like) ||
+                            (changeLike[index] && item.like),
                           index
                         );
                       }}

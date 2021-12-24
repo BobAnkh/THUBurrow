@@ -1,11 +1,29 @@
 # Backend
 
-## Sample
+API documentation of backend can be found at [docs.thuburrow.com](https://docs.thuburrow.com)
 
-食用指南：
+## Convention
 
-1. 安装rust、docker、docker-compose，安装rust-analyser插件和BetterToml插件
-2. 请保证vscode打开的文件夹是`backend`而不是整体`Thuburrow`文件夹，以方便rust-analyser插件工作
-3. 运行`docker-compose -f docker-compose-postgres.yml up -d`命令运行postgres数据库，请自行研究配置和pgadmin使用（访问127.0.0.1:5050可见）
-4. 运行`cargo run`，或安装`cargo-watch`之后运行`cargo watch -x run`，即可运行后端
-5. 使用apifox或者curl发送请求，确认结果
+1. Please checkout a new branch from `backend` to develop your new feature or fix the bug. Recommended to give your branch a name relevant to what you are doing. e.g. `feature/login` or `fix/email`.
+2. Rust coding style convention: [coding-style](https://wiki.jikexueyuan.com/project/rust-primer/coding-style/style.html)
+3. Please run `cargo clippy` and `cargo fmt` before submit your code to lint and format your code.
+
+## Deployment
+
+- Run `openssl rand -base64 32` to generate `ROCKET_SECRET_KEY`.
+- Copy `.env.sample` to `.env` and edit the environment variables to what you want.
+- Run `docker-compose -f backend-service up -d` to start all the services needed by running the backend.
+- Run `docker-compose -f backend-lb.yml` to start the load-balancer needed by running the backend.
+- Run `docker-compose up -d` to start the main backend container.
+
+## Trending formula
+
+$$
+\frac{\ln{(post\_ len)}+ like\_ num/10+collect\_ num/8}{((now\_ in\_ hours-create\_ time\_ in\_ hours)/2+(now\_ in\_ hours-last\_ update\_ in\_ hours)/2+2)^{1.2}+10}
+$$
+
+## Tests
+
+```bash
+cargo tarpaulin --all-features --no-fail-fast --skip-clean  --verbose --timeout 300 --out Xml --exclude-files "src/bin/*" --follow-exec
+```

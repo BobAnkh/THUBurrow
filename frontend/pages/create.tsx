@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Button, Card, Form, Input, Layout, message, Select } from 'antd';
-import TextArea from 'antd/lib/input/TextArea';
 import axios, { AxiosError } from 'axios';
 import { NextPage } from 'next';
 import GlobalHeader from '../components/header/header';
@@ -56,9 +55,7 @@ const Create: NextPage = () => {
     if (newURL != '') {
       const newContent =
         content +
-        `<img src='${newURL.slice(0, -5)}](${
-          process.env.NEXT_PUBLIC_BASEURL
-        }/storage/images/${newURL}' style='width : 60%'/>`;
+        `![${newURL}.slice(0,-5)](${process.env.NEXT_PUBLIC_BASEURL}/storage/images/${newURL})`;
       setContent(newContent);
     }
   }, [newURL]);
@@ -112,7 +109,6 @@ const Create: NextPage = () => {
   };
 
   const compress = (base64: any, quality: number, mimeType: string) => {
-    console.log(base64);
     let canvas = document.createElement('canvas');
     let img = document.createElement('img');
     img.crossOrigin = 'anonymous';
@@ -160,7 +156,7 @@ const Create: NextPage = () => {
 
   const upLoadToServer = async (bytes: Uint8Array, type: string) => {
     try {
-      console.log('size', bytes.length);
+      console.log('压缩后图片大小', 'size', bytes.length);
       const res = await axios.post(
         `${process.env.NEXT_PUBLIC_BASEURL}/storage/images`,
         bytes,
@@ -174,7 +170,6 @@ const Create: NextPage = () => {
 
   const uploadImage = (event: any) => {
     const reader = new FileReader();
-    console.log('step0 done!');
     reader.onload = async function (event) {
       let compressedDataURL = await compress(
         event.target?.result,
