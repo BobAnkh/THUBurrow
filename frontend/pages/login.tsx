@@ -17,7 +17,13 @@ const Login: NextPage = () => {
       return <Register switchform={switchForm}></Register>;
     }
     if (FormType === 'findback') {
-      return <FindbackPassword switchform={switchForm}></FindbackPassword>;
+      return (
+        <FindbackPassword
+          returnmsg='返回登录'
+          switchform={switchForm}
+          switchmsg='login'
+        ></FindbackPassword>
+      );
     }
   }
   return <div>{Switch()}</div>;

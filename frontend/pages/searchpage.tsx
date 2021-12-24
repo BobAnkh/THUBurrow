@@ -110,7 +110,7 @@ const SearchPage: FC = () => {
         );
         setfound_number(1);
         setjump(true);
-        router.push(`/post/{${id}}`);
+        router.push(`/post/${id}`);
       } catch (e) {
         setjump(false);
         const err = e as AxiosError;
@@ -130,7 +130,7 @@ const SearchPage: FC = () => {
         );
         setfound_number(1);
         setjump(true);
-        router.push(`/burrow/{${id}}`);
+        router.push(`/burrow/${id}`);
       } catch (e) {
         setjump(false);
         const err = e as AxiosError;
@@ -256,7 +256,7 @@ const SearchPage: FC = () => {
           message.error('搜洞号请输入数字');
         }
       } else {
-        var str = value.split(/ ,/);
+        var str = value.split(' ');
         if (str.length <= 6) settext({ keyword: str, id: 0, tag: [] });
         else settext({ keyword: str.slice(0, 6), id: 0, tag: [] });
         setwebtitle('T大地洞-搜索_' + str[0]);
@@ -350,8 +350,8 @@ const SearchPage: FC = () => {
             allowClear
             onSearch={handleFormSubmit}
           />
-          <p style={{ fontSize: '9px', opacity: 0.5 }}>
-            可根据关键词可以搜洞或帖，#tag搜对应标签帖子，#帖号进入帖,$洞号进入洞
+          <p style={{ fontSize: '14px', opacity: 0.5 }}>
+            可根据关键词可以搜洞或帖，#tag搜对应标签帖子，#帖号进入帖，$洞号进入洞，可用空格分割关键词、tag搜索多个关键词、tag。
           </p>
         </div>
 
@@ -373,8 +373,14 @@ const SearchPage: FC = () => {
           {jump == false && (
             <p>
               找到
-              <mark>{showreply === false ? found_number : found_number1}</mark>
-              个结果
+              <mark>{found_number}</mark>个{state == 'burrow' ? '洞' : '帖子'}
+            </p>
+          )}
+          {jump == false && state == 'post' && search_text.tag[0] == null && (
+            <p>
+              找到
+              <mark>{found_number1}</mark>
+              个回复
             </p>
           )}
           <Card>

@@ -131,8 +131,8 @@ export default function PostList({ listData, setPage, totalNum }: Props) {
             <Button
               type='text'
               icon={
-                (changeLike[index] && item.like) ||
-                (!changeLike[index] && !item.like) ? (
+                (changeLike[index] && !item.like) ||
+                (!changeLike[index] && item.like) ? (
                   <LikeTwoTone twoToneColor='#8A2BE2' />
                 ) : (
                   <LikeOutlined />
@@ -142,8 +142,8 @@ export default function PostList({ listData, setPage, totalNum }: Props) {
               onClick={() => {
                 clickLike(
                   item.post.post_id,
-                  (!changeLike[index] && item.like) ||
-                    (changeLike[index] && !item.like),
+                  (!changeLike[index] && !item.like) ||
+                    (changeLike[index] && item.like),
                   index
                 );
               }}
@@ -164,9 +164,9 @@ export default function PostList({ listData, setPage, totalNum }: Props) {
               key='list-vertical-star-o'
               onClick={() => {
                 clickCol(
-                  item.post_id,
-                  (changeCol[index] && item.collection) ||
-                    (!changeCol[index] && !item.collection),
+                  item.post.post_id,
+                  (!changeCol[index] && !item.collection) ||
+                    (changeCol[index] && item.collection),
                   index
                 );
               }}
@@ -183,12 +183,64 @@ export default function PostList({ listData, setPage, totalNum }: Props) {
         >
           <List.Item.Meta
             title={
-              <a
-                href={`../pages/post/${item.post.post_id}`}
-                className={styles.Title}
-              >
+              <a href={`/post/${item.post.post_id}`} className={styles.Title}>
                 {item.post.title}
               </a>
+            }
+            description={`#${item.post.burrow_id} 洞主`}
+          />
+          {item.post.content}
+          {showtag(item.post.tag)}
+        </List.Item>
+      )}
+    />
+  );
+}
+
+export function PostColList({ listData, setPage, totalNum }: Props) {
+  const initialnum1 = new Array(20).fill(0);
+  const initialnum2 = new Array(20).fill(0);
+  const [likeNum, setLikeNum] = useState(initialnum1);
+  const [colNum, setColNum] = useState(initialnum2);
+
+  return (
+    <List
+      itemLayout='vertical'
+      size='large'
+      pagination={{
+        onChange: (page) => {
+          setPage(page);
+        },
+        pageSize: 20,
+        showQuickJumper: true,
+        showSizeChanger: false,
+        total: totalNum,
+      }}
+      dataSource={listData}
+      renderItem={(item: any, index: number) => (
+        <List.Item
+          key={item.post.title}
+          actions={[
+            <IconText
+              text={item.post.like_num + likeNum[index]}
+              icon={LikeOutlined}
+              key='list-vertical-like-o'
+            />,
+            <IconText
+              text={item.post.collection_num + colNum[index]}
+              icon={StarOutlined}
+              key='list-vertical-star-o'
+            />,
+            <IconText
+              icon={MessageOutlined}
+              text={item.post.post_len}
+              key='list-vertical-message'
+            />,
+          ]}
+        >
+          <List.Item.Meta
+            title={
+              <Link href={`post/${item.post.post_id}`}>{item.post.title}</Link>
             }
             description={`#${item.post.burrow_id} 洞主`}
           />
