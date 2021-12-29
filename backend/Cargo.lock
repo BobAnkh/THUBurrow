@@ -494,6 +494,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "904dfeac50f3cdaba28fc6f57fdcddb75f49ed61346676a78c4ffe55877802fd"
 
 [[package]]
+name = "benches"
+version = "0.0.0"
+dependencies = [
+ "backend",
+ "criterion",
+ "idgenerator",
+]
+
+[[package]]
 name = "binascii"
 version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3615,6 +3624,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "task-executor"
+version = "1.0.0"
+dependencies = [
+ "backend",
+ "log",
+ "tokio",
+]
+
+[[package]]
 name = "tempfile"
 version = "3.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3626,6 +3644,21 @@ dependencies = [
  "redox_syscall 0.2.10",
  "remove_dir_all",
  "winapi",
+]
+
+[[package]]
+name = "tests-integration"
+version = "0.0.0"
+dependencies = [
+ "backend",
+ "once_cell",
+ "parking_lot",
+ "rand 0.8.4",
+ "reqwest",
+ "rocket",
+ "serde",
+ "serde_json",
+ "tokio",
 ]
 
 [[package]]

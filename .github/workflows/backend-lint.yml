@@ -38,7 +38,7 @@ jobs:
           working-directory: backend
     
       - name: cargo check
-        run: cargo check --all-targets
+        run: cargo check --all-targets --workspace
 
   cargo-build:
     runs-on: ubuntu-latest
@@ -65,7 +65,7 @@ jobs:
           working-directory: backend
         
       - name: cargo build
-        run: cargo build
+        run: cargo build --workspace
         
   cargo-clippy:
     runs-on: ubuntu-latest
@@ -96,7 +96,7 @@ jobs:
         uses: BobAnkh/clippy-check@master
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          args: --all-features
+          args: --all-features --workspace
           working-directory: backend
           
    
@@ -125,7 +125,7 @@ jobs:
           working-directory: backend
           
       - name: cargo fmt
-        run: cargo fmt -- --check
+        run: cargo fmt --all -- --check
 
   # cargo-udeps:
   #   runs-on: ubuntu-latest

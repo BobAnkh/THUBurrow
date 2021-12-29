@@ -1,6 +1,8 @@
 # THUBurrow
 
-![language-python](https://img.shields.io/github/languages/top/BobAnkh/THUBurrow?logo=rust&logoColor=orange)
+![language](https://img.shields.io/github/languages/top/BobAnkh/THUBurrow?logo=rust&logoColor=orange)
+[![Rust Report Card](https://rust-reportcard.xuri.me/badge/github.com/BobAnkh/THUBurrow)](https://rust-reportcard.xuri.me/report/github.com/BobAnkh/THUBurrow)
+[![codecov](https://codecov.io/gh/BobAnkh/THUBurrow/branch/main/graph/badge.svg?token=7QP055B1UK)](https://codecov.io/gh/BobAnkh/THUBurrow)
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/BobAnkh/THUBurrow?color=orange&logo=github-actions)
 ![LICENSE GPL-3.0](https://img.shields.io/github/license/BobAnkh/THUBurrow?logo=gpl)
 
