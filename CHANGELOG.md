@@ -182,6 +182,7 @@ Changes unreleased.
 ### Documentation
 
 - readme:
+  - add codacy quality badge ([4ab6d8a](https://github.com/BobAnkh/THUBurrow/commit/4ab6d8a958bab2169967e3f743e8d42396468337)) ([#141](https://github.com/BobAnkh/THUBurrow/pull/141))
   - update contributors ([2fd666d](https://github.com/BobAnkh/THUBurrow/commit/2fd666d76494c4ee47630fb0ea494b80eced5aae))
   - add formula for hot search ([d6aff01](https://github.com/BobAnkh/THUBurrow/commit/d6aff01c16b8b2f0e9fe19fde85b94bd149b6fd3)) ([#60](https://github.com/BobAnkh/THUBurrow/pull/60))
 
@@ -204,6 +205,7 @@ Changes unreleased.
 ### Refactor
 
 - backend:
+  - reorganize codes into workspace ([3dd40ec](https://github.com/BobAnkh/THUBurrow/commit/3dd40ecd8cbdf7a72c88db0d16b27c3d4071bd11)) ([#141](https://github.com/BobAnkh/THUBurrow/pull/141))
   - adjust structure ([73c3478](https://github.com/BobAnkh/THUBurrow/commit/73c3478c3469798975b978da7926a92eddd5d2fa)) ([#60](https://github.com/BobAnkh/THUBurrow/pull/60))
   - move init from utils to setup ([3dbfdbf](https://github.com/BobAnkh/THUBurrow/commit/3dbfdbf29be24331e176130e33c8aefaf8c1cb47)) ([#60](https://github.com/BobAnkh/THUBurrow/pull/60))
   - reorganize interfaces and file structure (#45) ([e28c366](https://github.com/BobAnkh/THUBurrow/commit/e28c36636ffbc8edfde4bf49c7a4ae66170e20ab)) ([#60](https://github.com/BobAnkh/THUBurrow/pull/60))
@@ -216,6 +218,9 @@ Changes unreleased.
   - reorganize file structure ([70e8f52](https://github.com/BobAnkh/THUBurrow/commit/70e8f52046bd736f112aed2e0e9643f79f42bf18)) ([#60](https://github.com/BobAnkh/THUBurrow/pull/60))
 
 ### Performance Improvements
+
+- image:
+  - improve build process ([7bda79c](https://github.com/BobAnkh/THUBurrow/commit/7bda79c47540777000bc812009a10695f712db7b)) ([#141](https://github.com/BobAnkh/THUBurrow/pull/141))
 
 - log:
   - improve log output ([b0c2031](https://github.com/BobAnkh/THUBurrow/commit/b0c20310f295c4eeac584029fb8c617e8cdb462b)) ([#60](https://github.com/BobAnkh/THUBurrow/pull/60))
