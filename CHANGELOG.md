@@ -1,8 +1,8 @@
 # CHANGELOG
 
-## Unreleased
+## [v1.0.0](https://github.com/BobAnkh/THUBurrow/releases/tag/v1.0.0) - 2021-12-29 16:01:41
 
-Changes unreleased.
+The first formal release version of the project. Add all the fundemantal and necessary functions.
 
 ### Feature
 
