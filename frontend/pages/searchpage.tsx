@@ -237,7 +237,7 @@ const SearchPage: FC = () => {
           var regu = '^[ ]+$';
           var re = new RegExp(regu);
           if (re.test(value.replace('#', '')) == false) {
-            var str = value.replace('#', '').split(/ ,/);
+            var str = value.replace('#', '').split(' ');
             if (str.length <= 6) settext({ keyword: [], id: 0, tag: str });
             else settext({ keyword: [], id: 0, tag: str.slice(0, 6) });
             setpage(1);
@@ -272,8 +272,12 @@ const SearchPage: FC = () => {
       defaultValue='post'
       onChange={on_change_area}
     >
-      <Option value='burrow'>搜洞</Option>
-      <Option value='post'>搜帖</Option>
+      <Option value='burrow' id='burrow'>
+        搜洞
+      </Option>
+      <Option value='post' id='post'>
+        搜帖
+      </Option>
     </Select>
   );
   function Switch() {
@@ -351,7 +355,7 @@ const SearchPage: FC = () => {
             onSearch={handleFormSubmit}
           />
           <p style={{ fontSize: '14px', opacity: 0.5 }}>
-            可根据关键词可以搜洞或帖，#tag搜对应标签帖子，#帖号进入帖，$洞号进入洞，可用空格分割关键词、tag搜索多个关键词、tag。
+            可根据关键词可以搜帖或洞，#tag搜对应标签帖子，#帖号进入帖，$洞号进入洞，可用空格分割关键词、tag搜索多个关键词、tag。
           </p>
         </div>
 
