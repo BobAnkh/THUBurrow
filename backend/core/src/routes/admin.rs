@@ -7,6 +7,7 @@ use rocket::{Build, Rocket};
 use rocket_db_pools::Connection;
 use sea_orm::{entity::*, ConnectionTrait, DbErr};
 
+#[cfg(debug_assertions)]
 use crate::config::BACKEND_TEST_MODE;
 use crate::db::{self, prelude::*};
 use crate::models::pulsar::{
