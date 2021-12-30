@@ -2,7 +2,7 @@ var keyword = new Array(10);
 keyword = ['火锅 关注 21312312s', 'test', '暗', '辛苦',
     '皮卡丘', '星云', 'bug', '大家', 'hello world',
     'hello 前端 section']
-var keyword1 = new Array(10);   
+var keyword1 = new Array(10);
 keyword1 = ['more burrow', 'Hi there', 'hello world', '你好',
 'dd', 'dd1', 'Mofukou', 'Mofukou dd', 'hello world Hi there',
     'sadsdasd']
@@ -51,17 +51,17 @@ describe('Test Searchpage', function () {
             for (var i = 0; i < postid.length; i++) {
             cy.visit('https://frontend-dev.thuburrow.com/searchpage')
             cy.get('input[type=text]').clear().type(postid[i]).should('have.value', postid[i])
-            cy.get('button[type=button]').closest('.ant-input-group-addon').click()  
+            cy.get('button[type=button]').closest('.ant-input-group-addon').click()
             cy.wait(2000)
             if(i<3)cy.url().should('include',postid[i].replace('#',''))
         }
     });
-    
+
     it('测试搜洞id', function () {
         for (var i = 0; i < burrowid.length; i++) {
         cy.visit('https://frontend-dev.thuburrow.com/searchpage')
         cy.get('input[type=text]').clear().type(burrowid[i]).should('have.value', burrowid[i])
-        cy.get('button[type=button]').closest('.ant-input-group-addon').click()  
+        cy.get('button[type=button]').closest('.ant-input-group-addon').click()
         cy.wait(2000)
         if(i<3)cy.url().should('include',burrowid[i].replace('$',''))
     }
@@ -75,4 +75,3 @@ describe('Test Searchpage', function () {
         }
     });
   });
-  

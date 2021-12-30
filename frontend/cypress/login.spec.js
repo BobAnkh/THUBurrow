@@ -1,5 +1,5 @@
-
-var useCase = new Array(6);
+import 'next/babel'
+let useCase = new Array(6);
 useCase[0] = { Username: 'test', Password: 'zt853142213', tag: true };
 useCase[1] = { Username: 'test', Password: '1231', tag: false };
 useCase[1] = {Username: 'test', Password: '11111111111111111111111111111111fsdfsd231',tag:false};
@@ -29,4 +29,3 @@ describe('login test', () => {
         }
     })
   })
-  
