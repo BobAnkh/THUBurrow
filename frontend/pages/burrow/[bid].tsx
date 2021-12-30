@@ -140,7 +140,7 @@ const Burrow: NextPage = () => {
       .then(function (res) {
         var j;
         for (j = 0; j < res.data.length; j++) {
-          if (Number(bid) == res.data.burrow.burrow_id) {
+          if (Number(bid) == res.data[j].burrow.burrow_id) {
             setattention(true);
             break;
           }

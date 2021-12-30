@@ -30,7 +30,7 @@ const Trending: NextPage = () => {
         console.log('show res.data');
         console.log(res.data);
         console.log(typeof res.data);
-        const postlist = JSON.parse(mockData);
+        const postlist = res.data;
         setPostList(postlist);
       } catch (error) {
         const err = error as AxiosError;

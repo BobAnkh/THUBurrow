@@ -1,5 +1,6 @@
 import { ColumnsType, ColumnType } from 'antd/es/table';
 import type { NextPage } from 'next';
+import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { FormInstance } from 'antd/lib/form';
 import axios, { AxiosError } from 'axios';
@@ -85,6 +86,9 @@ const followedBurrowColumns: ColumnsType<FollowedBurrowInfo> = [
     title: '名称',
     width: '20%',
     dataIndex: 'title',
+    render: (text, record, index) => {
+      return <Link href={`/burrow/${record.burrow_id}`}>{text}</Link>;
+    },
   },
   {
     key: 'description',
@@ -344,7 +348,6 @@ const UserPage: NextPage = () => {
       try {
         const res = await axios.post(
           `${process.env.NEXT_PUBLIC_BASEURL}/burrows`,
-          // 'http://127.0.0.1:4523/mock/435762/burrows/',
           { ...data },
           { headers: { 'Content-Type': 'application/json' } }
         );
@@ -471,6 +474,9 @@ const UserPage: NextPage = () => {
       dataIndex: 'title',
       editable: true,
       width: '20%',
+      render: (text, record, index) => {
+        return <Link href={`/burrow/${record.burrow_id}`}>{text}</Link>;
+      },
     },
     {
       key: 'description',
