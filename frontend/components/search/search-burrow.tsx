@@ -52,7 +52,9 @@ export default function Searchburrow({
             </div>
           )}
           <div className={styles.listContent}>
-            <div className={styles.description}>{item.description}</div>
+            <div className={styles.description}>
+              <div dangerouslySetInnerHTML={{ __html: item.description }}></div>
+            </div>
             <div className={styles.extra}>
               {item.update_time !== undefined && (
                 <em>
