@@ -45,3 +45,7 @@ frontend/.env.production.local
 frontend/.vercel
 backend/data
 log
+
+# cypress
+frontend/cypress/plugins
+frontend/cypress/support
