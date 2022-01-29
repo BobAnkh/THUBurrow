@@ -40,7 +40,7 @@ serde_json = "1.0"
 uuid = { version = "0.8.2", features = ["v4", "v5", "serde"] }
 rust-crypto = "0.2.36"
 deadpool = { version = "0.9.0", features = ["managed", "rt_tokio_1"] }
-deadpool-redis = { version = "0.10.0", features = ["rt_tokio_1", "serde"] }
+deadpool-redis = { version = "0.10.2", features = ["rt_tokio_1", "serde"] }
 redis = { version = "0.21" }
 idgenerator = "1.2.0"
 rocket_cors = { git = "https://github.com/BobAnkh/rocket_cors.git", branch = "master" }
@@ -56,7 +56,7 @@ reqwest = { version = "0.11", features = ["json", "blocking", "cookies"] }
 rust-s3 = "0.28.0"
 log4rs = "1.0.0"
 rand = "0.8.4"
-time = "0.3.4"
+time = "0.3.7"
 regex = "1.5.4"
 lazy_static = "1.4.0"
 check-if-email-exists = "0.8"
