@@ -524,7 +524,7 @@ pub async fn user_sign_up(
                 Box::pin(async move {
                     users.insert(txn).await?;
                     let res = burrows.insert(txn).await?;
-                    let burrow_id = res.burrow_id.unwrap();
+                    let burrow_id = res.burrow_id;
                     let valid_burrows_str = burrow_id.to_string();
                     let users_status = db::user_status::ActiveModel {
                         uid: Set(uid),

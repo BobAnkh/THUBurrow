@@ -191,7 +191,7 @@ pub async fn create_post(
                                 };
                                 // insert the row in database
                                 let post_res = content_post.insert(txn).await?;
-                                let post_id = post_res.post_id.unwrap();
+                                let post_id = post_res.post_id;
                                 log::info!("[CREATE-POST] create post: {}", post_id);
                                 // fill the row in content_reply
                                 let content_reply = db::content_reply::ActiveModel {
@@ -204,10 +204,7 @@ pub async fn create_post(
                                     ..Default::default()
                                 };
                                 let reply_res = content_reply.insert(txn).await?;
-                                log::info!(
-                                    "[CREATE-POST] add reply {}",
-                                    reply_res.reply_id.unwrap()
-                                );
+                                log::info!("[CREATE-POST] add reply {}", reply_res.reply_id);
                                 let update_res = Burrow::update_many()
                                     .col_expr(
                                         db::burrow::Column::PostNum,
@@ -508,7 +505,7 @@ pub async fn update_post(
                                         let pulsar_post = PulsarSearchPostData {
                                             post_id,
                                             title: content.title,
-                                            burrow_id: r.burrow_id.unwrap(),
+                                            burrow_id: r.burrow_id,
                                             section,
                                             tag,
                                             update_time: now,
@@ -986,7 +983,7 @@ pub async fn create_reply(
                                             };
                                             // insert the row in database
                                             let reply_res = content_reply.insert(txn).await?;
-                                            let reply_id = reply_res.reply_id.unwrap();
+                                            let reply_id = reply_res.reply_id;
                                             log::info!("[CREATE-REPLY] create reply {}", reply_id);
                                             let post_update = db::content_post::ActiveModel {
                                                 post_id: Set(post_info.post_id),
@@ -998,7 +995,7 @@ pub async fn create_reply(
                                             let post_res = post_update.update(txn).await?;
                                             log::info!(
                                                 "[CREATE-REPLY] update post {}",
-                                                post_res.post_id.unwrap()
+                                                post_res.post_id
                                             );
                                             UserCollection::update_many()
                                                 .col_expr(
@@ -1180,7 +1177,7 @@ pub async fn update_reply(
                                                 let pulsar_reply = PulsarSearchReplyData {
                                                     post_id: content.post_id,
                                                     reply_id: content.reply_id,
-                                                    burrow_id: content_reply.burrow_id.unwrap(),
+                                                    burrow_id: content_reply.burrow_id,
                                                     content: content.content,
                                                     update_time: now,
                                                 };

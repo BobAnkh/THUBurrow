@@ -170,14 +170,14 @@ pub async fn create_burrow(
                         .transaction::<_, BurrowCreateResponse, DbErr>(|txn| {
                             Box::pin(async move {
                                 let res = burrows.insert(txn).await?;
-                                let burrow_id = res.burrow_id.unwrap();
+                                let burrow_id = res.burrow_id;
                                 let pulsar_burrow = PulsarSearchBurrowData {
                                     burrow_id,
-                                    title: res.title.unwrap(),
-                                    description: res.description.unwrap(),
+                                    title: res.title,
+                                    description: res.description,
                                     update_time: now.to_owned(),
                                 };
-                                let uid = res.uid.unwrap();
+                                let uid = res.uid;
                                 ust.update_time = Set(now);
                                 ust.valid_burrow = {
                                     let mut valid_burrows: Vec<i64> =
