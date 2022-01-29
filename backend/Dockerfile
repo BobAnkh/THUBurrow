@@ -1,7 +1,7 @@
 FROM rust:1.58.1-slim-buster AS chef
 
 RUN apt update -qq && \
-    apt install --no-install-recommends build-essential git clang cmake libstdc++-10-dev libssl-dev libxxhash-dev zlib1g-dev pkg-config -y && \
+    apt install --no-install-recommends libssl-dev pkg-config -y && \
     rm -rf /var/lib/apt/lists/* && \
     cargo install cargo-chef
     # git clone https://github.com/rui314/mold.git && \
