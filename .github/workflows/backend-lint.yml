@@ -25,10 +25,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Install latest nightly
+      - name: Install latest stable
         uses: actions-rs/toolchain@v1
         with:
-            toolchain: nightly-2021-11-18
+            toolchain: stable
             override: true
             components: rustfmt, clippy
 
@@ -52,10 +52,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Install latest nightly
+      - name: Install latest stable
         uses: actions-rs/toolchain@v1
         with:
-            toolchain: nightly-2021-11-18
+            toolchain: stable
             override: true
             components: rustfmt, clippy
 
@@ -79,10 +79,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Install latest nightly
+      - name: Install latest stable
         uses: actions-rs/toolchain@v1
         with:
-            toolchain: nightly-2021-11-18
+            toolchain: stable
             override: true
             components: rustfmt, clippy
 
@@ -112,10 +112,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Install latest nightly
+      - name: Install latest stable
         uses: actions-rs/toolchain@v1
         with:
-            toolchain: nightly-2021-11-18
+            toolchain: stable 
             override: true
             components: rustfmt, clippy
 
