@@ -8,7 +8,7 @@ authors = ["BobAnkh <bobankhshen@gmail.com>"]
 
 [dev-dependencies]
 once_cell = "1.8.0"
-parking_lot = "0.11.2"
+parking_lot = "0.12.0"
 criterion = "0.3"
 
 # [[test]]

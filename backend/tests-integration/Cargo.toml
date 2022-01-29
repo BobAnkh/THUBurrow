@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 once_cell = "1.8.0"
-parking_lot = "0.11.2"
+parking_lot = "0.12.0"
 backend = {path = "../core"}
 rocket = { git = "https://github.com/SergioBenitez/Rocket", branch = "master", features = [
     "json",
