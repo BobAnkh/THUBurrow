@@ -5,7 +5,7 @@ use rocket::http::Status;
 use rocket::serde::json::Json;
 use rocket::{Build, Rocket};
 use rocket_db_pools::Connection;
-use sea_orm::{entity::*, ConnectionTrait, DbErr};
+use sea_orm::{entity::*, DbErr, TransactionTrait};
 
 #[cfg(debug_assertions)]
 use crate::config::BACKEND_TEST_MODE;

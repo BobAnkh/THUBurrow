@@ -8,7 +8,7 @@ use pulsar::{Consumer, Pulsar, SubType, TokioExecutor};
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 use sea_orm::sea_query::Expr;
-use sea_orm::{entity::*, ConnectionTrait, Database, DatabaseConnection, DbErr, QueryFilter};
+use sea_orm::{entity::*, Database, DatabaseConnection, DbErr, QueryFilter, TransactionTrait};
 use serde_json::json;
 use tokio::time::Duration;
 

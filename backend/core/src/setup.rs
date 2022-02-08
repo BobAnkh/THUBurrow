@@ -2,14 +2,14 @@
 
 /// Initialize the unique id generator.
 pub mod id_generator {
-    use idgenerator::{IdGeneratorOptions, IdHelper};
+    use idgenerator::{IdGeneratorOptions, IdInstance};
 
     pub fn init(worker_id: u32) {
-        IdHelper::init();
-        let mut options: IdGeneratorOptions = IdGeneratorOptions::new(worker_id);
-        options.worker_id_bit_len = 6;
-        options.seq_bit_len = 16;
-        IdHelper::set_id_generator(options);
+        let options: IdGeneratorOptions = IdGeneratorOptions::new()
+            .worker_id(worker_id)
+            .worker_id_bit_len(6)
+            .seq_bit_len(14);
+        IdInstance::init(options).unwrap();
     }
 }
 

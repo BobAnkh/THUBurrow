@@ -7,8 +7,8 @@ use rocket::{Build, Rocket};
 use rocket_db_pools::Connection;
 use sea_orm::sea_query::Expr;
 use sea_orm::{
-    entity::*, ActiveModelTrait, Condition, ConnectionTrait, DbBackend, DbErr, PaginatorTrait,
-    QueryFilter, QueryOrder, Statement,
+    entity::*, ActiveModelTrait, Condition, DbBackend, DbErr, PaginatorTrait, QueryFilter,
+    QueryOrder, Statement, TransactionTrait,
 };
 use std::collections::HashMap;
 
