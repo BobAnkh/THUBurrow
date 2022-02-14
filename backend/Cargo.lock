@@ -637,9 +637,9 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
 name = "check-if-email-exists"
-version = "0.8.27"
+version = "0.8.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f8d34b9464880b45139d4e458df19f48875cc95096ab60a2ff9a38f7f1a4553b"
+checksum = "4119091a5f8b04a935a900ac2d7aa7672b2e189daa726299f253c268b95b1fb4"
 dependencies = [
  "async-native-tls",
  "async-recursion",
