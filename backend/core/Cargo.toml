@@ -46,7 +46,7 @@ idgenerator = "2.0.0"
 rocket_cors = { git = "https://github.com/BobAnkh/rocket_cors.git", branch = "master" }
 pulsar = "4.1.1"
 futures = "0.3.21"
-tokio = { version = "1.16.1", features = [
+tokio = { version = "1.17.0", features = [
     "macros",
     "rt-multi-thread",
     "parking_lot",
