@@ -637,9 +637,9 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
 name = "check-if-email-exists"
-version = "0.8.28"
+version = "0.8.29"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4119091a5f8b04a935a900ac2d7aa7672b2e189daa726299f253c268b95b1fb4"
+checksum = "68f0b85e3bcd68d572f4919ae20a5a4916f182bab75bfb6785982554a69c954f"
 dependencies = [
  "async-native-tls",
  "async-recursion",
@@ -1885,9 +1885,9 @@ dependencies = [
 
 [[package]]
 name = "mailchecker"
-version = "4.1.11"
+version = "4.1.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e73d2d5abdebeaeab800c61e51b9e98461cf023db620195600a7966d69521b01"
+checksum = "321f65b2250fecfc645f9ec7b2e460e2b42cc2d4deedbe50a84d505cec2d7aa8"
 dependencies = [
  "fast_chemail",
  "once_cell",
