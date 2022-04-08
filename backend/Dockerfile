@@ -1,4 +1,4 @@
-FROM rust:1.59.0-slim-buster AS chef
+FROM rust:1.60.0-slim-buster AS chef
 
 RUN apt update -qq && \
     apt install --no-install-recommends libssl-dev pkg-config -y && \
