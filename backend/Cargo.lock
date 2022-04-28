@@ -2871,7 +2871,7 @@ dependencies = [
 [[package]]
 name = "rocket"
 version = "0.5.0-rc.1"
-source = "git+https://github.com/SergioBenitez/Rocket?branch=master#6bdd2f818642683b3aadbda51d7573abefe045ab"
+source = "git+https://github.com/SergioBenitez/Rocket?branch=master#613366f4bb52ac541bd3f8714a287cbcfc827287"
 dependencies = [
  "async-stream",
  "async-trait",
@@ -2902,7 +2902,7 @@ dependencies = [
  "tokio-stream",
  "tokio-util 0.7.0",
  "ubyte",
- "uuid 0.8.2",
+ "uuid 1.0.0",
  "version_check",
  "yansi",
 ]
@@ -2910,7 +2910,7 @@ dependencies = [
 [[package]]
 name = "rocket_codegen"
 version = "0.5.0-rc.1"
-source = "git+https://github.com/SergioBenitez/Rocket?branch=master#6bdd2f818642683b3aadbda51d7573abefe045ab"
+source = "git+https://github.com/SergioBenitez/Rocket?branch=master#613366f4bb52ac541bd3f8714a287cbcfc827287"
 dependencies = [
  "devise",
  "glob",
@@ -2940,7 +2940,7 @@ dependencies = [
 [[package]]
 name = "rocket_db_pools"
 version = "0.1.0-rc"
-source = "git+https://github.com/SergioBenitez/Rocket?branch=master#6bdd2f818642683b3aadbda51d7573abefe045ab"
+source = "git+https://github.com/SergioBenitez/Rocket?branch=master#613366f4bb52ac541bd3f8714a287cbcfc827287"
 dependencies = [
  "rocket",
  "rocket_db_pools_codegen",
@@ -2951,7 +2951,7 @@ dependencies = [
 [[package]]
 name = "rocket_db_pools_codegen"
 version = "0.1.0-rc"
-source = "git+https://github.com/SergioBenitez/Rocket?branch=master#6bdd2f818642683b3aadbda51d7573abefe045ab"
+source = "git+https://github.com/SergioBenitez/Rocket?branch=master#613366f4bb52ac541bd3f8714a287cbcfc827287"
 dependencies = [
  "devise",
  "quote",
@@ -2960,7 +2960,7 @@ dependencies = [
 [[package]]
 name = "rocket_http"
 version = "0.5.0-rc.1"
-source = "git+https://github.com/SergioBenitez/Rocket?branch=master#6bdd2f818642683b3aadbda51d7573abefe045ab"
+source = "git+https://github.com/SergioBenitez/Rocket?branch=master#613366f4bb52ac541bd3f8714a287cbcfc827287"
 dependencies = [
  "cookie 0.16.0",
  "either",
@@ -2980,7 +2980,7 @@ dependencies = [
  "time 0.3.9",
  "tokio",
  "uncased",
- "uuid 0.8.2",
+ "uuid 1.0.0",
 ]
 
 [[package]]
