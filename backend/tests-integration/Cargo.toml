@@ -14,7 +14,7 @@ rocket = { git = "https://github.com/SergioBenitez/Rocket", branch = "master", f
     "uuid",
     "secrets",
 ] }
-serde = { version = "1.0.136", features = ["derive"] }
+serde = { version = "1.0.137", features = ["derive"] }
 serde_json = "1.0.79"
 tokio = { version = "1.18.0", features = [
     "macros",
