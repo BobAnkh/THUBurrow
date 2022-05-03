@@ -13,4 +13,4 @@ tokio = { version = "1.18.0", features = [
     "parking_lot",
     "signal",
 ] }
-log = "0.4.16"
+log = "0.4.17"
