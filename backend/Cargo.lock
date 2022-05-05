@@ -2872,7 +2872,7 @@ dependencies = [
 [[package]]
 name = "rocket"
 version = "0.5.0-rc.1"
-source = "git+https://github.com/SergioBenitez/Rocket?branch=master#bf84b1cdb5358657ac36d905463321a8d17a0090"
+source = "git+https://github.com/SergioBenitez/Rocket?branch=master#38e43d08403eb46fb6c4bd34cb92a5fdfd3906cb"
 dependencies = [
  "async-stream",
  "async-trait",
@@ -2911,7 +2911,7 @@ dependencies = [
 [[package]]
 name = "rocket_codegen"
 version = "0.5.0-rc.1"
-source = "git+https://github.com/SergioBenitez/Rocket?branch=master#bf84b1cdb5358657ac36d905463321a8d17a0090"
+source = "git+https://github.com/SergioBenitez/Rocket?branch=master#38e43d08403eb46fb6c4bd34cb92a5fdfd3906cb"
 dependencies = [
  "devise",
  "glob",
@@ -2941,7 +2941,7 @@ dependencies = [
 [[package]]
 name = "rocket_db_pools"
 version = "0.1.0-rc"
-source = "git+https://github.com/SergioBenitez/Rocket?branch=master#bf84b1cdb5358657ac36d905463321a8d17a0090"
+source = "git+https://github.com/SergioBenitez/Rocket?branch=master#38e43d08403eb46fb6c4bd34cb92a5fdfd3906cb"
 dependencies = [
  "rocket",
  "rocket_db_pools_codegen",
@@ -2952,7 +2952,7 @@ dependencies = [
 [[package]]
 name = "rocket_db_pools_codegen"
 version = "0.1.0-rc"
-source = "git+https://github.com/SergioBenitez/Rocket?branch=master#bf84b1cdb5358657ac36d905463321a8d17a0090"
+source = "git+https://github.com/SergioBenitez/Rocket?branch=master#38e43d08403eb46fb6c4bd34cb92a5fdfd3906cb"
 dependencies = [
  "devise",
  "quote",
@@ -2961,10 +2961,11 @@ dependencies = [
 [[package]]
 name = "rocket_http"
 version = "0.5.0-rc.1"
-source = "git+https://github.com/SergioBenitez/Rocket?branch=master#bf84b1cdb5358657ac36d905463321a8d17a0090"
+source = "git+https://github.com/SergioBenitez/Rocket?branch=master#38e43d08403eb46fb6c4bd34cb92a5fdfd3906cb"
 dependencies = [
  "cookie 0.16.0",
  "either",
+ "futures",
  "http",
  "hyper",
  "indexmap",
@@ -3625,9 +3626,9 @@ dependencies = [
 
 [[package]]
 name = "state"
-version = "0.5.2"
+version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "87cf4f5369e6d3044b5e365c9690f451516ac8f0954084622b49ea3fde2f6de5"
+checksum = "dbe866e1e51e8260c9eed836a042a5e7f6726bb2b411dffeaa712e19c388f23b"
 dependencies = [
  "loom",
 ]
