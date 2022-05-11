@@ -30,7 +30,7 @@ rocket = { git = "https://github.com/SergioBenitez/Rocket", branch = "master", f
 rocket_db_pools = { git = "https://github.com/SergioBenitez/Rocket", branch = "master", features = [
     "sqlx_postgres",
 ] }
-sea-orm = { version = "0.7.1", features = [
+sea-orm = { version = "0.8.0", features = [
     "sqlx-postgres",
     "runtime-tokio-rustls",
     "macros",
