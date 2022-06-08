@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## Unreleased
+
+Changes unreleased.
+
+### Documentation
+
+- readme:
+  - update contributors ([0c5d43e](https://github.com/BobAnkh/THUBurrow/commit/0c5d43e08af43dfa89515a952962f8a7bc8e3041))
+
 ## [v1.0.0](https://github.com/BobAnkh/THUBurrow/releases/tag/v1.0.0) - 2021-12-29 16:01:41
 
 The first formal release version of the project. Add all the fundemantal and necessary functions.
