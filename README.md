@@ -32,9 +32,9 @@ Make sure to pass all the tests before submitting your code
 <tr>
     <td align="center" style="word-wrap: break-word; width: 150.0; height: 150.0">
         <a href=https://github.com/BobAnkh>
-            <img src=https://avatars.githubusercontent.com/u/44333669?v=4 width="100;"  style="border-radius:50%;align-items:center;justify-content:center;overflow:hidden;padding-top:10px" alt=BobAnkh/>
+            <img src=https://avatars.githubusercontent.com/u/44333669?v=4 width="100;"  style="border-radius:50%;align-items:center;justify-content:center;overflow:hidden;padding-top:10px" alt=Yixin Shen/>
             <br />
-            <sub style="font-size:14px"><b>BobAnkh</b></sub>
+            <sub style="font-size:14px"><b>Yixin Shen</b></sub>
         </a>
     </td>
     <td align="center" style="word-wrap: break-word; width: 150.0; height: 150.0">
@@ -76,9 +76,9 @@ Make sure to pass all the tests before submitting your code
 <tr>
     <td align="center" style="word-wrap: break-word; width: 150.0; height: 150.0">
         <a href=https://github.com/Mofuko1316>
-            <img src=https://avatars.githubusercontent.com/u/55481739?v=4 width="100;"  style="border-radius:50%;align-items:center;justify-content:center;overflow:hidden;padding-top:10px" alt=Mofuko1316/>
+            <img src=https://avatars.githubusercontent.com/u/55481739?v=4 width="100;"  style="border-radius:50%;align-items:center;justify-content:center;overflow:hidden;padding-top:10px" alt=Mofuko/>
             <br />
-            <sub style="font-size:14px"><b>Mofuko1316</b></sub>
+            <sub style="font-size:14px"><b>Mofuko</b></sub>
         </a>
     </td>
     <td align="center" style="word-wrap: break-word; width: 150.0; height: 150.0">
