@@ -476,7 +476,7 @@ dependencies = [
  "time 0.3.9",
  "tokio",
  "toml",
- "uuid 1.1.1",
+ "uuid 1.1.2",
 ]
 
 [[package]]
@@ -2902,7 +2902,7 @@ dependencies = [
  "tokio-stream",
  "tokio-util 0.7.0",
  "ubyte",
- "uuid 1.1.1",
+ "uuid 1.1.2",
  "version_check",
  "yansi",
 ]
@@ -2981,7 +2981,7 @@ dependencies = [
  "time 0.3.9",
  "tokio",
  "uncased",
- "uuid 1.1.1",
+ "uuid 1.1.2",
 ]
 
 [[package]]
@@ -4283,9 +4283,9 @@ dependencies = [
 
 [[package]]
 name = "uuid"
-version = "1.1.1"
+version = "1.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c6d5d669b51467dcf7b2f1a796ce0f955f05f01cafda6c19d6e95f730df29238"
+checksum = "dd6469f4314d5f1ffec476e05f17cc9a78bc7a27a6a857842170bdf8d6f98d2f"
 dependencies = [
  "getrandom",
  "serde",

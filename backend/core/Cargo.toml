@@ -37,7 +37,7 @@ sea-orm = { version = "0.8.0", features = [
 ], default-features = false }
 serde = { version = "1.0.137", features = ["derive"] }
 serde_json = "1.0.81"
-uuid = { version = "1.1.1", features = ["v4", "v5", "serde"] }
+uuid = { version = "1.1.2", features = ["v4", "v5", "serde"] }
 rust-crypto = "0.2.36"
 deadpool = { version = "0.9.5", features = ["managed", "rt_tokio_1"] }
 deadpool-redis = { version = "0.10.2", features = ["rt_tokio_1", "serde"] }
