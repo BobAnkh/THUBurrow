@@ -2871,7 +2871,7 @@ dependencies = [
 [[package]]
 name = "rocket"
 version = "0.5.0-rc.2"
-source = "git+https://github.com/SergioBenitez/Rocket?branch=master#2fc4b156ebcc3e7220159dd638286e8d890cccba"
+source = "git+https://github.com/SergioBenitez/Rocket?branch=master#ef2538f22275aeb5ce31f81dec8907b85b0f53db"
 dependencies = [
  "async-stream",
  "async-trait",
@@ -2910,7 +2910,7 @@ dependencies = [
 [[package]]
 name = "rocket_codegen"
 version = "0.5.0-rc.2"
-source = "git+https://github.com/SergioBenitez/Rocket?branch=master#2fc4b156ebcc3e7220159dd638286e8d890cccba"
+source = "git+https://github.com/SergioBenitez/Rocket?branch=master#ef2538f22275aeb5ce31f81dec8907b85b0f53db"
 dependencies = [
  "devise",
  "glob",
@@ -2940,7 +2940,7 @@ dependencies = [
 [[package]]
 name = "rocket_db_pools"
 version = "0.1.0-rc.2"
-source = "git+https://github.com/SergioBenitez/Rocket?branch=master#2fc4b156ebcc3e7220159dd638286e8d890cccba"
+source = "git+https://github.com/SergioBenitez/Rocket?branch=master#ef2538f22275aeb5ce31f81dec8907b85b0f53db"
 dependencies = [
  "rocket",
  "rocket_db_pools_codegen",
@@ -2951,7 +2951,7 @@ dependencies = [
 [[package]]
 name = "rocket_db_pools_codegen"
 version = "0.1.0-rc.2"
-source = "git+https://github.com/SergioBenitez/Rocket?branch=master#2fc4b156ebcc3e7220159dd638286e8d890cccba"
+source = "git+https://github.com/SergioBenitez/Rocket?branch=master#ef2538f22275aeb5ce31f81dec8907b85b0f53db"
 dependencies = [
  "devise",
  "quote",
@@ -2960,7 +2960,7 @@ dependencies = [
 [[package]]
 name = "rocket_http"
 version = "0.5.0-rc.2"
-source = "git+https://github.com/SergioBenitez/Rocket?branch=master#2fc4b156ebcc3e7220159dd638286e8d890cccba"
+source = "git+https://github.com/SergioBenitez/Rocket?branch=master#ef2538f22275aeb5ce31f81dec8907b85b0f53db"
 dependencies = [
  "cookie 0.16.0",
  "either",
