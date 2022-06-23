@@ -44,7 +44,7 @@ deadpool-redis = { version = "0.10.2", features = ["rt_tokio_1", "serde"] }
 redis = "0.21.5"
 idgenerator = "2.0.0"
 rocket_cors = { git = "https://github.com/BobAnkh/rocket_cors.git", branch = "master" }
-pulsar = "4.1.1"
+pulsar = "4.1.2"
 futures = "0.3.21"
 tokio = { version = "1.19.2", features = [
     "macros",
