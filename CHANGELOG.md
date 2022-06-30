@@ -31,16 +31,17 @@ The first formal release version of the project. Add all the fundemantal and nec
   - support add and modify burrow on profile page (#66) ([92f79ac](https://github.com/BobAnkh/THUBurrow/commit/92f79acbbcff12bdbc07b895baff2588011ac017)) ([#66](https://github.com/BobAnkh/THUBurrow/pull/66))
   - add a vanilla user profile page (#39) ([0319686](https://github.com/BobAnkh/THUBurrow/commit/0319686f206cc8342fcf69b49d3e8c80b180bdec)) ([#39](https://github.com/BobAnkh/THUBurrow/pull/39))
 
+- storage:
+  - limit interfaces to admin use ([a11d8eb](https://github.com/BobAnkh/THUBurrow/commit/a11d8eb6a60298e64136bfc9cc409479b37c51e5)) ([#60](https://github.com/BobAnkh/THUBurrow/pull/60))
+  - add storage table ([e2304df](https://github.com/BobAnkh/THUBurrow/commit/e2304df5509c2dd4f8df1d6f55fd1e3bcefe7d74)) ([#60](https://github.com/BobAnkh/THUBurrow/pull/60))
+  - add tables for storage (#17) ([54605c1](https://github.com/BobAnkh/THUBurrow/commit/54605c17aca7eeea75b62a1f26975042683f390b)) ([#60](https://github.com/BobAnkh/THUBurrow/pull/60))
+  - add referrer check for download ([d46ac3e](https://github.com/BobAnkh/THUBurrow/commit/d46ac3e94cd860e95916db49da61c12f70226240)) ([#60](https://github.com/BobAnkh/THUBurrow/pull/60))
+
 - post:
   - add update and delete post (#78) ([26ea0e8](https://github.com/BobAnkh/THUBurrow/commit/26ea0e82eeef4c47865ec29102ba4936dd804e1a)) ([#78](https://github.com/BobAnkh/THUBurrow/pull/78))
   - add function of modify reply (#58) ([a1612fd](https://github.com/BobAnkh/THUBurrow/commit/a1612fdda5c6f3c329b3164a2ae02de245123b40)) ([#58](https://github.com/BobAnkh/THUBurrow/pull/58))
   - add like and favorites in post list and post details page  (#28) ([a07f8f6](https://github.com/BobAnkh/THUBurrow/commit/a07f8f6a5ddc0c1c51523eebaacbdb634a030ef4)) ([#28](https://github.com/BobAnkh/THUBurrow/pull/28))
   - add view post detail and reply  (#21) ([15b22f2](https://github.com/BobAnkh/THUBurrow/commit/15b22f2f9c573cc0fecca64125eed2d78854943d)) ([#21](https://github.com/BobAnkh/THUBurrow/pull/21))
-
-- storage:
-  - add storage table ([e2304df](https://github.com/BobAnkh/THUBurrow/commit/e2304df5509c2dd4f8df1d6f55fd1e3bcefe7d74)) ([#60](https://github.com/BobAnkh/THUBurrow/pull/60))
-  - add tables for storage (#17) ([54605c1](https://github.com/BobAnkh/THUBurrow/commit/54605c17aca7eeea75b62a1f26975042683f390b)) ([#60](https://github.com/BobAnkh/THUBurrow/pull/60))
-  - add referrer check for download ([d46ac3e](https://github.com/BobAnkh/THUBurrow/commit/d46ac3e94cd860e95916db49da61c12f70226240)) ([#60](https://github.com/BobAnkh/THUBurrow/pull/60))
 
 - admin:
   - add routes for admin operation ([8454bfa](https://github.com/BobAnkh/THUBurrow/commit/8454bfac992ccd22b23ffeef6884e15570c0ec07)) ([#60](https://github.com/BobAnkh/THUBurrow/pull/60))
