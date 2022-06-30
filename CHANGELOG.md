@@ -7,6 +7,7 @@ Changes unreleased.
 ### Documentation
 
 - readme:
+  - update docs website ([b60efc8](https://github.com/BobAnkh/THUBurrow/commit/b60efc819c20d1a8627378de5690b2c09870672d)) ([#335](https://github.com/BobAnkh/THUBurrow/pull/335))
   - update contributors ([0c5d43e](https://github.com/BobAnkh/THUBurrow/commit/0c5d43e08af43dfa89515a952962f8a7bc8e3041))
 
 ## [v1.0.0](https://github.com/BobAnkh/THUBurrow/releases/tag/v1.0.0) - 2021-12-29 16:01:41
