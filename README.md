@@ -10,9 +10,7 @@
 
 A **bigger** and **better** one
 
-View our website at [thuburrow.com](https://thuburrow.com)
-
-API documentation of backend can be found at [docs.thuburrow.com](https://docs.thuburrow.com)
+API documentation of backend can be found at [https://bobankh.com/THUBurrow]([https://bobankh.com/THUBurrow)
 
 ## Maintainer
 
