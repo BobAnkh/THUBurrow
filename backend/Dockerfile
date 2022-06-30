@@ -1,9 +1,14 @@
-FROM rustlang/rust:nightly-buster-slim AS chef
+FROM rust:1.61.0-slim-buster AS chef
 
 RUN apt update -qq && \
     apt install --no-install-recommends libssl-dev pkg-config -y && \
     rm -rf /var/lib/apt/lists/* && \
     cargo install cargo-chef
+    # git clone https://github.com/rui314/mold.git && \
+    # cd mold && \
+    # git checkout v1.0.2 && \
+    # make -j$(nproc) CXX=clang++ && \
+    # sudo make install
 WORKDIR /app
 
 FROM chef AS planner

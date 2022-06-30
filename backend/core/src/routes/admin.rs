@@ -5,7 +5,7 @@ use rocket::http::Status;
 use rocket::serde::json::Json;
 use rocket::{Build, Rocket};
 use rocket_db_pools::Connection;
-use sea_orm::{entity::*, ConnectionTrait, DbErr};
+use sea_orm::{entity::*, DbErr, TransactionTrait};
 
 #[cfg(debug_assertions)]
 use crate::config::BACKEND_TEST_MODE;
@@ -266,7 +266,7 @@ pub async fn admin_operation(
                                         bst.burrow_state = Set(burrow_state - burrow_state % 2);
                                         bst.permission = Set(admin.role);
                                         match pg_con
-                                            .transaction::<_, db::burrow::ActiveModel, DbErr>(|txn| {
+                                            .transaction::<_, db::burrow::Model, DbErr>(|txn| {
                                                 Box::pin(async move {
                                                     let bst = bst.update(txn).await?;
                                                     let ust = UserStatus::find_by_id(uid).one(txn).await?;
@@ -306,10 +306,10 @@ pub async fn admin_operation(
                                     {
                                         Ok(res) => {
                                             let pulsar_burrow = PulsarSearchBurrowData {
-                                                burrow_id: res.burrow_id.unwrap(),
-                                                title: res.title.unwrap(),
-                                                description: res.description.unwrap(),
-                                                update_time: res.update_time.unwrap(),
+                                                burrow_id: res.burrow_id,
+                                                title: res.title,
+                                                description: res.description,
+                                                update_time: res.update_time,
                                             };
                                             let msg = PulsarSearchData::CreateBurrow(pulsar_burrow);
                                             let _ = producer
@@ -410,19 +410,16 @@ pub async fn admin_operation(
                                         Ok(content) => {
                                             let pulsar_post = PulsarSearchPostData {
                                                 post_id,
-                                                title: content.title.unwrap(),
-                                                burrow_id: content.burrow_id.unwrap(),
-                                                section: serde_json::from_str(
-                                                    &content.section.unwrap(),
-                                                )
-                                                .unwrap(),
+                                                title: content.title,
+                                                burrow_id: content.burrow_id,
+                                                section: serde_json::from_str(&content.section)
+                                                    .unwrap(),
                                                 tag: content
                                                     .tag
-                                                    .unwrap()
                                                     .split(',')
                                                     .map(str::to_string)
                                                     .collect(),
-                                                update_time: content.update_time.unwrap(),
+                                                update_time: content.update_time,
                                             };
                                             let msg = PulsarSearchData::CreatePost(pulsar_post);
                                             let _ = producer
@@ -530,9 +527,9 @@ pub async fn admin_operation(
                                             let pulsar_reply = PulsarSearchReplyData {
                                                 post_id,
                                                 reply_id,
-                                                burrow_id: content.burrow_id.unwrap(),
-                                                content: content.content.unwrap(),
-                                                update_time: content.update_time.unwrap(),
+                                                burrow_id: content.burrow_id,
+                                                content: content.content,
+                                                update_time: content.update_time,
                                             };
                                             let msg = PulsarSearchData::CreateReply(pulsar_reply);
                                             let _ = producer

@@ -7,10 +7,10 @@ edition = "2021"
 
 [dependencies]
 backend = { path = "../core" }
-tokio = { version = "1.13.0", features = [
+tokio = { version = "1.19.2", features = [
     "macros",
     "rt-multi-thread",
     "parking_lot",
     "signal",
 ] }
-log = "0.4"
+log = "0.4.17"

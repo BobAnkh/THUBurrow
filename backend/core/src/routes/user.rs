@@ -3,7 +3,7 @@
 use chrono::{FixedOffset, Utc};
 use crypto::digest::Digest;
 use crypto::sha3::Sha3;
-use idgenerator::IdHelper;
+use idgenerator::IdInstance;
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 use rocket::http::{Cookie, CookieJar, Status};
@@ -497,7 +497,7 @@ pub async fn user_sign_up(
         hash_sha3.input_str(&(String::from(&salt) + user.password));
         let password = hash_sha3.result_str();
         // generate uid
-        let uid: i64 = IdHelper::next_id();
+        let uid: i64 = IdInstance::next_id();
         // fill the row of table 'user' and 'user_status'
         let now = Utc::now().with_timezone(&FixedOffset::east(8 * 3600));
         let users = db::user::ActiveModel {
@@ -524,7 +524,7 @@ pub async fn user_sign_up(
                 Box::pin(async move {
                     users.insert(txn).await?;
                     let res = burrows.insert(txn).await?;
-                    let burrow_id = res.burrow_id.unwrap();
+                    let burrow_id = res.burrow_id;
                     let valid_burrows_str = burrow_id.to_string();
                     let users_status = db::user_status::ActiveModel {
                         uid: Set(uid),
