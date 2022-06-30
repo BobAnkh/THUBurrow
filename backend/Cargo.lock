@@ -508,7 +508,7 @@ dependencies = [
  "sea-orm",
  "serde",
  "serde_json",
- "time 0.3.9",
+ "time 0.3.11",
  "tokio",
  "toml",
  "uuid 1.1.2",
@@ -774,7 +774,7 @@ dependencies = [
  "rand 0.8.5",
  "sha2 0.10.1",
  "subtle",
- "time 0.3.9",
+ "time 0.3.11",
  "version_check",
 ]
 
@@ -2932,7 +2932,7 @@ dependencies = [
  "serde_json",
  "state",
  "tempfile",
- "time 0.3.9",
+ "time 0.3.11",
  "tokio",
  "tokio-stream",
  "tokio-util 0.7.0",
@@ -3013,7 +3013,7 @@ dependencies = [
  "smallvec",
  "stable-pattern",
  "state",
- "time 0.3.9",
+ "time 0.3.11",
  "tokio",
  "uncased",
  "uuid 1.1.2",
@@ -3067,7 +3067,7 @@ dependencies = [
  "serde_derive",
  "sha2 0.10.1",
  "thiserror",
- "time 0.3.9",
+ "time 0.3.11",
  "tokio",
  "tokio-stream",
  "url",
@@ -3876,9 +3876,9 @@ dependencies = [
 
 [[package]]
 name = "time"
-version = "0.3.9"
+version = "0.3.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c2702e08a7a860f005826c6815dcac101b19b5eb330c27fe4a5928fec1d20ddd"
+checksum = "72c91f41dcb2f096c05f0873d667dceec1087ce5bcf984ec8ffb19acddbb3217"
 dependencies = [
  "itoa 1.0.1",
  "libc",
